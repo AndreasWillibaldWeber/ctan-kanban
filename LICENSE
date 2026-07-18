@@ -1,0 +1,16 @@
+This work is distributed under the LaTeX Project Public License (LPPL),
+version 1.3c or, at your option, any later version.
+
+The latest version of the license is available at
+https://www.latex-project.org/lppl.txt
+
+The work has LPPL maintenance status "maintained". The Current Maintainer is
+Andreas Willibald Weber.
+
+The work consists of the source files kanban.dtx and kanban.ins; build.lua,
+README.md, CONTRIBUTING.md, RELEASING.md, CHANGELOG.md, and LICENSE; the
+example files kanban-example.tex, kanban-modes-example.tex,
+kanban-deadlines-example.tex, kanban-date-formats-example.tex,
+kanban-palette-example.tex, kanban-columnsep-example.tex,
+kanban-break-example.tex, and kanban-landscape-example.tex; the files in the
+testfiles directory; and the derived files kanban.sty and kanban.pdf.

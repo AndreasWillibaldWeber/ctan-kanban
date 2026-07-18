@@ -1,0 +1,60 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[reference-date=2026-07-18]{kanban}
+\newcount\kbcompletedboxes
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\def\kbtask@prio{}\def\kbtask@author{}\def\kbtask@deadline{}%
+\def\kbtask@late{}\def\kbtask@completed{}%
+\kanban@processtaskoptions{due=2026-08-01}
+\ifdefstring{\kbtask@deadline}{2026-08-01}
+  {\TYPE{KANBAN DUE KEY STORES DEADLINE OK}}
+  {\TYPE{KANBAN DUE KEY STORES DEADLINE FAILED}}
+\def\kbtask@deadline{}%
+\kanban@processtaskoptions{deadline=2026-08-01}
+\ifdefstring{\kbtask@deadline}{2026-08-01}
+  {\TYPE{KANBAN DEADLINE KEY STORES DEADLINE OK}}
+  {\TYPE{KANBAN DEADLINE KEY STORES DEADLINE FAILED}}
+
+\begingroup
+  \def\tcbox[#1]#2{%
+    \in@{colback=kanbanHigh}{#1}%
+    \ifin@
+      \TYPE{KANBAN LATE OVERRIDE USES OVERDUE STYLE OK}%
+    \else
+      \TYPE{KANBAN LATE OVERRIDE USES OVERDUE STYLE FAILED}%
+    \fi}
+  \kanban@deadlinechip{1}{2099-12-31}
+\endgroup
+\begingroup
+  \def\tcbox[#1]#2{%
+    \in@{colback=kanbanHigh}{#1}%
+    \ifin@
+      \TYPE{KANBAN FUTURE DEADLINE NEUTRAL STYLE FAILED}%
+    \else
+      \TYPE{KANBAN FUTURE DEADLINE NEUTRAL STYLE OK}%
+    \fi}
+  \kanban@deadlinechip{}{2099-12-31}
+\endgroup
+
+\begingroup
+  \def\tcbox[#1]#2{\global\advance\kbcompletedboxes by 1\relax}
+  \kanban@completedchip{1}
+  \kanban@completedchip{}
+\endgroup
+\ifnum\kbcompletedboxes=1\relax
+  \TYPE{KANBAN COMPLETION CHIP FLAG OK}
+\else
+  \TYPE{KANBAN COMPLETION CHIP FLAG FAILED}
+\fi
+\makeatother
+
+\begin{kanban}[columns={Only},columnsep=\linewidth]
+  \kanbantask[prio=high,author=Alice,due=2026-07-18]
+    {Only}{Exercise a one-column board with a registered length}
+\end{kanban}
+\TYPE{KANBAN ONE COLUMN PUBLIC RENDER OK}
+\END
+\end{document}

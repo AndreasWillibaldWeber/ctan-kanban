@@ -1,0 +1,169 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[palette=muted,startdate=01.07.2026,
+  mode=dark,date-format=english,columnsep=3mm,
+  columns={Queue,Work,Done}]{kanban}
+\makeatletter
+\edef\kb@packagedateformat{\kanban@dateformat}
+\makeatother
+% Exercise rejected definitions and selections before log capture.
+\kbdefinepalette{empty}{}
+\kbdefinepalette{ custom }{red,blue}
+\kbset{palette={ custom },mode=LIGHT,date-format=german,
+  startdate=2026-07-15,columnsep=1mm}
+\kbset{palette=missing}
+\kbset{startdate=31.02.2026}
+\kbset{columns={}}
+\kbset{columnsep=-1mm}
+% Redefining the selected palette must update the default for later boards.
+\kbdefinepalette{ custom }{green,purple,orange}
+\ExplSyntaxOn
+\NewDocumentCommand \kbcheckglobalpalette { }
+  {
+    \int_compare:nNnTF {\clist_count:N \g__kanban_palette_clist} = {3}
+      {
+        \str_if_eq:eeTF
+          {\clist_item:Nn \g__kanban_palette_clist {1}} {green}
+          {\TYPE{KANBAN~SELECTED~PALETTE~REFRESHED~OK}}
+          {\TYPE{KANBAN~SELECTED~PALETTE~REFRESHED~FAILED}}
+      }
+      {\TYPE{KANBAN~SELECTED~PALETTE~REFRESHED~FAILED}}
+  }
+\NewDocumentCommand \kbcheckpackagecolumns { }
+  {
+    \str_if_eq:eeTF
+      {\clist_use:Nn \g__kanban_columns_clist {,}}
+      {QUEUE,WORK,DONE}
+      {\TYPE{KANBAN~PACKAGE~COLUMNS~OK}}
+      {\TYPE{KANBAN~PACKAGE~COLUMNS~FAILED}}
+  }
+\NewDocumentCommand \kbcheckboardpalette { }
+  {
+    \int_compare:nNnTF
+      {\clist_count:N \l__kanban_board_palette_clist} = {8}
+      {\TYPE{KANBAN~BOARD~PALETTE~OVERRIDE~OK}}
+      {\TYPE{KANBAN~BOARD~PALETTE~OVERRIDE~FAILED}}
+  }
+\ExplSyntaxOff
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\ifdefstring{\kb@packagedateformat}{english}
+  {\TYPE{KANBAN PACKAGE DATE FORMAT OK}}
+  {\TYPE{KANBAN PACKAGE DATE FORMAT FAILED}}
+\ifdefstring{\kanban@mode}{light}
+  {\TYPE{KANBAN SETUP MODE OK}}
+  {\TYPE{KANBAN SETUP MODE FAILED}}
+\ifdefstring{\kanban@startdate}{2026-07-15}
+  {\TYPE{KANBAN SETUP STARTDATE OK}}
+  {\TYPE{KANBAN SETUP STARTDATE FAILED}}
+\ifdefstring{\kanban@dateformat}{german}
+  {\TYPE{KANBAN SETUP DATE FORMAT OK}}
+  {\TYPE{KANBAN SETUP DATE FORMAT FAILED}}
+\ifdim\kanban@columnsep=1mm
+  \TYPE{KANBAN SETUP GAP OK}
+\else
+  \TYPE{KANBAN SETUP GAP FAILED}
+\fi
+\makeatother
+\kbcheckpackagecolumns
+\kbcheckglobalpalette
+\begin{kanban}[columns={Todo},palette=default,mode=DaRk,dateformat=iso,
+    startdate=01.08.2026,columnsep=4mm]
+  \makeatletter
+  \ifdefstring{\kanban@boardmode}{dark}
+    {\TYPE{KANBAN BOARD MODE OVERRIDE OK}}
+    {\TYPE{KANBAN BOARD MODE OVERRIDE FAILED}}
+  \ifdefstring{\kanban@thestart}{2026-08-01}
+    {\TYPE{KANBAN BOARD STARTDATE OVERRIDE OK}}
+    {\TYPE{KANBAN BOARD STARTDATE OVERRIDE FAILED}}
+  \ifdefstring{\kanban@boarddateformat}{iso}
+    {\TYPE{KANBAN BOARD DATE FORMAT OVERRIDE OK}}
+    {\TYPE{KANBAN BOARD DATE FORMAT OVERRIDE FAILED}}
+  \ifdim\kanban@boardcolumnsep=4mm
+    \TYPE{KANBAN BOARD GAP OVERRIDE OK}
+  \else
+    \TYPE{KANBAN BOARD GAP OVERRIDE FAILED}
+  \fi
+  \makeatother
+  \kbcheckboardpalette
+  \kanbantask{Todo}{Exercise board-local settings}
+  \begingroup
+    \makeatletter
+    \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+    \makeatother
+    \kanbantask[prio=urgent]{Todo}{Exercise priority validation}
+  \endgroup
+\end{kanban}
+\makeatletter
+\ifdefstring{\kanban@mode}{light}
+  {\TYPE{KANBAN BOARD MODE SCOPE OK}}
+  {\TYPE{KANBAN BOARD MODE SCOPE FAILED}}
+\ifdefstring{\kanban@startdate}{2026-07-15}
+  {\TYPE{KANBAN BOARD STARTDATE SCOPE OK}}
+  {\TYPE{KANBAN BOARD STARTDATE SCOPE FAILED}}
+\ifdefstring{\kanban@dateformat}{german}
+  {\TYPE{KANBAN BOARD DATE FORMAT SCOPE OK}}
+  {\TYPE{KANBAN BOARD DATE FORMAT SCOPE FAILED}}
+\makeatother
+\kbcheckglobalpalette
+\begingroup
+  \begin{kanban}[columns={Todo},columnsep=-2mm]
+    \makeatletter
+    \ifdim\kanban@boardcolumnsep=1mm
+      \TYPE{KANBAN NEGATIVE BOARD GAP PRESERVED OK}
+    \else
+      \TYPE{KANBAN NEGATIVE BOARD GAP PRESERVED FAILED}
+    \fi
+    \makeatother
+    \kanbantask{Todo}{Exercise rejected board gap}
+  \end{kanban}
+\endgroup
+\begingroup
+  \begin{kanban}[columns={Todo},columnsep=not-a-length]
+    \makeatletter
+    \ifdim\kanban@boardcolumnsep=1mm
+      \TYPE{KANBAN MALFORMED BOARD GAP PRESERVED OK}
+    \else
+      \TYPE{KANBAN MALFORMED BOARD GAP PRESERVED FAILED}
+    \fi
+    \makeatother
+    \kanbantask{Todo}{Exercise malformed board gap validation}
+  \end{kanban}
+\endgroup
+\begingroup
+  \makeatletter
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \makeatother
+  \begin{kanban}[columns={One,Two},columnsep=\linewidth]
+    \makeatletter
+    \ifdim\kanban@boardcolumnsep=0pt
+      \TYPE{KANBAN IMPOSSIBLE TOTAL GAP FALLBACK OK}
+    \else
+      \TYPE{KANBAN IMPOSSIBLE TOTAL GAP FALLBACK FAILED}
+    \fi
+    \makeatother
+    \kanbantask{One}{Exercise impossible total gap validation}
+  \end{kanban}
+\endgroup
+\begin{kanban}[columns={Todo},startdate={}]
+  \makeatletter
+  \ifdefempty{\kanban@thestart}
+    {\TYPE{KANBAN BOARD EMPTY STARTDATE CLEARS LOCAL VALUE OK}}
+    {\TYPE{KANBAN BOARD EMPTY STARTDATE CLEARS LOCAL VALUE FAILED}}
+  \makeatother
+\end{kanban}
+\makeatletter
+\ifdefstring{\kanban@startdate}{2026-07-15}
+  {\TYPE{KANBAN BOARD EMPTY STARTDATE PRESERVES DEFAULT OK}}
+  {\TYPE{KANBAN BOARD EMPTY STARTDATE PRESERVES DEFAULT FAILED}}
+\makeatother
+\kbset{startdate={}}
+\makeatletter
+\ifdefempty{\kanban@startdate}
+  {\TYPE{KANBAN SETUP EMPTY STARTDATE CLEARS DEFAULT OK}}
+  {\TYPE{KANBAN SETUP EMPTY STARTDATE CLEARS DEFAULT FAILED}}
+\makeatother
+\END
+\end{document}

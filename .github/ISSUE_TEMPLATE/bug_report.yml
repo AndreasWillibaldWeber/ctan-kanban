@@ -1,0 +1,65 @@
+name: Defect report
+description: Report a reproducible defect in the kanban package.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for preparing a reproducible report. Remove confidential task data before attaching files.
+  - type: input
+    id: version
+    attributes:
+      label: kanban version
+      description: Copy the version and date from the package banner in the log.
+      placeholder: 1.0.0 (2026-07-18)
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: TeX engine and distribution
+      description: State the engine version and TeX Live or MiKTeX release.
+      placeholder: pdfTeX 3.141592653, TeX Live 2026
+    validations:
+      required: true
+  - type: textarea
+    id: minimal-example
+    attributes:
+      label: Minimal complete example
+      description: Provide a complete document from documentclass through end document.
+      render: latex
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed result
+      description: Explain what happened and attach a PDF or screenshot for a visual defect.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: Explain the result you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log output
+      description: Paste the diagnostic and nearby context, or attach the complete log file.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preliminary checks
+      options:
+        - label: I searched the existing issues for the same defect.
+          required: true
+        - label: The example does not contain confidential task data.
+          required: true

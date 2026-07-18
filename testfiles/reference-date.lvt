@@ -1,0 +1,75 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[
+  date-format=us,
+  startdate=07/08/2026,
+  reference-date=07/08/2026
+]{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\ifdefstring{\kanban@startdate}{2026-07-08}
+  {\TYPE{KANBAN PACKAGE STARTDATE CANONICAL OK}}
+  {\TYPE{KANBAN PACKAGE STARTDATE CANONICAL FAILED}}
+\ifdefstring{\kanban@referencedate}{2026-07-08}
+  {\TYPE{KANBAN PACKAGE REFERENCE DATE CANONICAL OK}}
+  {\TYPE{KANBAN PACKAGE REFERENCE DATE CANONICAL FAILED}}
+
+\def\kbtestdate{07/09/2026}
+\kbset{startdate=\kbtestdate,reference-date=\kbtestdate}
+\def\kbtestdate{12/31/2099}
+\ifdefstring{\kanban@startdate}{2026-07-09}
+  {\TYPE{KANBAN STARTDATE MACRO SNAPSHOT OK}}
+  {\TYPE{KANBAN STARTDATE MACRO SNAPSHOT FAILED}}
+\ifdefstring{\kanban@referencedate}{2026-07-09}
+  {\TYPE{KANBAN REFERENCE DATE MACRO SNAPSHOT OK}}
+  {\TYPE{KANBAN REFERENCE DATE MACRO SNAPSHOT FAILED}}
+
+\kbset{date-format=us,startdate=07/08/2026,
+  reference-date=07/08/2026}
+\begin{kanban}[columns={Todo},date-format=english]
+  \ifdefstring{\kanban@thestart}{2026-07-08}
+    {\TYPE{KANBAN INHERITED STARTDATE STABLE OK}}
+    {\TYPE{KANBAN INHERITED STARTDATE STABLE FAILED}}
+  \ifdefstring{\kanban@thereference}{2026-07-08}
+    {\TYPE{KANBAN INHERITED REFERENCE DATE STABLE OK}}
+    {\TYPE{KANBAN INHERITED REFERENCE DATE STABLE FAILED}}
+  \kb@evaloverdue{M1}
+  \ifbool{kb@duenow}
+    {\TYPE{KANBAN PROJECT MONTH FORMAT INDEPENDENCE OK}}
+    {\TYPE{KANBAN PROJECT MONTH FORMAT INDEPENDENCE FAILED}}
+\end{kanban}
+
+\begin{kanban}[columns={Todo},reference-date=09/07/2026,
+    date-format=english]
+  \ifdefstring{\kanban@thereference}{2026-07-09}
+    {\TYPE{KANBAN DEFERRED BOARD REFERENCE DATE OK}}
+    {\TYPE{KANBAN DEFERRED BOARD REFERENCE DATE FAILED}}
+\end{kanban}
+\begin{kanban}[columns={Todo},today=10/07/2026,
+    date-format=english]
+  \ifdefstring{\kanban@thereference}{2026-07-10}
+    {\TYPE{KANBAN TODAY ALIAS OK}}
+    {\TYPE{KANBAN TODAY ALIAS FAILED}}
+\end{kanban}
+
+\begingroup
+  \year=2026 \month=7 \day=11
+  \begin{kanban}[columns={Todo},reference-date={}]
+    \kb@evaloverdue{2026-07-11}
+    \ifbool{kb@duenow}
+      {\TYPE{KANBAN BOARD REFERENCE RESET OK}}
+      {\TYPE{KANBAN BOARD REFERENCE RESET FAILED}}
+  \end{kanban}
+\endgroup
+\ifdefstring{\kanban@referencedate}{2026-07-08}
+  {\TYPE{KANBAN BOARD REFERENCE SCOPE OK}}
+  {\TYPE{KANBAN BOARD REFERENCE SCOPE FAILED}}
+\kbset{reference-date={}}
+\ifdefempty{\kanban@referencedate}
+  {\TYPE{KANBAN REFERENCE DEFAULT RESET OK}}
+  {\TYPE{KANBAN REFERENCE DEFAULT RESET FAILED}}
+\makeatother
+\END
+\end{document}

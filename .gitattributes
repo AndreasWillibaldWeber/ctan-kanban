@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+*.pdf binary
+*.zip binary
+
+# The style file is generated from kanban.dtx for release archives.
+kanban.sty linguist-generated=true

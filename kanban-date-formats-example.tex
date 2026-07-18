@@ -1,0 +1,41 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage[reference-date=2026-07-18]{kanban}
+
+\pagestyle{empty}
+
+% ISO input is unambiguous and is therefore convenient when task data are
+% exchanged between documents. Each board normalizes that input for display.
+\newcommand\dateformatboard[2]{%
+  \begin{minipage}[t]{0.48\linewidth}
+    \subsection*{#2}
+    \begin{kanban}[columns={Upcoming},date-format=#1]
+      \kanbantask[author=Alice,due=2099-07-18]
+        {Upcoming}{Prepare the scheduled release}
+    \end{kanban}
+  \end{minipage}}
+
+\begin{document}
+
+\section*{Five date formats}
+
+The package default is the US format. The other four formats can be selected
+as package options, through \verb|\kbset|, or for one board as shown here.
+
+\dateformatboard{us}{US: MM/DD/YYYY}
+\hfill
+\dateformatboard{english}{English: DD/MM/YYYY}
+
+\bigskip
+
+\dateformatboard{german}{German: DD.MM.YYYY}
+\hfill
+\dateformatboard{iso}{ISO: YYYY-MM-DD}
+
+\bigskip
+
+\dateformatboard{ymd}{Year first: YYYY/MM/DD}
+
+\end{document}

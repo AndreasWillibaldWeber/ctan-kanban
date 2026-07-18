@@ -1,0 +1,120 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage[columnsep=2mm,reference-date=2026-07-18]{kanban}
+
+\pagestyle{plain}
+
+% A slightly longer description makes the example reliably continue onto a
+% second page. In a real project, each card would naturally contain its own
+% task text.
+\newcommand{\workitem}[1]{#1. Record the responsible person, verify the result,
+  and preserve the relevant evidence for the release review.}
+
+\begin{document}
+
+\section*{A page-breakable Kanban board}
+
+% The break option selects the paracol-based layout. Column bodies may continue
+% on later pages and are intentionally not forced to a common height.
+\begin{kanban}[
+  columns={Backlog,In progress,Review,Done},
+  break,
+  mode=light
+]
+  \kanbantask[prio=high,author=Alice,deadline=01/01/2000]{Backlog}
+    {\workitem{Confirm the public interface}}
+  \kanbantask[author=Alice]{Backlog}
+    {\workitem{Collect compatibility requirements}}
+  \kanbantask[author=Bob]{Backlog}
+    {\workitem{Inspect package dependencies}}
+  \kanbantask[author=Bob]{Backlog}
+    {\workitem{Review the date model}}
+  \kanbantask[author=Carol]{Backlog}
+    {\workitem{Check palette contrast}}
+  \kanbantask[author=Carol]{Backlog}
+    {\workitem{Plan the documentation examples}}
+  \kanbantask[author=David]{Backlog}
+    {\workitem{Prepare the release checklist}}
+  \kanbantask[author=David]{Backlog}
+    {\workitem{Confirm the archive structure}}
+  \kanbantask[author=Alice]{Backlog}
+    {\workitem{Check the installation instructions}}
+  \kanbantask[author=Bob]{Backlog}
+    {\workitem{Assess the supported engines}}
+  \kanbantask[author=Carol]{Backlog}
+    {\workitem{Collect representative use cases}}
+  \kanbantask[author=David]{Backlog}
+    {\workitem{Review the configuration hierarchy}}
+  \kanbantask[author=Alice]{Backlog}
+    {\workitem{Plan the final quality checks}}
+  \kanbantask[author=Bob]{Backlog}
+    {\workitem{Confirm the submission schedule}}
+
+  \kanbantask[prio=medium,author=Alice,
+    due=07/18/2026]{In progress}
+    {\workitem{Implement the configuration keys}}
+  \kanbantask[author=Alice]{In progress}
+    {\workitem{Synchronize the header heights}}
+  \kanbantask[author=Bob]{In progress}
+    {\workitem{Synchronize fixed column heights}}
+  \kanbantask[author=Bob]{In progress}
+    {\workitem{Remove the outer side rules}}
+  \kanbantask[author=Carol]{In progress}
+    {\workitem{Extend the manual}}
+  \kanbantask[author=Carol]{In progress}
+    {\workitem{Compile the example documents}}
+  \kanbantask[author=David]{In progress}
+    {\workitem{Run the pdfTeX tests}}
+  \kanbantask[author=David]{In progress}
+    {\workitem{Run the LuaTeX tests}}
+  \kanbantask[author=Alice]{In progress}
+    {\workitem{Compile the minimal example}}
+  \kanbantask[author=Bob]{In progress}
+    {\workitem{Compile the landscape example}}
+  \kanbantask[author=Carol]{In progress}
+    {\workitem{Inspect the light board}}
+  \kanbantask[author=David]{In progress}
+    {\workitem{Inspect the dark board}}
+  \kanbantask[author=Alice]{In progress}
+    {\workitem{Regenerate the documented source}}
+  \kanbantask[author=Bob]{In progress}
+    {\workitem{Assemble the distribution archive}}
+
+  \kanbantask[author=Alice,deadline=12/31/2099]{Review}
+    {\workitem{Inspect the generated style file}}
+  \kanbantask[author=Bob]{Review}
+    {\workitem{Compare the regression logs}}
+  \kanbantask[author=Carol]{Review}
+    {\workitem{Proofread the user interface section}}
+  \kanbantask[author=David]{Review}
+    {\workitem{Inspect the rendered examples}}
+  \kanbantask[author=Alice]{Review}
+    {\workitem{Check the CTAN metadata}}
+  \kanbantask[author=Bob]{Review}
+    {\workitem{Validate the source archive}}
+  \kanbantask[author=Carol]{Review}
+    {\workitem{Confirm the license statements}}
+  \kanbantask[author=David]{Review}
+    {\workitem{Approve the release candidate}}
+  \kanbantask[author=Alice]{Review}
+    {\workitem{Check the example comments}}
+  \kanbantask[author=Bob]{Review}
+    {\workitem{Review the package metadata}}
+  \kanbantask[author=Carol]{Review}
+    {\workitem{Verify the change history}}
+  \kanbantask[author=David]{Review}
+    {\workitem{Check the installation archive}}
+  \kanbantask[author=Alice]{Review}
+    {\workitem{Verify the PDF bookmarks}}
+  \kanbantask[author=Bob]{Review}
+    {\workitem{Record the release approval}}
+
+  \kanbantask[completed,due=12/31/2099]{Done}{Select the LPPL license}
+  \kanbantask[completed]{Done}{Create the documented source}
+  \kanbantask[completed]{Done}{Add the initial regression tests}
+  \kanbantask[completed]{Done}{Prepare the minimal example}
+\end{kanban}
+
+\end{document}

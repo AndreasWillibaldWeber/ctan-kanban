@@ -1,0 +1,48 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[startdate=18.07.2026]{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begingroup
+  \makeatletter
+  \setlength\linewidth{120pt}
+  \setbox2=\vbox{\hsize=120pt
+    \kanban@rendercard{kanbanBlue}{Measured card}{}{}{}{}{}}
+  \ifdim\wd2=120pt
+    \TYPE{KANBAN FULL-WIDTH CARD OK}
+  \else
+    \TYPE{KANBAN FULL-WIDTH CARD FAILED}
+  \fi
+  \def\kanban@boardgroup{layout-header-test}
+  \csgdef{tcb@ehg@height@KBH@layout-header-test}{80pt}
+  \setlength\linewidth{90pt}
+  \setbox2=\vbox{\hsize=90pt
+    \begin{kanban@header}{kanbanSlate}{white}Short\end{kanban@header}}
+  \setbox4=\vbox{\hsize=90pt
+    \begin{kanban@header}{kanbanBlue}{white}%
+      A deliberately wrapping heading
+    \end{kanban@header}}
+  \dimen0=\dimexpr\ht2+\dp2\relax
+  \dimen2=\dimexpr\ht4+\dp4\relax
+  \ifdim\dimen0=\dimen2
+    \TYPE{KANBAN BREAK HEADERS SYNCHRONIZED OK}
+  \else
+    \TYPE{KANBAN BREAK HEADERS SYNCHRONIZED FAILED}
+  \fi
+  \makeatother
+\endgroup
+\begin{kanban}[
+    columns={A deliberately long heading,Short,Empty},
+    mode=dark,columnsep=1mm]
+  \kanbantask[prio=high,author=Alice,deadline=01.01.2000]
+    {A deliberately long heading}{A full-width card}
+  \kanbantask[due=Milestone]{Short}{A descriptive deadline label}
+\end{kanban}
+\begin{kanban}[columns={Backlog,Done},break,columnsep=2mm]
+  \kanbantask[due=Editorial review.]{Backlog}{A punctuated label}
+  \kanbantask[completed]{Done}{A completed task}
+\end{kanban}
+\TYPE{KANBAN FIXED AND BREAK LAYOUTS OK}
+\END
+\end{document}

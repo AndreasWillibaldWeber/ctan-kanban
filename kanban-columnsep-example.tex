@@ -1,0 +1,51 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+% The package option establishes the initial gap for every board.
+\usepackage[columnsep=3mm,reference-date=2026-07-18]{kanban}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\section*{Configuring the gap between columns}
+
+\subsection*{Package default: 3 mm}
+\begin{kanban}[columns={Todo,Doing,Done}]
+  \kanbantask[prio=high,deadline=01/01/2000]
+    {Todo}{Define the interface}
+  \kanbantask[author=Alice,
+    due=07/18/2026]
+    {Doing}{Write the implementation}
+  \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+\end{kanban}
+
+\bigskip
+
+% \kbset changes the default for every board that follows it.
+\kbset{columnsep=1mm}
+\subsection*{Document default changed to 1 mm}
+\begin{kanban}[columns={Todo,Doing,Done}]
+  \kanbantask[prio=high,deadline=01/01/2000]
+    {Todo}{Define the interface}
+  \kanbantask[author=Alice,
+    due=07/18/2026]
+    {Doing}{Write the implementation}
+  \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+\end{kanban}
+
+\bigskip
+
+% An environment option overrides the current default for this board only.
+\subsection*{Local override: 4 mm}
+\begin{kanban}[columns={Todo,Doing,Done},columnsep=4mm]
+  \kanbantask[prio=high,deadline=01/01/2000]
+    {Todo}{Define the interface}
+  \kanbantask[author=Alice,
+    due=07/18/2026]
+    {Doing}{Write the implementation}
+  \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+\end{kanban}
+
+\end{document}

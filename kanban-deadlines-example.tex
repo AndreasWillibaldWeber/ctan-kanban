@@ -1,0 +1,39 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage[reference-date=2026-07-18]{kanban}
+
+\pagestyle{empty}
+
+\newcommand{\deadlineboard}[1]{%
+  \begin{kanban}[columns={Overdue,Due now,Upcoming},mode=#1]
+    % deadline and due are aliases. The chip color is determined by status.
+    \kanbantask[author=Alice,deadline=01/01/2000]
+      {Overdue}{Resolve the review comments}
+    \kanbantask[author=Bob,due=07/18/2026]
+      {Due now}{Complete the current milestone}
+    % ISO input is normalized to the selected display format.
+    \kanbantask[author=Carol,deadline=2099-12-31]
+      {Upcoming}{Prepare the next milestone}
+  \end{kanban}}
+
+\begin{document}
+
+\section*{Deadline and due chips}
+
+The red chip is a past calendar date, the amber chip is the configured
+reference date,
+and the neutral chip is a future calendar date. The same status colors are
+retained on light and dark cards. The example uses US input and unambiguous
+ISO input; both are normalized to the board's selected display format.
+
+\subsection*{Light mode}
+\deadlineboard{light}
+
+\bigskip
+
+\subsection*{Dark mode}
+\deadlineboard{dark}
+
+\end{document}

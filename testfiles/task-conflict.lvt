@@ -1,0 +1,47 @@
+\input regression-test.tex
+\documentclass{article}
+\newcommand\task{original task command}
+\let\originaltask\task
+\newcommand\kbtask{original kbtask command}
+\let\originalkbtask\kbtask
+\newcommand\kbset{original kbset command}
+\let\originalkbset\kbset
+\newcommand\kbdefinepalette{original palette command}
+\let\originalkbdefinepalette\kbdefinepalette
+\usepackage{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\ifx\task\originaltask
+  \TYPE{KANBAN TASK CONFLICT PRESERVED OK}
+\else
+  \TYPE{KANBAN TASK CONFLICT PRESERVED FAILED}
+\fi
+\ifx\kbtask\originalkbtask
+  \TYPE{KANBAN KBTASK CONFLICT PRESERVED OK}
+\else
+  \TYPE{KANBAN KBTASK CONFLICT PRESERVED FAILED}
+\fi
+\ifx\kbset\originalkbset
+  \TYPE{KANBAN KBSET CONFLICT PRESERVED OK}
+\else
+  \TYPE{KANBAN KBSET CONFLICT PRESERVED FAILED}
+\fi
+\ifx\kbdefinepalette\originalkbdefinepalette
+  \TYPE{KANBAN PALETTE ALIAS CONFLICT PRESERVED OK}
+\else
+  \TYPE{KANBAN PALETTE ALIAS CONFLICT PRESERVED FAILED}
+\fi
+\kanbandefinepalette{conflict-test}{red,blue}
+\kanbansetup{palette=conflict-test,mode=dark}
+\makeatletter
+\ifdefstring{\kanban@mode}{dark}
+  {\TYPE{KANBAN CANONICAL COMMANDS AFTER CONFLICT OK}}
+  {\TYPE{KANBAN CANONICAL COMMANDS AFTER CONFLICT FAILED}}
+\makeatother
+\begin{kanban}[columns={Todo}]
+  \kanbantask{Todo}{The package command remains available}
+\end{kanban}
+\TYPE{KANBAN CONFLICT BOARD OK}
+\END
+\end{document}

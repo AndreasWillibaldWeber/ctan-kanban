@@ -1,0 +1,15 @@
+\RequirePackage[2020-10-01]{latexrelease}
+\input regression-test.tex
+\documentclass{article}
+\usepackage{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begin{kanban}
+  \kanbantask[prio=high,author=Alice,due=31.12.2099]
+    {Backlog}{Exercise the declared minimum LaTeX format}
+  \kanbantask[completed]{Done}{Complete the compatibility probe}
+\end{kanban}
+\TYPE{KANBAN LATEX 2020 COMPATIBILITY OK}
+\END
+\end{document}

@@ -1,0 +1,20 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[columnsep=2.5mm]{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\ifdim\kanban@columnsep=2.5mm\relax
+  \TYPE{KANBAN PACKAGE COLUMNSEP OK}
+\else
+  \TYPE{KANBAN PACKAGE COLUMNSEP FAILED}
+\fi
+\makeatother
+\begin{kanban}[columns={A deliberately long column heading,Done,Empty}]
+  \kanbantask{A deliberately long column heading}
+    {Check the package option and wrapped heading height}
+  \kanbantask[completed]{Done}{Check the equal body height}
+\end{kanban}
+\END
+\end{document}

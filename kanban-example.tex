@@ -1,0 +1,47 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage[
+  columns={Backlog,Doing,Review,Done},
+  columnsep=2mm,
+  reference-date=2026-07-18
+]{kanban}
+\pagestyle{empty}
+\kbdefinepalette{release}{kanbanBlue,kanbanTeal,kanbanAmber,kanbanPlum}
+\begin{document}
+\section*{Release board}
+% The reference date makes deadline classification reproducible. Calendar
+% deadlines use the default US form MM/DD/YYYY.
+\begin{kanban}[palette=release,mode=light]
+  % Tasks may be declared in any cross-column order. Within each column they
+  % retain their source order.
+  \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+    {Backlog}{Finalize the public API}
+  \kanbantask[prio=medium,author=Bob,
+    due=07/18/2026]
+    {Doing}{Write regression tests}
+  \kanbantask[prio=low,author=Carol,deadline=12/31/2099]
+    {Review}{Proofread the manual}
+  % \kbtask is an exact concise alias when that name was free at package load.
+  \kbtask[author=Alice,completed]{Done}{Create the repository}
+\end{kanban}
+\bigskip
+\section*{Dark board}
+% The longest heading determines the height of every heading cell. The empty
+% column still extends to the same bottom edge as the populated columns.
+\begin{kanban}[
+  columns={Planned,Active review,Done,Empty},
+  palette=muted,
+  mode=dark,
+  columnsep=3mm
+]
+  \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+    {Planned}{Prepare the release archive}
+  \kanbantask[prio=medium,author=Bob,
+    due=07/18/2026]
+    {Active review}{Run the regression suite}
+  \kanbantask[completed,deadline=12/31/2099]
+    {Done}{Document the palette API}
+\end{kanban}
+\end{document}

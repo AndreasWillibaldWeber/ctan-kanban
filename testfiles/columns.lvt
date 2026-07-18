@@ -1,0 +1,133 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage{kanban}
+\ExplSyntaxOn
+\NewDocumentCommand \kbcheckglobalcolumns {mm}
+  {
+    \str_if_eq:eeTF
+      {\clist_use:Nn \g__kanban_columns_clist {,}} {#1}
+      {\TYPE{#2~OK}}
+      {\TYPE{#2~FAILED}}
+  }
+\NewDocumentCommand \kbcheckboardcolumns {mm}
+  {
+    \str_if_eq:eeTF
+      {\clist_use:Nn \l__kanban_board_columns_clist {,}} {#1}
+      {\TYPE{#2~OK}}
+      {\TYPE{#2~FAILED}}
+  }
+\NewDocumentCommand \kbcheckdefaultids { }
+  {
+    \str_if_eq:eeTF
+      {
+        \prop_item:Nn \l__kanban_column_ids_prop {BACKLOG},
+        \prop_item:Nn \l__kanban_column_ids_prop {DOING},
+        \prop_item:Nn \l__kanban_column_ids_prop {DONE}
+      }
+      {1,2,3}
+      {\TYPE{KANBAN~DISTINCT~COLUMN~IDS~OK}}
+      {\TYPE{KANBAN~DISTINCT~COLUMN~IDS~FAILED}}
+  }
+\ExplSyntaxOff
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\kbcheckglobalcolumns{BACKLOG,DOING,DONE}{KANBAN BUILTIN COLUMNS}
+\begin{kanban}
+  \kbcheckboardcolumns{BACKLOG,DOING,DONE}{KANBAN OMITTED COLUMNS}
+  \kbcheckdefaultids
+  \kanbantask{backlog}{Default first column}
+  \kanbantask{Doing}{Default second column}
+  \kanbantask{dOnE}{Default third column}
+\end{kanban}
+\kbset{columns={Queued,Active,Complete}}
+\kbcheckglobalcolumns{QUEUED,ACTIVE,COMPLETE}{KANBAN SETUP COLUMNS}
+\begin{kanban}[break]
+  \kbcheckboardcolumns{QUEUED,ACTIVE,COMPLETE}{KANBAN INHERITED COLUMNS}
+  \kanbantask{aCtIvE}{Inherited column}
+\end{kanban}
+\begin{kanban}[columns={}]
+  \kbcheckboardcolumns{QUEUED,ACTIVE,COMPLETE}{KANBAN EMPTY FALLBACK}
+  \kanbantask{complete}{Empty argument fallback}
+\end{kanban}
+\begin{kanban}[columns={One,tWo}]
+  \kbcheckboardcolumns{ONE,TWO}{KANBAN LOCAL COLUMNS}
+  \kanbantask{oNe}{Local first column}
+  \makeatletter
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \makeatother
+  \kanbantask{}{Missing target}
+  \kanbantask{Missing}{Unknown target}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=1\relax
+    \TYPE{KANBAN INVALID TASKS IGNORED OK}
+  \else
+    \TYPE{KANBAN INVALID TASKS IGNORED FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\kbcheckglobalcolumns{QUEUED,ACTIVE,COMPLETE}{KANBAN LOCAL SCOPE}
+\begingroup
+  \makeatletter
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \makeatother
+  \begin{kanban}[columns={Alpha,aLpHa}]
+    \kbcheckboardcolumns{ALPHA}{KANBAN DUPLICATE NORMALIZATION}
+    \kanbantask{alpha}{Deduplicated column}
+  \end{kanban}
+\endgroup
+\begin{kanban}[columns={Grouped}]
+  {\kanbantask{Grouped}{A declaration inside an ordinary group}}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=1\relax
+    \TYPE{KANBAN GROUPED TASK OK}
+  \else
+    \TYPE{KANBAN GROUPED TASK FAILED}
+  \fi
+  \xdef\kbtestboardid{\kanban@boardgroup}
+  \makeatother
+\end{kanban}
+\def\kbmacrocolumn{Macro Stage}
+\begin{kanban}[columns={\kbmacrocolumn}]
+  \kanbantask{macro stage}{A target expanded from a column-name macro}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=1\relax
+    \TYPE{KANBAN MACRO COLUMN NORMALIZATION OK}
+  \else
+    \TYPE{KANBAN MACRO COLUMN NORMALIZATION FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\makeatletter
+\ifcsdef{kanban@count@\kbtestboardid @1}
+  {\TYPE{KANBAN BOARD CLEANUP FAILED}}
+  {\TYPE{KANBAN BOARD CLEANUP OK}}
+\makeatother
+\begin{kanban}[columns={Outer}]
+  \begingroup
+    \makeatletter
+    \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+    \makeatother
+    \begin{kanban}[columns={Inner}]
+      \kanbantask{Inner}{Ignored nested task}
+      \kanbantask{Inner}{A second ignored nested task}
+    \end{kanban}
+  \endgroup
+  \kanbantask{Outer}{Outer board remains valid}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=1\relax
+    \TYPE{KANBAN NESTED ISOLATION OK}
+  \else
+    \TYPE{KANBAN NESTED ISOLATION FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\begingroup
+  \makeatletter
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \makeatother
+  \kanbantask{ONE}{Outside board}
+\endgroup
+\TYPE{KANBAN COLUMNS OK}
+\END
+\end{document}

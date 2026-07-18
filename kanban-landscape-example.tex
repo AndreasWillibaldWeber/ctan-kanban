@@ -1,0 +1,68 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage{pdflscape}
+\usepackage[columnsep=2mm,reference-date=2026-07-18]{kanban}
+
+\pagestyle{empty}
+
+\begin{document}
+
+% pdflscape rotates this page in the PDF and supplies a landscape line width.
+% Use the fixed Kanban layout: the break option is deliberately absent because
+% the paracol-based breaking layout is not compatible with this use.
+\begin{landscape}
+\section*{Release workflow on a landscape page}
+
+\begin{kanban}[
+  columns={Ideas,Selected,Build,Review,Docs,Released},
+  mode=light
+]
+  \kanbantask[author=Alice,deadline=01/01/2000]
+    {Ideas}{Collect feature requests}
+  \kanbantask[author=Bob]
+    {Ideas}{Record user feedback}
+  \kanbantask[author=Carol]
+    {Ideas}{Identify compatibility risks}
+
+  \kanbantask[prio=high,author=Bob,
+    due=07/18/2026]
+    {Selected}{Approve the release scope}
+  \kanbantask[author=Carol]
+    {Selected}{Confirm supported engines}
+  \kanbantask[author=David]
+    {Selected}{Assign milestone owners}
+
+  \kanbantask[author=Carol,deadline=12/31/2099]
+    {Build}{Complete the package changes}
+  \kanbantask[author=David]
+    {Build}{Update date validation}
+  \kanbantask[author=Alice]
+    {Build}{Generate the style file}
+
+  \kanbantask[author=David]
+    {Review}{Run the technical review}
+  \kanbantask[author=Alice]
+    {Review}{Compare engine output}
+  \kanbantask[author=Bob]
+    {Review}{Check regression logs}
+
+  \kanbantask[author=Alice]
+    {Docs}{Update the user manual}
+  \kanbantask[author=Bob]
+    {Docs}{Compile usage examples}
+  \kanbantask[author=Carol]
+    {Docs}{Verify CTAN metadata}
+
+  \kanbantask[completed]
+    {Released}{Publish the source archive}
+  \kanbantask[author=Alice,completed]
+    {Released}{Tag version 1.0.0}
+  \kanbantask[author=Bob,completed]
+    {Released}{Announce the release}
+\end{kanban}
+
+\end{landscape}
+
+\end{document}

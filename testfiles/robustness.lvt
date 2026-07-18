@@ -1,0 +1,65 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[startdate=18.07.2026]{kanban}
+\newcount\kbitem
+% Invalid replacements must warn and preserve the valid package value.
+\kbset{startdate=31.02.2026}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begingroup
+\makeatletter
+\year=2026 \month=7 \day=18
+\newcommand\kbexpectneutral[2]{%
+  \kb@evaloverdue{#1}%
+  \ifboolexpr{not bool {kb@overdue} and not bool {kb@duenow}}
+    {\TYPE{#2 OK}}
+    {\TYPE{#2 FAILED}}}
+\newcommand\kbexpectoverdue[2]{%
+  \kb@evaloverdue{#1}%
+  \ifbool{kb@overdue}
+    {\TYPE{#2 OK}}
+    {\TYPE{#2 FAILED}}}
+\newcommand\kbexpectcurrent[2]{%
+  \kb@evaloverdue{#1}%
+  \ifbool{kb@duenow}
+    {\TYPE{#2 OK}}
+    {\TYPE{#2 FAILED}}}
+
+\ifdefstring{\kanban@startdate}{2026-07-18}
+  {\TYPE{KANBAN INVALID STARTDATE PRESERVES VALUE OK}}
+  {\TYPE{KANBAN INVALID STARTDATE PRESERVES VALUE FAILED}}
+\def\kanban@thestart{18.07.2026}
+\kbexpectcurrent{\number\day.\number\month.\number\year}
+  {KANBAN EXPANDED CURRENT DATE}
+\kbexpectoverdue{29.02.2024}{KANBAN VALID LEAP DATE}
+\kbexpectneutral{29.02.2025}{KANBAN INVALID LEAP DATE NEUTRAL}
+\kbexpectneutral{2025-02-29}{KANBAN INVALID ISO LEAP DATE NEUTRAL}
+\kbexpectneutral{31.04.2026}{KANBAN INVALID MONTH DAY NEUTRAL}
+\kbexpectneutral{Milestone}{KANBAN M LABEL NEUTRAL}
+\kbexpectneutral{Editorial review.}{KANBAN PUNCTUATED LABEL NEUTRAL}
+\kbexpectneutral{M0}{KANBAN ZERO PROJECT MONTH NEUTRAL}
+\kbexpectneutral{M1000000}{KANBAN OUT-OF-RANGE PROJECT MONTH NEUTRAL}
+\kbexpectneutral{M999999999999999999999999999999999999}
+  {KANBAN HUGE PROJECT MONTH NEUTRAL}
+\kbexpectcurrent{M1}{KANBAN PROJECT MONTH CURRENT}
+\kbexpectneutral{M2}{KANBAN PROJECT MONTH FUTURE}
+\makeatother
+\endgroup
+\begin{kanban}[columns={Queue}]
+  \kbitem=0
+  \loop
+    \advance\kbitem by 1
+    \kanbantask{Queue}{Collected task \the\kbitem}
+  \ifnum\kbitem<25
+  \repeat
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=25\relax
+    \TYPE{KANBAN LARGE COLLECTION COUNT OK}
+  \else
+    \TYPE{KANBAN LARGE COLLECTION COUNT FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\END
+\end{document}

@@ -1,0 +1,96 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[
+  labels={high=URGENT,medium=NORMAL}
+]{kanban}
+\kbset{labels={low=ROUTINE,done=FINISHED}}
+\kbdefinepalette*{contrast}{kanbanSlate/white,kanbanMed/kanbanInk}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\ifdefstring{\kanban@highlabel}{URGENT}
+  {\TYPE{KANBAN GLOBAL HIGH LABEL OK}}
+  {\TYPE{KANBAN GLOBAL HIGH LABEL FAILED}}
+\ifdefstring{\kanban@mediumlabel}{NORMAL}
+  {\TYPE{KANBAN GLOBAL MEDIUM LABEL OK}}
+  {\TYPE{KANBAN GLOBAL MEDIUM LABEL FAILED}}
+\ifdefstring{\kanban@lowlabel}{ROUTINE}
+  {\TYPE{KANBAN GLOBAL LOW LABEL OK}}
+  {\TYPE{KANBAN GLOBAL LOW LABEL FAILED}}
+\ifdefstring{\kanban@donelabel}{FINISHED}
+  {\TYPE{KANBAN GLOBAL DONE LABEL OK}}
+  {\TYPE{KANBAN GLOBAL DONE LABEL FAILED}}
+\ifdefstring{\kanban@mediumtext}{kanbanInk}
+  {\TYPE{KANBAN MEDIUM CHIP CONTRAST OK}}
+  {\TYPE{KANBAN MEDIUM CHIP CONTRAST FAILED}}
+\makeatother
+\pgfkeysifdefined{/tcb/kanban/header/.@cmd}
+  {\TYPE{KANBAN PUBLIC HEADER STYLE OK}}
+  {\TYPE{KANBAN PUBLIC HEADER STYLE FAILED}}
+\pgfkeysifdefined{/tcb/kanban/card/.@cmd}
+  {\TYPE{KANBAN PUBLIC CARD STYLE OK}}
+  {\TYPE{KANBAN PUBLIC CARD STYLE FAILED}}
+\pgfkeysifdefined{/tcb/kanban/deadline-chip/.@cmd}
+  {\TYPE{KANBAN PUBLIC DEADLINE STYLE OK}}
+  {\TYPE{KANBAN PUBLIC DEADLINE STYLE FAILED}}
+\begingroup
+  \makeatletter
+  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+  \makeatother
+  \kbset{labels={high=}}
+\endgroup
+\begingroup
+  \makeatletter
+  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+  \makeatother
+  \kbdefinepalette*{broken}{red/}
+\endgroup
+\makeatletter
+\ifdefstring{\kanban@highlabel}{URGENT}
+  {\TYPE{KANBAN EMPTY LABEL PRESERVES VALUE OK}}
+  {\TYPE{KANBAN EMPTY LABEL PRESERVES VALUE FAILED}}
+\makeatother
+\begin{kanban}[
+    columns={Todo,Done},
+    labels={high=IMMEDIATE,done=APPROVED}]
+  \makeatletter
+  \ifdefstring{\kanban@boardhighlabel}{IMMEDIATE}
+    {\TYPE{KANBAN BOARD HIGH LABEL OK}}
+    {\TYPE{KANBAN BOARD HIGH LABEL FAILED}}
+  \ifdefstring{\kanban@boardmediumlabel}{NORMAL}
+    {\TYPE{KANBAN BOARD MEDIUM LABEL SNAPSHOT OK}}
+    {\TYPE{KANBAN BOARD MEDIUM LABEL SNAPSHOT FAILED}}
+  \ifdefstring{\kanban@boarddonelabel}{APPROVED}
+    {\TYPE{KANBAN BOARD DONE LABEL OK}}
+    {\TYPE{KANBAN BOARD DONE LABEL FAILED}}
+  \makeatother
+  \kanbantask[prio=high]{Todo}{Review the customization}
+  \kanbantask[completed]{Done}{Approve the customization}
+\end{kanban}
+\begin{kanban}[columns={Dark heading,Light heading},palette=contrast]
+  \makeatletter
+  \edef\kbfirstheadingtext{\csuse{kanban@headingtext@1}}
+  \edef\kbsecondheadingtext{\csuse{kanban@headingtext@2}}
+  \ifdefstring{\kbfirstheadingtext}{white}
+    {\TYPE{KANBAN PAIRED PALETTE WHITE TEXT OK}}
+    {\TYPE{KANBAN PAIRED PALETTE WHITE TEXT FAILED}}
+  \ifdefstring{\kbsecondheadingtext}{kanbanInk}
+    {\TYPE{KANBAN PAIRED PALETTE DARK TEXT OK}}
+    {\TYPE{KANBAN PAIRED PALETTE DARK TEXT FAILED}}
+  \makeatother
+  \kanbantask{Dark heading}{Check white heading text}
+  \kanbantask{Light heading}{Check dark heading text}
+\end{kanban}
+\makeatletter
+\ifcsdef{kanban@headingtext@1}
+  {\TYPE{KANBAN HEADING TEXT CLEANUP FAILED}}
+  {\TYPE{KANBAN HEADING TEXT CLEANUP OK}}
+\makeatother
+\makeatletter
+\ifdefstring{\kanban@highlabel}{URGENT}
+  {\TYPE{KANBAN BOARD LABEL SCOPE OK}}
+  {\TYPE{KANBAN BOARD LABEL SCOPE FAILED}}
+\makeatother
+\END
+\end{document}

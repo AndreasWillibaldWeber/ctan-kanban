@@ -1,0 +1,84 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\newcommand\kbexpectdisplay[4]{%
+  \def\kanban@boarddateformat{#1}%
+  \kanban@preparedeadline{#2}%
+  \ifdefstring{\kb@displaydeadline}{#3}
+    {\TYPE{#4 OK}}
+    {\TYPE{#4 FAILED: \kb@displaydeadline}}}
+\newcommand\kbexpectdatealias[3]{%
+  \kanban@canonicaldateformat{#1}%
+  \ifdefstring{\kb@datechoice}{#2}
+    {\TYPE{#3 OK}}
+    {\TYPE{#3 FAILED}}}
+\ifdefstring{\kanban@dateformat}{us}
+  {\TYPE{KANBAN DEFAULT DATE FORMAT US OK}}
+  {\TYPE{KANBAN DEFAULT DATE FORMAT US FAILED}}
+\kbexpectdisplay{us}{18.07.2026}{07/18/2026}
+  {KANBAN US DISPLAY}
+\kbexpectdisplay{english}{2026-07-18}{18/07/2026}
+  {KANBAN ENGLISH DISPLAY}
+\kbexpectdisplay{german}{2026/07/18}{18.07.2026}
+  {KANBAN GERMAN DISPLAY}
+\kbexpectdisplay{iso}{07/18/2026}{2026-07-18}
+  {KANBAN ISO DISPLAY}
+\kbexpectdisplay{ymd}{18/07/2026}{2026/07/18}
+  {KANBAN YMD DISPLAY}
+\kbexpectdisplay{us}{M2}{M2}
+  {KANBAN PROJECT MONTH UNCHANGED}
+\kbexpectdisplay{us}{Editorial review}{Editorial review}
+  {KANBAN DESCRIPTIVE LABEL UNCHANGED}
+\kbexpectdatealias{american}{us}{KANBAN AMERICAN DATE ALIAS}
+\kbexpectdatealias{uk}{english}{KANBAN UK DATE ALIAS}
+\kbexpectdatealias{ BrItIsH }{english}{KANBAN BRITISH DATE ALIAS}
+\kbexpectdatealias{de}{german}{KANBAN DE DATE ALIAS}
+\kbexpectdatealias{deutsch}{german}{KANBAN DEUTSCH DATE ALIAS}
+\kbexpectdatealias{year-first}{ymd}{KANBAN YEAR-FIRST DATE ALIAS}
+\ExplSyntaxOn
+\cs_new_protected:Npn \kb_expect_components:nnnnn #1#2#3#4#5
+  {
+    \__kanban_parse_date:nn {#1} {#2}
+    \bool_if:nTF
+      {
+        \l__kanban_valid_date_bool
+        && \int_compare_p:nNn {\l__kanban_deadline_year_int} = {#3}
+        && \int_compare_p:nNn {\l__kanban_deadline_month_int} = {#4}
+        && \int_compare_p:nNn {\l__kanban_deadline_day_int} = {#5}
+      }
+      {\TYPE{KANBAN~#2~SLASH~PARSE~#1~OK}}
+      {\TYPE{KANBAN~#2~SLASH~PARSE~#1~FAILED}}
+  }
+\kb_expect_components:nnnnn {07/08/2026}{us}{2026}{7}{8}
+\kb_expect_components:nnnnn {07/08/2026}{english}{2026}{8}{7}
+\kb_expect_components:nnnnn {07/08/2026}{german}{2026}{8}{7}
+\kb_expect_components:nnnnn {31/07/2026}{us}{2026}{7}{31}
+\kb_expect_components:nnnnn {07/31/2026}{english}{2026}{7}{31}
+\ExplSyntaxOff
+\kbset{date-format=german}
+\ifdefstring{\kanban@dateformat}{german}
+  {\TYPE{KANBAN SETUP DATE FORMAT OK}}
+  {\TYPE{KANBAN SETUP DATE FORMAT FAILED}}
+\begin{kanban}[columns={Todo},date-format=english]
+  \ifdefstring{\kanban@boarddateformat}{english}
+    {\TYPE{KANBAN BOARD DATE FORMAT OVERRIDE OK}}
+    {\TYPE{KANBAN BOARD DATE FORMAT OVERRIDE FAILED}}
+  \kanbantask[due=2026-07-18]{Todo}{Test local formatting}
+\end{kanban}
+\ifdefstring{\kanban@dateformat}{german}
+  {\TYPE{KANBAN BOARD DATE FORMAT SCOPE OK}}
+  {\TYPE{KANBAN BOARD DATE FORMAT SCOPE FAILED}}
+\begingroup
+  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+  \kbset{date-format=martian}
+  \ifdefstring{\kanban@dateformat}{german}
+    {\TYPE{KANBAN INVALID DATE FORMAT PRESERVES VALUE OK}}
+    {\TYPE{KANBAN INVALID DATE FORMAT PRESERVES VALUE FAILED}}
+\endgroup
+\makeatother
+\END
+\end{document}

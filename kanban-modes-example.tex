@@ -1,0 +1,39 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=18mm]{geometry}
+\usepackage[reference-date=2026-07-18]{kanban}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\section*{Light and dark board modes}
+
+% Light mode is the package default. It can nevertheless be stated explicitly
+% when the contrast with a following dark board is important.
+\subsection*{Light mode}
+\begin{kanban}[columns={Planned,Active,Complete},mode=light]
+  \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+    {Planned}{Confirm the requirements}
+  \kanbantask[author=Bob,due=07/18/2026]
+    {Active}{Implement the package interface}
+  \kanbantask[completed,deadline=12/31/2099]
+    {Complete}{Create the test files}
+\end{kanban}
+
+\bigskip
+
+% Dark mode changes only the board surfaces and text. It does not change the
+% page color or the surrounding document text.
+\subsection*{Dark mode}
+\begin{kanban}[columns={Planned,Active,Complete},mode=dark]
+  \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
+    {Planned}{Prepare the release notes}
+  \kanbantask[author=David,due=07/18/2026]
+    {Active}{Review the documentation}
+  \kanbantask[completed,deadline=12/31/2099]
+    {Complete}{Select the license}
+\end{kanban}
+
+\end{document}

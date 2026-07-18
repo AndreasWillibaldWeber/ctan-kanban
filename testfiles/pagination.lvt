@@ -1,0 +1,35 @@
+\input regression-test.tex
+\documentclass{article}
+\setlength\textheight{85mm}
+\usepackage{lmodern}
+\usepackage{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begin{kanban}[columns={Queue,Review},break,columnsep=2mm]
+  \kanbantask[author=Alice,due=01.01.2000]
+    {Queue}{Prepare the first pagination case}
+  \kanbantask[prio=high]{Queue}{Prepare the second pagination case}
+  \kanbantask{Queue}{Prepare the third pagination case}
+  \kanbantask{Queue}{Prepare the fourth pagination case}
+  \kanbantask{Queue}{Prepare the fifth pagination case}
+  \kanbantask{Queue}{Prepare the sixth pagination case}
+  \kanbantask{Queue}{Prepare the seventh pagination case}
+  \kanbantask{Queue}{Prepare the eighth pagination case}
+  \kanbantask[due=31.12.2099]{Review}{Review the first pagination case}
+  \kanbantask{Review}{Review the second pagination case}
+  \kanbantask{Review}{Review the third pagination case}
+  \kanbantask{Review}{Review the fourth pagination case}
+  \kanbantask{Review}{Review the fifth pagination case}
+  \kanbantask{Review}{Review the sixth pagination case}
+  \kanbantask[completed]{Review}{Review the seventh pagination case}
+\end{kanban}
+\clearpage
+\ifnum\value{page}>2\relax
+  \TYPE{KANBAN BREAK BOARD CROSSES PAGE BOUNDARY OK}
+\else
+  \TYPE{KANBAN BREAK BOARD CROSSES PAGE BOUNDARY FAILED}
+\fi
+\TYPE{KANBAN BREAK BOARD COMPLETES AFTER PAGINATION OK}
+\END
+\end{document}

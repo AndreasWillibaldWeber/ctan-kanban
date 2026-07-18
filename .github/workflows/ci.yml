@@ -1,0 +1,143 @@
+name: Continuous integration
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  current-tex-live:
+    name: Current TeX Live
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Test, document, and package
+        uses: xu-cheng/texlive-action@v3
+        with:
+          # Pin the distribution year so routine image updates cannot change
+          # the TeX toolchain silently within a release branch.
+          texlive_version: 2026
+          os: debian
+          run: |
+            set -euo pipefail
+            l3build check
+            l3build doc
+            l3build ctan
+
+            if grep -Eq '(^! |LaTeX Error|Package .* Error|Undefined control sequence|Emergency stop|Fatal error occurred)' build/doc/kanban.log; then
+              echo 'The manual log contains a fatal diagnostic.' >&2
+              exit 1
+            fi
+            if grep -Eq 'LaTeX Warning: (There were undefined references|Label\(s\) may have changed)' build/doc/kanban.log; then
+              echo 'The manual contains an unresolved cross-reference.' >&2
+              exit 1
+            fi
+            if grep -Eq 'Overfull \\[hv]box' build/doc/kanban.log; then
+              echo 'The manual contains an overfull box.' >&2
+              exit 1
+            fi
+
+            unzip -t kanban-ctan.zip
+            unzip -t kanban.tds.zip
+            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/compatibility.lvt'
+            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/customization.lvt'
+            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/pagination.lvt'
+            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/reference-date.lvt'
+            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/metadata.lvt'
+            unzip -l kanban-ctan.zip | grep -q 'kanban/RELEASING.md'
+            unzip -l kanban.tds.zip | grep -q 'tex/latex/kanban/kanban.sty'
+
+            unzip -p kanban.tds.zip tex/latex/kanban/kanban.sty \
+              > build/tds-kanban.sty
+            cmp build/unpacked/kanban.sty build/tds-kanban.sty
+
+            for engine in pdflatex lualatex xelatex; do
+              outdir="build/examples/${engine}"
+              mkdir -p "${outdir}"
+              for source in kanban-example.tex kanban-*-example.tex; do
+                TEXINPUTS="build/unpacked//:" \
+                  "${engine}" -interaction=nonstopmode -halt-on-error \
+                  -output-directory="${outdir}" "${source}"
+                TEXINPUTS="build/unpacked//:" \
+                  "${engine}" -interaction=nonstopmode -halt-on-error \
+                  -output-directory="${outdir}" "${source}"
+              done
+              if grep -Eq '(^! |LaTeX Error|Package .* Error|Undefined control sequence|Emergency stop|Fatal error occurred|Overfull \\[hv]box)' "${outdir}"/*.log; then
+                echo "An example log produced by ${engine} contains a fatal diagnostic." >&2
+                exit 1
+              fi
+              if grep -Eq 'LaTeX Warning: (There were undefined references|Label\(s\) may have changed)' "${outdir}"/*.log; then
+                echo "An example produced by ${engine} contains an unresolved cross-reference." >&2
+                exit 1
+              fi
+            done
+
+            # Raster output is retained for systematic visual review. Exact
+            # pixel comparison is deliberately avoided because font rasterizers
+            # and PDF backends differ across supported TeX Live releases.
+            if command -v pdftoppm >/dev/null 2>&1 && \
+               command -v pdfinfo >/dev/null 2>&1; then
+              manual_pages="$(pdfinfo build/doc/kanban.pdf | \
+                awk '/^Pages:/ {print $2}')"
+              test "${manual_pages}" -ge 40
+              mkdir -p build/visual-review/manual \
+                build/visual-review/examples
+              pdftoppm -png -r 96 build/doc/kanban.pdf \
+                build/visual-review/manual/kanban
+              for pdf in build/examples/pdflatex/*.pdf; do
+                stem="$(basename "${pdf}" .pdf)"
+                pdftoppm -f 1 -l 1 -singlefile -png -r 96 "${pdf}" \
+                  "build/visual-review/examples/${stem}"
+              done
+              find build/visual-review -name '*.png' -size +0c | \
+                grep -q .
+            else
+              echo 'Poppler is unavailable; PDF artifacts remain available for visual review.'
+            fi
+
+            archive_check="build/archive-check"
+            rm -rf "${archive_check}"
+            mkdir -p "${archive_check}"
+            unzip -q kanban-ctan.zip -d "${archive_check}"
+            (cd "${archive_check}/kanban" && l3build check -e pdftex)
+
+      - name: Retain review artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kanban-current-build
+          if-no-files-found: error
+          path: |
+            build/doc/kanban.pdf
+            build/examples/**/*.pdf
+            build/visual-review/**/*.png
+            kanban-ctan.zip
+            kanban.tds.zip
+
+  tex-live-2020:
+    name: TeX Live 2020 compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Test the declared minimum distribution
+        uses: xu-cheng/texlive-action@v3
+        with:
+          texlive_version: 2020
+          os: debian
+          run: |
+            set -euo pipefail
+            l3build check
+            l3build doc

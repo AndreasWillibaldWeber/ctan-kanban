@@ -1,0 +1,67 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begingroup
+\makeatletter
+\year=2026 \month=7 \day=18
+
+\kb@evaloverdue{17.07.2026}
+\ifbool{kb@overdue}
+  {\TYPE{KANBAN CALENDAR OVERDUE OK}}
+  {\TYPE{KANBAN CALENDAR OVERDUE FAILED}}
+
+\kb@evaloverdue{18.07.2026}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN CALENDAR CURRENT OK}}
+  {\TYPE{KANBAN CALENDAR CURRENT FAILED}}
+
+\kb@evaloverdue{2026-07-17}
+\ifbool{kb@overdue}
+  {\TYPE{KANBAN ISO CALENDAR OVERDUE OK}}
+  {\TYPE{KANBAN ISO CALENDAR OVERDUE FAILED}}
+
+\kb@evaloverdue{2026-07-18}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN ISO CALENDAR CURRENT OK}}
+  {\TYPE{KANBAN ISO CALENDAR CURRENT FAILED}}
+
+\def\kanban@thestart{18.07.2026}
+\kb@evaloverdue{M1}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN PROJECT CURRENT OK}}
+  {\TYPE{KANBAN PROJECT CURRENT FAILED}}
+
+\kb@evaloverdue{M2}
+\ifboolexpr{not bool {kb@overdue} and not bool {kb@duenow}}
+  {\TYPE{KANBAN PROJECT FUTURE OK}}
+  {\TYPE{KANBAN PROJECT FUTURE FAILED}}
+
+\def\kanban@thestart{2026-07-18}
+\kb@evaloverdue{M1}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN ISO PROJECT START OK}}
+  {\TYPE{KANBAN ISO PROJECT START FAILED}}
+
+\def\kanban@thestart{31.01.2026}
+\year=2026 \month=2 \day=27
+\kb@evaloverdue{M1}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN PROJECT MONTH-END BEFORE BOUNDARY OK}}
+  {\TYPE{KANBAN PROJECT MONTH-END BEFORE BOUNDARY FAILED}}
+\year=2026 \month=2 \day=28
+\kb@evaloverdue{M2}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN PROJECT MONTH-END CLAMP OK}}
+  {\TYPE{KANBAN PROJECT MONTH-END CLAMP FAILED}}
+\year=2028 \month=2 \day=29
+\kb@evaloverdue{M26}
+\ifbool{kb@duenow}
+  {\TYPE{KANBAN PROJECT LEAP BOUNDARY OK}}
+  {\TYPE{KANBAN PROJECT LEAP BOUNDARY FAILED}}
+\makeatother
+\endgroup
+\END
+\end{document}

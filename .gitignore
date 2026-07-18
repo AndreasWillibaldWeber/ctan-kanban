@@ -1,0 +1,30 @@
+# l3build output
+/build/
+
+# Local quality-assurance output
+/tmp/
+
+# Generated package and release artifacts
+/kanban.sty
+/kanban.pdf
+/kanban-ctan.zip
+/kanban.tds.zip
+/kanban-*-example.pdf
+/kanban-example.pdf
+
+# TeX auxiliary files
+*.aux
+*.glg
+*.glo
+*.gls
+*.hd
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+missfont.log

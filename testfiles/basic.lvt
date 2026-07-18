@@ -1,0 +1,87 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[palette=monochrome,startdate=01.07.2026,mode=Dark]{kanban}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\newcommand\kbcheckdefaultgap{%
+  \ifdim\kanban@columnsep=2mm\relax
+    \TYPE{KANBAN DEFAULT COLUMNSEP OK}%
+  \else
+    \TYPE{KANBAN DEFAULT COLUMNSEP FAILED}%
+  \fi}
+\newcommand\kbchecksetupgap{%
+  \ifdim\kanban@columnsep=1mm\relax
+    \TYPE{KANBAN SETUP COLUMNSEP OK}%
+  \else
+    \TYPE{KANBAN SETUP COLUMNSEP FAILED}%
+  \fi}
+\newcommand\kbcheckboardgap{%
+  \ifdim\kanban@boardcolumnsep=3mm\relax
+    \TYPE{KANBAN BOARD COLUMNSEP OK}%
+  \else
+    \TYPE{KANBAN BOARD COLUMNSEP FAILED}%
+  \fi}
+\newcommand\kbcheckdarkmode{%
+  \ifdefstring{\kanban@cardcolor}{kanbanInk}
+    {\ifdefstring{\kanban@textcolor}{white!88!black}
+      {\ifdefstring{\kanban@authorback}{black!6}
+        {\ifdefstring{\kanban@authortext}{black!58}
+          {\ifdefstring{\kanban@deadlineback}{black!7}
+            {\ifdefstring{\kanban@deadlinetext}{black!62}
+              {\TYPE{KANBAN DARK COLORS OK}}
+              {\TYPE{KANBAN DARK COLORS FAILED}}}
+            {\TYPE{KANBAN DARK COLORS FAILED}}}
+          {\TYPE{KANBAN DARK COLORS FAILED}}}
+        {\TYPE{KANBAN DARK COLORS FAILED}}}
+      {\TYPE{KANBAN DARK COLORS FAILED}}}
+    {\TYPE{KANBAN DARK COLORS FAILED}}}
+\makeatother
+\ifcsname task\endcsname
+  \TYPE{KANBAN SHORT TASK NAMESPACE FAILED}
+\else
+  \TYPE{KANBAN SHORT TASK NAMESPACE OK}
+\fi
+\ifx\kanbansetup\kbset
+  \TYPE{KANBAN SETUP ALIAS OK}
+\else
+  \TYPE{KANBAN SETUP ALIAS FAILED}
+\fi
+\ifx\kanbantask\kbtask
+  \TYPE{KANBAN TASK ALIAS OK}
+\else
+  \TYPE{KANBAN TASK ALIAS FAILED}
+\fi
+\ifx\kanbandefinepalette\kbdefinepalette
+  \TYPE{KANBAN PALETTE ALIAS OK}
+\else
+  \TYPE{KANBAN PALETTE ALIAS FAILED}
+\fi
+\ExplSyntaxOn
+\keys_if_exist:nnTF {kanban/task}{prio}
+  {\TYPE{KANBAN~TASK~KEY~NAMESPACE~OK}}
+  {\TYPE{KANBAN~TASK~KEY~NAMESPACE~FAILED}}
+\ExplSyntaxOff
+\kbcheckdefaultgap
+\kanbandefinepalette{test}{red,blue}
+\kanbansetup{palette=test,columnsep=1mm}
+\kbchecksetupgap
+\begin{kanban}[columns={Todo,Done},palette=default,
+    mode=light,columnsep=3mm]
+  \kbcheckboardgap
+  \kanbantask[prio=HIGH,author=A,due=M1]{Todo}{First}
+  \makeatletter
+  \ifdefstring{\kbtask@prio}{high}
+    {\TYPE{KANBAN PRIORITY NORMALIZATION OK}}
+    {\TYPE{KANBAN PRIORITY NORMALIZATION FAILED}}
+  \makeatother
+  \kbtask[completed]{Done}{Second}
+\end{kanban}
+\begin{kanban}[columns={Todo,Done},mode=dark]
+  \kbcheckdarkmode
+  \kanbantask[author=B]{Todo}{Dark mode}
+\end{kanban}
+\TYPE{KANBAN BASIC OK}
+\END
+\end{document}
