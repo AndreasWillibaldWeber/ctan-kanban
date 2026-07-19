@@ -64,7 +64,7 @@ jobs:
             for engine in pdflatex lualatex xelatex; do
               outdir="build/examples/${engine}"
               mkdir -p "${outdir}"
-              for source in kanban-example.tex kanban-*-example.tex; do
+              for source in examples/kanban-example.tex examples/kanban-*-example.tex; do
                 TEXINPUTS="build/unpacked//:" \
                   "${engine}" -interaction=nonstopmode -halt-on-error \
                   -output-directory="${outdir}" "${source}"

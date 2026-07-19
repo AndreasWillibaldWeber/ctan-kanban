@@ -12,7 +12,7 @@ typesetopts = "-interaction=nonstopmode"
 checkengines = {"pdftex", "luatex", "xetex"}
 checkruns = 2
 testfiledir = "testfiles"
-demofiles = {"kanban-example.tex", "kanban-*-example.tex"}
+demofiles = {"examples/kanban-example.tex", "examples/kanban-*-example.tex"}
 textfiles = {
   "README.md",
   "CONTRIBUTING.md",

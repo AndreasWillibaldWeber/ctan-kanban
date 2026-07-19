@@ -566,7 +566,7 @@ Use `break` when a board contains enough cards to continue onto another page:
 ## Additional examples
 
 The release includes focused, self-contained examples that can be copied and
-adapted directly:
+adapted directly (kept in the `examples/` directory of the repository):
 
 Every date-bearing example fixes `reference-date=2026-07-18`, so its semantic
 chip colors remain identical when the example is rebuilt later.
