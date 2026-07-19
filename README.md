@@ -609,7 +609,9 @@ equal-height measurements are updated.
 ## Requirements
 
 The package requires LaTeX 2020-10-01 or later and the packages `xcolor`,
-`etoolbox`, `tikz`, `tcolorbox`, and `paracol`. The regression suite is run
+`etoolbox`, `tikz`, `tcolorbox`, and `paracol`. On formats older than
+2021-06-01 the package additionally loads `kvoptions` to process package
+options whose values contain brace groups. The regression suite is run
 with pdfTeX, LuaTeX, and XeTeX. Continuous integration tests both a current
 TeX Live installation and an actual TeX Live 2020 installation. The local
 compatibility test additionally selects the declared format boundary through

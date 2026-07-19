@@ -17,11 +17,9 @@ KANBAN BOARD MODE SCOPE OK
 KANBAN BOARD STARTDATE SCOPE OK
 KANBAN BOARD DATE FORMAT SCOPE OK
 KANBAN SELECTED PALETTE REFRESHED OK
-Package kanban Warning: Invalid board columnsep value '-2mm'; keeping the
-(kanban)                current value.
+KANBAN WARNING: invalid board columnsep value '-2mm'
 KANBAN NEGATIVE BOARD GAP PRESERVED OK
-Package kanban Warning: Invalid board columnsep value 'not-a-length'; keeping
-(kanban)                the current value.
+KANBAN WARNING: invalid board columnsep value 'not-a-length'
 KANBAN MALFORMED BOARD GAP PRESERVED OK
 KANBAN ERROR: column separation leaves no width for columns
 KANBAN IMPOSSIBLE TOTAL GAP FALLBACK OK

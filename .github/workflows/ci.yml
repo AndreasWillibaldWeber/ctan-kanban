@@ -30,6 +30,10 @@ jobs:
           os: debian
           run: |
             set -euo pipefail
+            # The container image ships zip but not unzip, which the archive
+            # inspection steps below require.
+            apt-get update -qq
+            apt-get install -qq -y --no-install-recommends unzip > /dev/null
             l3build check
             l3build doc
             l3build ctan
@@ -49,13 +53,18 @@ jobs:
 
             unzip -t kanban-ctan.zip
             unzip -t kanban.tds.zip
-            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/compatibility.lvt'
-            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/customization.lvt'
-            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/pagination.lvt'
-            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/reference-date.lvt'
-            unzip -l kanban-ctan.zip | grep -q 'kanban/testfiles/metadata.lvt'
-            unzip -l kanban-ctan.zip | grep -q 'kanban/RELEASING.md'
-            unzip -l kanban.tds.zip | grep -q 'tex/latex/kanban/kanban.sty'
+            # List each archive once and grep the file: under `pipefail`,
+            # `unzip -l | grep -q` dies of SIGPIPE (exit 141) whenever grep
+            # closes the pipe before unzip finishes writing.
+            unzip -l kanban-ctan.zip > build/ctan-list.txt
+            unzip -l kanban.tds.zip > build/tds-list.txt
+            grep -q 'kanban/testfiles/compatibility.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/customization.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/pagination.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/reference-date.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/metadata.lvt' build/ctan-list.txt
+            grep -q 'kanban/RELEASING.md' build/ctan-list.txt
+            grep -q 'tex/latex/kanban/kanban.sty' build/tds-list.txt
 
             unzip -p kanban.tds.zip tex/latex/kanban/kanban.sty \
               > build/tds-kanban.sty
@@ -99,8 +108,7 @@ jobs:
                 pdftoppm -f 1 -l 1 -singlefile -png -r 96 "${pdf}" \
                   "build/visual-review/examples/${stem}"
               done
-              find build/visual-review -name '*.png' -size +0c | \
-                grep -q .
+              test -n "$(find build/visual-review -name '*.png' -size +0c)"
             else
               echo 'Poppler is unavailable; PDF artifacts remain available for visual review.'
             fi
@@ -121,6 +129,7 @@ jobs:
             build/doc/kanban.pdf
             build/examples/**/*.pdf
             build/visual-review/**/*.png
+            build/test*/*.diff
             kanban-ctan.zip
             kanban.tds.zip
 
@@ -141,3 +150,11 @@ jobs:
             set -euo pipefail
             l3build check
             l3build doc
+
+      - name: Retain check diffs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kanban-tex-live-2020-diffs
+          if-no-files-found: warn
+          path: build/test*/*.diff

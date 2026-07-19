@@ -45,6 +45,10 @@ Initial public release.
 - Parse setup, board, task, and semantic-label options through namespaced
   LaTeX3 key families, defer stored dates until each key list has resolved its
   date format, and route new validation diagnostics through named messages.
+- Process package options through `kvoptions` on LaTeX formats older than
+  2021-06-01, whose native option processor cannot parse brace groups in
+  package option lists; newer formats use the brace-aware kernel processor
+  directly.
 - Validate explicit column-gap dimensions before assignment, accepting fixed
   dimensions and registered dimension values while replacing raw TeX
   number/unit failures with one actionable package warning.

@@ -163,6 +163,9 @@
 \fancyfoot[C]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
+% Formats up to TeX Live 2020 do not preload hypdoc/hyperref via ltxdoc;
+% newer doc releases load hypdoc themselves, for which this is a no-op.
+\usepackage{hypdoc}
 \AtBeginDocument{%
   \hypersetup{
     linkcolor=kanbanBlue,
@@ -297,7 +300,9 @@
 %
 % The package requires a LaTeX format dated 2020-10-01 or later and loads
 % \textsf{xcolor}, \textsf{etoolbox}, \textsf{tikz}, \textsf{tcolorbox}, and
-% \textsf{paracol}. These dependencies are included in the principal TeX
+% \textsf{paracol}. On formats older than 2021-06-01, whose option processor
+% cannot parse brace groups in package option lists, \textsf{kvoptions} is
+% loaded additionally. These dependencies are included in the principal TeX
 % distributions. Continuous integration runs the regression and documentation
 % builds on both a current TeX Live installation and an actual TeX Live 2020
 % installation. The declared format boundary is also exercised locally through
@@ -3645,23 +3650,31 @@
 %    \end{macrocode}
 %
 % \paragraph{Collection and application of package options.}
-% LaTeX2e presents unknown package options one at a time through
-% |\CurrentOption|. The package collects them into one token list and applies
-% that list through the same deferred setup transaction only after
-% |\ProcessOptions| has finished. Package options therefore share validation,
-% aliases, key-order independence, and diagnostics with |\kanbansetup|.
+% LaTeX2e presents package options one at a time. The package collects them
+% into one token list and applies that list through the same deferred setup
+% transaction only after option processing has finished. Package options
+% therefore share validation, aliases, key-order independence, and diagnostics
+% with |\kanbansetup|.
+%
+% Formats dated 2021-06-01 or later parse raw option lists with the
+% brace-aware key--value processor, so the catch-all |\DeclareOption*|
+% collector receives every option intact through |\CurrentOption|, including
+% values with embedded commas such as |columns={A,B}|. The older 2020-10-01
+% format splits raw option lists at every comma and mishandles brace groups in
+% its option bookkeeping, which derails loading. On such formats the package
+% routes its options through \textsf{kvoptions} instead: every documented
+% setup key is declared as a \textsf{keyval} key whose handler re-wraps the
+% brace-stripped value before appending it to the same accumulator, and
+% unrecognized options fall through to the same catch-all collector.
 %
 % |\tl_new:N| allocates the global accumulator. |\tl_if_empty:NF| inserts a
 % comma only after the first option, and |\tl_gput_right:Nn| appends globally.
 % The expansion prefix |\exp_args:NNo| expands |\CurrentOption| once while
 % retaining the destination variable. Application uses |\exp_args:NV| to pass
-% the complete accumulated value to |\kanban@processsetup|. After leaving
-% LaTeX3 syntax, |\DeclareOption*| installs the collector as the catch-all
-% LaTeX2e option handler. |\ProcessOptions\relax| visits the requested options.
-% The final call to |\kanban@applypackageoptions| commits the resulting setup
-% list.
+% the complete accumulated value to |\kanban@processsetup|. The final call to
+% |\kanban@applypackageoptions| commits the resulting setup list.
 % Unknown package options consequently produce the same warning as unknown
-% setup keys.
+% setup keys on both processing paths.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \tl_new:N \g__kanban_package_options_tl
@@ -3672,6 +3685,12 @@
     \exp_args:NNo \tl_gput_right:Nn
       \g__kanban_package_options_tl {\CurrentOption}
   }
+\cs_new_protected:Npn \kanban@collectkeyvalue #1#2
+  {
+    \tl_if_empty:NF \g__kanban_package_options_tl
+      {\tl_gput_right:Nn \g__kanban_package_options_tl {,}}
+    \tl_gput_right:Nn \g__kanban_package_options_tl {#1={#2}}
+  }
 \cs_new_protected:Npn \kanban@applypackageoptions
   {
     \tl_if_empty:NF \g__kanban_package_options_tl
@@ -3679,8 +3698,37 @@
         \g__kanban_package_options_tl}
   }
 \ExplSyntaxOff
-\DeclareOption*{\kanban@collectpackageoption}
-\ProcessOptions\relax
+\IfFormatAtLeastTF{2021-06-01}
+  {%
+    \DeclareOption*{\kanban@collectpackageoption}%
+    \ProcessOptions\relax
+  }
+  {%
+    \RequirePackage{kvoptions}%
+    \SetupKeyvalOptions{family=kanban,prefix=kanban@pkgopt@}%
+    \DeclareDefaultOption{\kanban@collectpackageoption}%
+    \define@key{kanban}{columns}%
+      {\kanban@collectkeyvalue{columns}{#1}}%
+    \define@key{kanban}{palette}%
+      {\kanban@collectkeyvalue{palette}{#1}}%
+    \define@key{kanban}{date-format}%
+      {\kanban@collectkeyvalue{date-format}{#1}}%
+    \define@key{kanban}{dateformat}%
+      {\kanban@collectkeyvalue{dateformat}{#1}}%
+    \define@key{kanban}{startdate}%
+      {\kanban@collectkeyvalue{startdate}{#1}}%
+    \define@key{kanban}{reference-date}%
+      {\kanban@collectkeyvalue{reference-date}{#1}}%
+    \define@key{kanban}{today}%
+      {\kanban@collectkeyvalue{today}{#1}}%
+    \define@key{kanban}{mode}%
+      {\kanban@collectkeyvalue{mode}{#1}}%
+    \define@key{kanban}{columnsep}%
+      {\kanban@collectkeyvalue{columnsep}{#1}}%
+    \define@key{kanban}{labels}%
+      {\kanban@collectkeyvalue{labels}{#1}}%
+    \ProcessKeyvalOptions*\relax
+  }
 \kanban@applypackageoptions
 %    \end{macrocode}
 % \end{macro}

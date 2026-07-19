@@ -109,6 +109,14 @@
 \makeatother
 \kbcheckglobalpalette
 \begingroup
+  \makeatletter
+  \ExplSyntaxOn
+  % Capture the diagnostic semantically: the kernel's l3msg console rendering
+  % (wrap point, continuation padding) varies across TeX Live releases.
+  \cs_set_protected:Npn \kanban@dimensionwarning #1#2
+    {\TYPE{KANBAN~WARNING:~invalid~#1~value~'#2'}}
+  \ExplSyntaxOff
+  \makeatother
   \begin{kanban}[columns={Todo},columnsep=-2mm]
     \makeatletter
     \ifdim\kanban@boardcolumnsep=1mm
@@ -121,6 +129,12 @@
   \end{kanban}
 \endgroup
 \begingroup
+  \makeatletter
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \kanban@dimensionwarning #1#2
+    {\TYPE{KANBAN~WARNING:~invalid~#1~value~'#2'}}
+  \ExplSyntaxOff
+  \makeatother
   \begin{kanban}[columns={Todo},columnsep=not-a-length]
     \makeatletter
     \ifdim\kanban@boardcolumnsep=1mm
