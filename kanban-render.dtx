@@ -1,0 +1,273 @@
+% \iffalse meta-comment
+% Copyright (C) 2026 Andreas Willibald Weber
+%
+% This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at your
+% option) any later version. The latest version of the license is available at
+% https://www.latex-project.org/lppl.txt.
+%
+% This work has the LPPL maintenance status `maintained'. The Current
+% Maintainer of this work is Andreas Willibald Weber.
+%
+% This file is part of the `kanban' package; the complete list of files
+% constituting the work appears in the main source file kanban.dtx.
+% \fi
+%
+%    \begin{macrocode}
+%<*package>
+%    \end{macrocode}
+%
+% \subsection{Card components and renderers}
+%
+% Metadata elements are small inline boxes. Their semantic colors are stable
+% across modes; only the card surface, card text, and card border respond to
+% the light or dark board mode. Public, namespaced styles are appended after
+% structural defaults. Fixed and breakable layouts reuse the same card renderer
+% but provide different column containers. Rendering is deliberately delayed:
+% task declarations store calls to these components, and the environment
+% executes those calls only after it knows all column counts and dimensions.
+%
+% \paragraph{Structural and extension styles.}
+% The first style registry distinguishes fixed package structure from supported
+% user extension points. Empty public styles such as |kanban/card| may be
+% extended with |\tcbset|, while private styles establish the common geometry
+% of inline pills and the stable author and deadline colors.
+%
+% |\tcbset| defines |tcolorbox| keys globally. A |/.style| value expands to a
+% reusable set of keys. |on line| makes a box participate in the current text
+% line; |boxsep| and the side-specific dimensions control padding; |arc| rounds
+% corners; |boxrule=0pt| removes the frame; |nobeforeafter| suppresses paragraph
+% material; and |box align=base| aligns the box with surrounding text. The
+% private |kanban@chip| and |kanban@due| styles inherit |kanban@pill| and add
+% semantic foreground and background macros. Because the public extension key
+% is applied last in each component definition below, a document may override
+% presentation without replacing structural collection logic.
+%    \begin{macrocode}
+\tcbset{
+  kanban/header/.style={},
+  kanban/card/.style={},
+  kanban/column-body/.style={},
+  kanban/priority-chip/.style={},
+  kanban/author-chip/.style={},
+  kanban/deadline-chip/.style={},
+  kanban/completed-chip/.style={},
+  kanban@pill/.style={on line,boxsep=0pt,left=1.2mm,right=1.2mm,
+    top=.4mm,bottom=.4mm,arc=.7mm,boxrule=0pt,nobeforeafter,
+    box align=base},
+  kanban@chip/.style={kanban@pill,colback=\kanban@authorback,
+    coltext=\kanban@authortext},
+  kanban@due/.style={kanban@pill,colback=\kanban@deadlineback,
+    coltext=\kanban@deadlinetext}}
+%    \end{macrocode}
+%
+% \paragraph{Priority and author chips.}
+% A priority chip maps a normalized semantic value to the board-local label,
+% semantic background, and accessible foreground. An empty or unknown value
+% produces no chip. The author component has no semantic classification and
+% therefore renders any non-blank author text with the stable author style.
+%
+% Both commands are checked LaTeX2e definitions made by |\newcommand|.
+% |\ifblank| avoids creating empty inline boxes. The priority renderer initializes
+% three temporary macros and fills them through |\ifstrequal| comparisons;
+% |\ifdefempty| then guards the actual box. |\tcbox| draws a one-line
+% |tcolorbox|, and its optional key list combines the structural pill, the
+% selected colors, and the public extension style. |\bfseries| and
+% |\scriptsize| are declarations scoped by the box content. The author renderer
+% uses the inherited |kanban@chip| colors and applies |kanban/author-chip| last.
+%    \begin{macrocode}
+\newcommand\kanban@prioritypill[1]{\ifblank{#1}{}{%
+  \def\kb@pl{}\def\kb@pc{}\def\kb@pt{}%
+  \ifstrequal{#1}{high}{\def\kb@pl{\kanban@boardhighlabel}%
+    \def\kb@pc{kanbanHigh}\def\kb@pt{\kanban@hightext}}{}%
+  \ifstrequal{#1}{medium}{\def\kb@pl{\kanban@boardmediumlabel}%
+    \def\kb@pc{kanbanMed}\def\kb@pt{\kanban@mediumtext}}{}%
+  \ifstrequal{#1}{med}{\def\kb@pl{\kanban@boardmediumlabel}%
+    \def\kb@pc{kanbanMed}\def\kb@pt{\kanban@mediumtext}}{}%
+  \ifstrequal{#1}{low}{\def\kb@pl{\kanban@boardlowlabel}%
+    \def\kb@pc{kanbanLow}\def\kb@pt{\kanban@lowtext}}{}%
+  \ifdefempty\kb@pl{}{\tcbox[kanban@pill,
+    colback=\kb@pc,colframe=\kb@pc,coltext=\kb@pt,
+    kanban/priority-chip]{\bfseries\scriptsize\kb@pl}}}}
+\newcommand\kanban@authorchip[1]{\ifblank{#1}{}{%
+  \tcbox[kanban@chip,kanban/author-chip]{\scriptsize #1}}}
+%    \end{macrocode}
+%
+% \paragraph{The deadline clock symbol.}
+% Deadline chips include a compact clock drawn from primitives so the package
+% does not depend on an icon font. Its dimensions are fixed in points and are
+% small enough to align with script-sized metadata text.
+%
+% The inline |\tikz| command creates a self-contained picture. Its |baseline|
+% option lowers the picture relative to the surrounding baseline. The first
+% |\draw| command creates a circle, and the next two draw the clock hands; each
+% uses the same thin |line width|. Coordinates and lengths are local to this
+% picture, so the symbol does not alter the dimensions or style of later TikZ
+% material.
+%    \begin{macrocode}
+\newcommand\kb@clock{\tikz[baseline=-.55ex]{%
+  \draw[line width=.3pt] (0,0) circle (1.7pt);
+  \draw[line width=.3pt] (0,0)--(0,1.1pt);
+  \draw[line width=.3pt] (0,0)--(1pt,.2pt);}}
+%    \end{macrocode}
+%
+% \paragraph{Deadline and completion chips.}
+% Deadline rendering first classifies the raw value and then prepares its
+% display notation. A manually |late| task or an automatically overdue date
+% receives the high semantic color; a date equal to the reference date receives
+% the medium color; future dates, project labels, and descriptive text retain
+% the neutral deadline style. Completion is a separate Boolean flag rendered
+% with the low semantic color. These colors remain identical in light and dark
+% board modes.
+%
+% |\ifboolexpr| combines the string test for the stored late flag with the
+% |etoolbox| overdue Boolean. Its |test| wrapper embeds |\ifstrequal|, while
+% |or bool| reads the named Boolean. The nested |\ifbool| selects due-now versus
+% neutral output. Each branch invokes |\tcbox| with the public deadline style
+% last and includes the clock, spacing command |\,|, size, and optional bold
+% declaration. |\kanban@completedchip| uses |\ifstrequal| to recognize the
+% stored flag and otherwise expands to nothing.
+%    \begin{macrocode}
+\newcommand\kanban@deadlinechip[2]{\ifblank{#2}{}{%
+  \kb@evaloverdue{#2}%
+  \kanban@preparedeadline{#2}%
+  \ifboolexpr{test {\ifstrequal{#1}{1}} or bool {kb@overdue}}
+    {\tcbox[kanban@due,colback=kanbanHigh,coltext=\kanban@hightext,
+        kanban/deadline-chip]
+      {\kb@clock\,\scriptsize\bfseries \kb@displaydeadline}}
+    {\ifbool{kb@duenow}
+      {\tcbox[kanban@due,colback=kanbanMed,coltext=\kanban@mediumtext,
+          kanban/deadline-chip]
+        {\kb@clock\,\scriptsize\bfseries \kb@displaydeadline}}
+      {\tcbox[kanban@due,kanban/deadline-chip]
+        {\kb@clock\,\scriptsize \kb@displaydeadline}}}}}
+\newcommand\kanban@completedchip[1]{\ifstrequal{#1}{1}
+  {\tcbox[kanban@pill,colback=kanbanLow,colframe=kanbanLow,
+      coltext=\kanban@lowtext,kanban/completed-chip]
+    {\bfseries\scriptsize\kanban@boarddonelabel}}{}}
+%    \end{macrocode}
+%
+% \paragraph{Priority-value validation.}
+% Task options must store only priority values understood by the renderer. The
+% setter normalizes case and surrounding spaces, accepts the four documented
+% spellings, treats a blank choice as omission, and warns when non-blank input
+% is unknown. The normalized value, rather than the original spelling, is
+% stored with the task.
+%
+% The implementation reuses |\kanban@normalizechoice|. It initializes the
+% task-priority macro |\kbtask@prio| with |\def|. Nested |\ifdefstring| tests select the accepted
+% replacement. The final |\ifdefempty| distinguishes an intentional blank from
+% a rejected choice before issuing |\PackageWarning|. Because all definitions
+% occur while a task is being collected inside an environment group, the
+% temporary value cannot leak to later tasks.
+%    \begin{macrocode}
+\newcommand\kanban@setpriority[1]{%
+  \kanban@normalizechoice{#1}%
+  \def\kbtask@prio{}%
+  \ifdefstring{\kb@choice}{high}{\def\kbtask@prio{high}}{%
+    \ifdefstring{\kb@choice}{medium}{\def\kbtask@prio{medium}}{%
+      \ifdefstring{\kb@choice}{med}{\def\kbtask@prio{med}}{%
+        \ifdefstring{\kb@choice}{low}{\def\kbtask@prio{low}}{%
+          \ifdefempty\kb@choice{}{\PackageWarning{kanban}
+            {unknown priority '#1'; omitting the priority chip}}}}}}}
+%    \end{macrocode}
+%
+% \paragraph{Break-layout headers and shared task cards.}
+% The page-breakable renderer needs a header box whose height is synchronized
+% across its independent columns. All renderers need one full-width card whose
+% surface and text follow the active mode and whose colored west rule identifies
+% the target column. The shared card composer places task text first, then an
+% optional priority/completion/author row, and finally an optional deadline row.
+%
+% |\newtcolorbox| defines an environment backed by |tcolorbox|. The header
+% accepts two arguments for background and foreground colors. |enhanced| enables
+% advanced drawing, |sharp corners| removes rounding, |fontupper| applies bold
+% ragged-right text, and |equal height group| gives every header in the current
+% board group the height of the tallest member. |valign=center| vertically
+% centers shorter headings in that shared height. The card accepts its column
+% color as one argument. |width=\linewidth| makes it fill the column;
+% |borderline west| draws the semantic accent; the mode macros supply its
+% surface, frame, and text; and |kanban/card| is applied last.
+%
+% |\kanban@rendercard| is a seven-argument deferred composer. |\notblank| from
+% |etoolbox| executes metadata rows only when their concatenated fields contain
+% material. |\par| begins a new row, |\vspace| separates it, and |\noindent|
+% removes paragraph indentation. |\hfill| pushes the author chip to the right;
+% a conditional |\hspace| separates adjacent priority and completion pills.
+% The same composer is stored for both board layouts, which guarantees
+% identical card semantics.
+%    \begin{macrocode}
+\newtcolorbox{kanban@header}[2]{enhanced,sharp corners,colback=#1,
+  boxrule=0pt,coltext=#2,
+  fontupper=\bfseries\raggedright,
+  left=2mm,right=2mm,
+  top=1.2mm,bottom=1.2mm,before skip=0pt,after skip=1.8mm,
+  equal height group={KBH@\kanban@boardgroup},valign=center,
+  kanban/header}
+\newtcolorbox{kanban@card}[1]{enhanced,arc=.6mm,outer arc=.6mm,
+  colback=\kanban@cardcolor,colframe=\kanban@bordercolor,
+  coltext=\kanban@textcolor,boxrule=.4pt,width=\linewidth,
+  borderline west={2.2pt}{0pt}{#1},left=2.4mm,right=2mm,top=1.6mm,
+  bottom=1.6mm,before skip=0pt,after skip=1.8mm,
+  fontupper=\scriptsize\raggedright,kanban/card}
+\newcommand\kanban@rendercard[7]{%
+  \begin{kanban@card}{#1}#2%
+    \notblank{#3#4#7}{\par\vspace{1mm}\noindent
+      \kanban@prioritypill{#3}%
+      \notblank{#3}{\notblank{#7}{\hspace{1mm}}{}}{}%
+      \kanban@completedchip{#7}\hfill\kanban@authorchip{#4}}{}%
+    \notblank{#5}{\par\vspace{1mm}\noindent
+      \kanban@deadlinechip{#6}{#5}}{}%
+  \end{kanban@card}}
+%    \end{macrocode}
+%
+% \paragraph{Fixed-board containers and renderer adapters.}
+% The fixed renderer uses a two-row raster: the first row contains synchronized
+% headings and the second contains equal-height transparent column bodies. The
+% breakable renderer instead places each header and task list in a separate
+% |paracol| stream. Three small adapter commands insert the dynamically stored
+% column name, count, color, foreground, and deferred card list into the
+% appropriate container.
+%
+% |kanban@fixedheader| is a |tcolorbox| environment without outer vertical
+% skip; raster row equalization supplies its height. |kanban@fixedbody| hides
+% the frame, uses |opacityback=0| for a transparent background, removes lateral
+% padding, and draws only |borderline south| in a tint of the column color.
+% In the adapters, |\csuse| from |etoolbox| constructs and expands a control
+% sequence from character data, such as the color for numeric column |#1| or
+% the count belonging to the active board group. The break adapter uses the
+% equal-height |kanban@header| and emits the stored card list directly after it;
+% its final |\par| closes the column material cleanly.
+%    \begin{macrocode}
+\newtcolorbox{kanban@fixedheader}[2]{enhanced,sharp corners,
+  colback=#1,boxrule=0pt,coltext=#2,
+  fontupper=\bfseries\raggedright,boxsep=0pt,left=2mm,right=2mm,
+  top=1mm,bottom=1mm,before skip=0pt,after skip=0pt,valign=center,
+  kanban/header}
+\newtcolorbox{kanban@fixedbody}[1]{enhanced,sharp corners,frame hidden,
+  colback=white,opacityback=0,boxrule=0pt,
+  borderline south={.6pt}{0pt}{#1!55},boxsep=0pt,
+  left=0pt,right=0pt,top=2mm,bottom=2mm,
+  before skip=0pt,after skip=0pt,valign=top,kanban/column-body}
+\newcommand\kanban@onehead[1]{%
+  \begin{kanban@fixedheader}{\csuse{kanban@color@#1}}%
+      {\csuse{kanban@headingtext@#1}}%
+    \csuse{kanban@name@#1}\hfill
+      \csuse{kanban@count@\kanban@boardgroup @#1}%
+  \end{kanban@fixedheader}}
+\newcommand\kanban@onecol[1]{%
+  \begin{kanban@fixedbody}{\csuse{kanban@color@#1}}%
+    \csuse{kanban@list@\kanban@boardgroup @#1}%
+  \end{kanban@fixedbody}}
+\newcommand\kanban@onecol@b[1]{%
+  \begin{kanban@header}{\csuse{kanban@color@#1}}%
+      {\csuse{kanban@headingtext@#1}}%
+    \csuse{kanban@name@#1}\hfill
+      \csuse{kanban@count@\kanban@boardgroup @#1}%
+  \end{kanban@header}%
+  \csuse{kanban@list@\kanban@boardgroup @#1}\par}
+%    \end{macrocode}
+%
+%
+%    \begin{macrocode}
+%</package>
+%    \end{macrocode}

@@ -49,6 +49,11 @@ Initial public release.
   2021-06-01, whose native option processor cannot parse brace groups in
   package option lists; newer formats use the brace-aware kernel processor
   directly.
+- Organize the documented source as one main file (`kanban.dtx`, with the
+  driver, user manual, and bootstrap) plus five subsystem parts
+  (`kanban-registry.dtx`, `kanban-dates.dtx`, `kanban-config.dtx`,
+  `kanban-render.dtx`, `kanban-board.dtx`) that `kanban.ins` assembles into
+  the identical generated `kanban.sty`.
 - Validate explicit column-gap dimensions before assignment, accepting fixed
   dimensions and registered dimension values while replacing raw TeX
   number/unit failures with one actionable package warning.

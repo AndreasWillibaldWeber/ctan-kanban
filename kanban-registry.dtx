@@ -1,0 +1,520 @@
+% \iffalse meta-comment
+% Copyright (C) 2026 Andreas Willibald Weber
+%
+% This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at your
+% option) any later version. The latest version of the license is available at
+% https://www.latex-project.org/lppl.txt.
+%
+% This work has the LPPL maintenance status `maintained'. The Current
+% Maintainer of this work is Andreas Willibald Weber.
+%
+% This file is part of the `kanban' package; the complete list of files
+% constituting the work appears in the main source file kanban.dtx.
+% \fi
+%
+%    \begin{macrocode}
+%<*package>
+%    \end{macrocode}
+%
+% \subsection{Palette and column registries}
+%
+% Palette names map to background lists and, for starred definitions, paired
+% heading-foreground lists in global property lists. Column names are
+% normalized separately and receive board-local numeric identifiers; this
+% prevents user text from becoming part of an internal control-sequence name.
+% The registry layer consequently has two responsibilities. It maintains the
+% persistent palette catalogue, and it converts the textual column interface
+% into a compact board-local representation suitable for deferred rendering.
+%
+% \paragraph{A common palette diagnostic.}
+% Palette validation has several failure paths, but they should all identify
+% the package in the same way. The small helper below centralizes that
+% responsibility and leaves the more substantial functions concerned with
+% validation and storage.
+%
+% |\cs_new_protected:Npn| defines a new protected LaTeX3 function. The
+% signature |:n| states that the function accepts one braced token-list
+% argument. The |Npn| part has the same broad shape as a protected TeX
+% definition: |N| is the function being defined, |p| denotes its parameter
+% text, and |n| denotes its unexpanded replacement text. Protection prevents
+% the warning operation from expanding unexpectedly in an expansion-only
+% context. |\PackageWarning| then writes a non-fatal package diagnostic to the
+% terminal and log.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_palette_warning:n #1
+  {\PackageWarning{kanban}{#1}}
+%    \end{macrocode}
+%
+% \paragraph{Plain palette definitions.}
+% An unstarred palette definition must accept a name and a non-empty comma
+% list of heading backgrounds. A successful definition replaces any palette
+% of the same name, removes a previously associated foreground list, and, if
+% the redefined palette is currently selected, refreshes the active persistent
+% snapshot immediately. An invalid definition leaves all registries unchanged.
+%
+% The implementation first copies and trims the name with |\tl_set:Nn| and
+% |\tl_trim_spaces:N|. |\tl_if_blank:VTF| examines the value held in the token
+% list: |V| means ``use the value of this variable'', while |TF| supplies true
+% and false branches. The color input is parsed by |\clist_set:Nn|, and
+% |\clist_if_empty:NTF| distinguishes an empty comma list from a usable one.
+% On success, |\prop_gput:NVV| globally associates the palette name with the
+% color list; its |NVV| signature takes a property-list variable followed by
+% the values of two variables. |\prop_gremove:NV| deletes stale foreground
+% data. Finally, |\tl_if_eq:NNT| compares the new name with the selected name,
+% |\clist_gset_eq:NN| copies the accepted list globally, and
+% |\clist_gclear:N| records that the plain palette has no explicit heading
+% foregrounds.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_palette_define:nn #1#2
+  {
+    \tl_set:Nn \l__kanban_palette_name_tl {#1}
+    \tl_trim_spaces:N \l__kanban_palette_name_tl
+    \tl_if_blank:VTF \l__kanban_palette_name_tl
+      {\__kanban_palette_warning:n {palette~name~must~not~be~empty}}
+      {
+        \clist_set:Nn \l_tmpa_clist {#2}
+        \clist_if_empty:NTF \l_tmpa_clist
+          {\__kanban_palette_warning:n
+            {palette~'\tl_use:N \l__kanban_palette_name_tl'
+              \c_space_tl must~contain~at~least~one~color}}
+          {
+            \prop_gput:NVV \g__kanban_palettes_prop
+              \l__kanban_palette_name_tl \l_tmpa_clist
+            \prop_gremove:NV \g__kanban_palette_texts_prop
+              \l__kanban_palette_name_tl
+            \tl_if_eq:NNT \l__kanban_palette_name_tl
+              \g__kanban_palette_name_tl
+              {
+                \clist_gset_eq:NN \g__kanban_palette_clist
+                  \l_tmpa_clist
+                \clist_gclear:N \g__kanban_palette_fg_clist
+              }
+          }
+      }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Paired palette definitions.}
+% The starred public syntax associates every heading background with an
+% explicit heading foreground. Its validator therefore requires each comma
+% item to contain exactly one |/| separator and two non-empty components. The
+% complete definition is committed only after every pair has passed; a single
+% malformed item rejects the entire palette rather than installing a partial
+% result.
+%
+% The background and foreground working lists are emptied with
+% |\clist_clear:N|, and |\bool_set_false:N| initializes the transaction's
+% failure flag. The comma-list mapping command |\clist_map_inline:Nn| then
+% visits each pair. Inside its body, |##1| is the current list item because the
+% mapping code itself occurs within a macro definition.
+% |\seq_set_split:Nnn| splits that item at |/|, while
+% |\seq_count:N| and |\int_compare:nNnTF| require exactly two sequence
+% elements. |\seq_item:Nn| retrieves each component. The predicate forms
+% |\tl_if_blank_p:V| return Boolean expressions, and |\bool_if:nTF| combines
+% them with the LaTeX3 logical disjunction operator. Accepted components are
+% appended with |\clist_put_right:NV|. After the map,
+% |\bool_if:NTF| either emits one diagnostic or globally commits both property
+% entries and, where necessary, refreshes the selected palette lists.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_palette_define_pairs:nn #1#2
+  {
+    \tl_set:Nn \l__kanban_palette_name_tl {#1}
+    \tl_trim_spaces:N \l__kanban_palette_name_tl
+    \clist_clear:N \l__kanban_palette_bg_clist
+    \clist_clear:N \l__kanban_palette_fg_clist
+    \bool_set_false:N \l__kanban_bad_palette_bool
+    \tl_if_blank:VTF \l__kanban_palette_name_tl
+      {\__kanban_palette_warning:n {palette~name~must~not~be~empty}}
+      {
+        \clist_set:Nn \l_tmpa_clist {#2}
+        \clist_if_empty:NTF \l_tmpa_clist
+          {\__kanban_palette_warning:n
+            {palette~'\tl_use:N \l__kanban_palette_name_tl'
+              \c_space_tl must~contain~at~least~one~color/text~pair}}
+          {
+            \clist_map_inline:Nn \l_tmpa_clist
+              {
+                \seq_set_split:Nnn \l__kanban_palette_pair_seq {/}{##1}
+                \int_compare:nNnTF
+                  {\seq_count:N \l__kanban_palette_pair_seq} = {2}
+                  {
+                    \tl_set:Nx \l_tmpa_tl
+                      {\seq_item:Nn \l__kanban_palette_pair_seq {1}}
+                    \tl_set:Nx \l_tmpb_tl
+                      {\seq_item:Nn \l__kanban_palette_pair_seq {2}}
+                    \tl_trim_spaces:N \l_tmpa_tl
+                    \tl_trim_spaces:N \l_tmpb_tl
+                    \bool_if:nTF
+                      {
+                        \tl_if_blank_p:V \l_tmpa_tl
+                        || \tl_if_blank_p:V \l_tmpb_tl
+                      }
+                      {\bool_set_true:N \l__kanban_bad_palette_bool}
+                      {
+                        \clist_put_right:NV
+                          \l__kanban_palette_bg_clist \l_tmpa_tl
+                        \clist_put_right:NV
+                          \l__kanban_palette_fg_clist \l_tmpb_tl
+                      }
+                  }
+                  {\bool_set_true:N \l__kanban_bad_palette_bool}
+              }
+            \bool_if:NTF \l__kanban_bad_palette_bool
+              {\__kanban_palette_warning:n
+                {palette~'\tl_use:N \l__kanban_palette_name_tl'
+                  \c_space_tl must~use~non-empty~color/text~pairs;
+                  \c_space_tl definition~ignored}}
+              {
+                \prop_gput:NVV \g__kanban_palettes_prop
+                  \l__kanban_palette_name_tl
+                  \l__kanban_palette_bg_clist
+                \prop_gput:NVV \g__kanban_palette_texts_prop
+                  \l__kanban_palette_name_tl
+                  \l__kanban_palette_fg_clist
+                \tl_if_eq:NNT \l__kanban_palette_name_tl
+                  \g__kanban_palette_name_tl
+                  {
+                    \clist_gset_eq:NN \g__kanban_palette_clist
+                      \l__kanban_palette_bg_clist
+                    \clist_gset_eq:NN \g__kanban_palette_fg_clist
+                      \l__kanban_palette_fg_clist
+                  }
+              }
+          }
+      }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Persistent selection and board-local selection.}
+% Selecting a palette is distinct from defining one. Document-wide setup must
+% replace the persistent defaults used by future boards, whereas a board option
+% must replace only the current board's local snapshot. Both operations verify
+% the requested name against the same global registry and preserve the current
+% selection when the name is unknown.
+%
+% |\prop_get:NVNTF| looks up the key held in a token-list variable. If the key
+% exists, it writes the associated value to the supplied token-list variable
+% and executes the true branch; otherwise it executes the false branch.
+% Commands containing |gset| or |gclear| make global assignments for persistent
+% configuration. Their local |set| and |clear| counterparts are used for the
+% active board. |\tl_gset_eq:NN| records the selected name by equivalence, and
+% |\clist_set_eq:NN| in |\kanban@paletteboardinit| takes the initial local
+% snapshot when a board begins.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_palette_select_global:n #1
+  {
+    \tl_set:Nn \l__kanban_palette_name_tl {#1}
+    \tl_trim_spaces:N \l__kanban_palette_name_tl
+    \prop_get:NVNTF \g__kanban_palettes_prop
+      \l__kanban_palette_name_tl \l_tmpa_tl
+      {
+        \clist_gset:NV \g__kanban_palette_clist \l_tmpa_tl
+        \prop_get:NVNTF \g__kanban_palette_texts_prop
+          \l__kanban_palette_name_tl \l_tmpb_tl
+          {\clist_gset:NV \g__kanban_palette_fg_clist \l_tmpb_tl}
+          {\clist_gclear:N \g__kanban_palette_fg_clist}
+        \tl_gset_eq:NN \g__kanban_palette_name_tl
+          \l__kanban_palette_name_tl
+      }
+      {\__kanban_palette_warning:n
+        {unknown~palette~'\tl_use:N \l__kanban_palette_name_tl';
+          \c_space_tl keeping~the~current~palette}}
+  }
+\cs_new_protected:Npn \__kanban_palette_select_board:n #1
+  {
+    \tl_set:Nn \l__kanban_palette_name_tl {#1}
+    \tl_trim_spaces:N \l__kanban_palette_name_tl
+    \prop_get:NVNTF \g__kanban_palettes_prop
+      \l__kanban_palette_name_tl \l_tmpa_tl
+      {
+        \clist_set:NV \l__kanban_board_palette_clist \l_tmpa_tl
+        \prop_get:NVNTF \g__kanban_palette_texts_prop
+          \l__kanban_palette_name_tl \l_tmpb_tl
+          {\clist_set:NV \l__kanban_board_palette_fg_clist \l_tmpb_tl}
+          {\clist_clear:N \l__kanban_board_palette_fg_clist}
+      }
+      {\__kanban_palette_warning:n
+        {unknown~palette~'\tl_use:N \l__kanban_palette_name_tl';
+          \c_space_tl keeping~the~current~palette}}
+  }
+\cs_new_protected:Npn \kanban@paletteboardinit
+  {
+    \clist_set_eq:NN \l__kanban_board_palette_clist
+      \g__kanban_palette_clist
+    \clist_set_eq:NN \l__kanban_board_palette_fg_clist
+      \g__kanban_palette_fg_clist
+  }
+%    \end{macrocode}
+%
+% \paragraph{Cyclic palette lookup.}
+% A board may contain more columns than its palette contains colors. The lookup
+% function therefore maps each one-based column number cyclically onto the
+% board palette and returns both the background and its heading foreground.
+% If the selected palette has no explicit foreground list, the board theme's
+% standard heading color is used.
+%
+% |\clist_count:N| obtains the palette length. |\int_mod:nn| performs the
+% zero-based wraparound, |\int_eval:n| evaluates the resulting one-based index,
+% and |\clist_item:Nn| retrieves the corresponding entry. The |x| assignment
+% in |\tl_set:Nx| expands this calculation before storing it. |\cs_set:Npx|
+% locally defines the LaTeX2e-facing bridge macros with an expanded replacement
+% value. This bridge lets later |etoolbox| and |tcolorbox| code consume data
+% prepared in the LaTeX3 registry without knowing its container types.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@palettecolor #1
+  {
+    \int_set:Nn \l_tmpa_int
+      {\clist_count:N \l__kanban_board_palette_clist}
+    \tl_set:Nx \l_tmpa_tl
+      {
+        \clist_item:Nn \l__kanban_board_palette_clist
+          {\int_eval:n {1 + \int_mod:nn {#1 - 1} {\l_tmpa_int}}}
+      }
+    \cs_set:Npx \kb@thiscolor {\tl_use:N \l_tmpa_tl}
+    \clist_if_empty:NTF \l__kanban_board_palette_fg_clist
+      {\cs_set:Npn \kb@thisheadingtext {\kanban@headingtext}}
+      {
+        \tl_set:Nx \l_tmpa_tl
+          {
+            \clist_item:Nn \l__kanban_board_palette_fg_clist
+              {\int_eval:n {1 + \int_mod:nn {#1 - 1} {\l_tmpa_int}}}
+          }
+        \cs_set:Npx \kb@thisheadingtext {\tl_use:N \l_tmpa_tl}
+      }
+  }
+%    \end{macrocode}
+% \begin{macro}{\kanbandefinepalette}
+% \begin{macro}{\kbdefinepalette}
+% The public definition command exposes both registry formats through one
+% interface. Its unstarred form accepts a list of backgrounds; its starred
+% form accepts background/foreground pairs. The long command is the stable
+% public name, while the concise alias is installed only when that name is
+% free so that loading |kanban| does not overwrite another package's command.
+%
+% |\NewDocumentCommand| checks that the canonical command is new and parses
+% the xparse signature |smm|: |s| records an optional star as a Boolean token,
+% and the two |m| entries read mandatory arguments. |\IfBooleanTF| selects the
+% paired or plain validator. |\cs_if_exist:NTF| tests whether the alias already
+% exists; the occupied case uses |\PackageWarning| and preserves it, while
+% |\cs_new_eq:NN| gives the free alias exactly the same meaning as the
+% canonical command without creating a second implementation.
+%    \begin{macrocode}
+\NewDocumentCommand \kanbandefinepalette {smm}
+  {
+    \IfBooleanTF{#1}
+      {\__kanban_palette_define_pairs:nn {#2}{#3}}
+      {\__kanban_palette_define:nn {#2}{#3}}
+  }
+\cs_if_exist:NTF \kbdefinepalette
+  {\PackageWarning{kanban}
+    {\string\kbdefinepalette\space is~already~defined;
+      \MessageBreak use~\string\kanbandefinepalette\space instead}}
+  {\cs_new_eq:NN \kbdefinepalette \kanbandefinepalette}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \paragraph{Internal selection bridges.}
+% The setup and board-key layers are written partly in traditional LaTeX2e
+% syntax. These two protected wrappers provide stable internal names through
+% which those layers invoke the LaTeX3 selection functions. They add no state
+% or validation of their own.
+%
+% Both definitions again use |\cs_new_protected:Npn| with one braced argument.
+% Passing |{#1}| to the underlying |:n| function deliberately preserves the
+% argument as a token list until that function performs its own trimming and
+% lookup.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@selectpalette #1
+  {\__kanban_palette_select_global:n {#1}}
+\cs_new_protected:Npn \kanban@selectboardpalette #1
+  {\__kanban_palette_select_board:n {#1}}
+%    \end{macrocode}
+%
+% \paragraph{Column-name normalization.}
+% Column identity is intentionally case-insensitive. A single-name function
+% removes surrounding spaces and converts the result to uppercase. A list
+% function applies that rule to every item, ignores empty items, and diagnoses
+% duplicates after normalization. Thus |Doing| and |DOING| cannot silently
+% create two visually different names that refer to the same logical column.
+%
+% The signature |:nN| means that the first function receives textual input and
+% a destination variable. |\tl_upper_case:n| performs the Unicode-aware
+% LaTeX3 case conversion; |\exp_args:NV| supplies the current value of the
+% destination as its argument, and |\tl_set:Nx| stores the expanded result.
+% For lists, |\clist_map_inline:nn| maps directly over literal input,
+% |\tl_if_blank:VF| skips blank normalized values, and
+% |\clist_if_in:NVTF| checks the accumulating destination. A duplicate is a
+% user error rather than a recoverable preference, so |\PackageError| provides
+% both a concise error and corrective help. Unique values enter the list via
+% |\clist_put_right:NV|.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_column_normalize:nN #1#2
+  {
+    \tl_set:Nn #2 {#1}
+    \tl_trim_spaces:N #2
+    \tl_set:Nx #2 {\exp_args:NV \tl_upper_case:n #2}
+  }
+\cs_new_protected:Npn \__kanban_columns_normalize:nN #1#2
+  {
+    \clist_clear:N #2
+    \clist_map_inline:nn {#1}
+      {
+        \__kanban_column_normalize:nN {##1} \l__kanban_column_tl
+        \tl_if_blank:VF \l__kanban_column_tl
+          {
+            \clist_if_in:NVTF #2 \l__kanban_column_tl
+              {\PackageError{kanban}
+                {duplicate~kanban~column~
+                  '\tl_use:N \l__kanban_column_tl'}
+                {Column~names~are~case-insensitive.\MessageBreak
+                  Remove~the~repeated~name~from~the~column~list.}}
+              {\clist_put_right:NV #2 \l__kanban_column_tl}
+          }
+      }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Persistent and board-local column lists.}
+% As with palettes, columns have a persistent default and a board-local
+% snapshot. Document setup accepts only a normalized non-empty list and makes
+% it global. Board initialization copies that default locally; a non-blank
+% board override may then replace the copy without affecting later boards.
+%
+% |\clist_gset:NV| is the global value-copying assignment used after persistent
+% validation. |\clist_set_eq:NN| copies a list locally for the active board.
+% |\tl_if_blank:nF| and |\clist_if_empty:NF| are one-branch conditionals: their
+% bodies run only when the literal argument or normalized list, respectively,
+% is not blank or empty. The short |\kanban@selectcolumns| wrapper exposes the
+% global selector to the setup key layer.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_columns_select_global:n #1
+  {
+    \__kanban_columns_normalize:nN {#1} \l_tmpa_clist
+    \clist_if_empty:NTF \l_tmpa_clist
+      {\PackageWarning{kanban}
+        {column~list~must~contain~at~least~one~name;
+          ~keeping~the~current~list}}
+      {\clist_gset:NV \g__kanban_columns_clist \l_tmpa_clist}
+  }
+\cs_new_protected:Npn \kanban@selectcolumns #1
+  {\__kanban_columns_select_global:n {#1}}
+\cs_new_protected:Npn \kanban@columnsboardinit
+  {\clist_set_eq:NN \l__kanban_board_columns_clist
+    \g__kanban_columns_clist}
+\cs_new_protected:Npn \kanban@selectboardcolumns #1
+  {
+    \tl_if_blank:nF {#1}
+      {
+        \__kanban_columns_normalize:nN {#1} \l_tmpa_clist
+        \clist_if_empty:NF \l_tmpa_clist
+          {\clist_set_eq:NN
+            \l__kanban_board_columns_clist \l_tmpa_clist}
+      }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Task-target resolution.}
+% A task names a column textually, but collection must append the task to a
+% numeric board-local list. The resolver normalizes the supplied name, exposes
+% that normalized text for diagnostics, and looks it up in the active board's
+% name-to-identifier property list. A missing key leaves the identifier empty,
+% allowing the collection layer to issue the context-specific error.
+%
+% |\prop_get:NVNTF| performs the lookup. A successful value is written to the
+% token-list variable |\l__kanban_column_id_tl|. |\cs_set:Npn| first
+% establishes an empty result;
+% |\cs_set:Npx| then expands and copies a successful normalized name or numeric
+% identifier into the LaTeX2e-facing task macros. These assignments are local
+% to the surrounding board group.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@normtaskcol #1
+  {
+    \__kanban_column_normalize:nN {#1} \l__kanban_column_tl
+    \cs_set:Npx \kbtask@column {\tl_use:N \l__kanban_column_tl}
+    \cs_set:Npn \kbtask@columnid { }
+    \prop_get:NVNTF
+      \l__kanban_column_ids_prop \l__kanban_column_tl
+      \l__kanban_column_id_tl
+      {\cs_set:Npx \kbtask@columnid
+        {\tl_use:N \l__kanban_column_id_tl}}
+      { }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Numeric column registration.}
+% Before tasks can be collected, every normalized board column receives a
+% consecutive identifier. The setup function also prepares a printable list of
+% valid names for error messages and delegates the creation of per-column
+% counters, lists, colors, and renderer entries to |\kanban@setupcolumn|, which
+% is defined after the board key family.
+%
+% |\clist_use:Nn| serializes the board list with a comma delimiter.
+% |\prop_clear:N| and |\int_zero:N| reset the local lookup and counter.
+% |\clist_map_inline:Nn| iterates over the stored list, |\int_incr:N| advances
+% the identifier, and |\prop_put:Nnx| stores the expanded integer value under
+% the current normalized name. |\int_use:N| converts the LaTeX3 integer to
+% character tokens. Finally, |\exp_args:Nnx| expands only the numeric argument
+% before calling the later LaTeX2e setup function.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@setupboardcolumns
+  {
+    \cs_set:Npx \kanban@availablecolumns
+      {\clist_use:Nn \l__kanban_board_columns_clist {,}}
+    \prop_clear:N \l__kanban_column_ids_prop
+    \int_zero:N \l__kanban_column_index_int
+    \clist_map_inline:Nn \l__kanban_board_columns_clist
+      {
+        \int_incr:N \l__kanban_column_index_int
+        \prop_put:Nnx \l__kanban_column_ids_prop {##1}
+          {\int_use:N \l__kanban_column_index_int}
+        \exp_args:Nnx \kanban@setupcolumn {##1}
+          {\int_use:N \l__kanban_column_index_int}
+      }
+  }
+%    \end{macrocode}
+%
+% \paragraph{Choice normalization and registry cleanup.}
+% Several key values, including modes and date-format names, share the same
+% case-insensitive choice syntax. The choice helper trims and lowercases such a
+% value before publishing it as |\kb@choice|. At the other end of the board
+% lifecycle, the cleanup function removes all dynamically created per-column
+% control sequences so that completed boards do not retain card material or
+% counters in the global hash table.
+%
+% |\tl_lower_case:n| is applied through the same value-expansion pattern used
+% for column uppercasing. |\int_step_inline:nn| executes its body once for each
+% integer from one through |\kanban@ncols|; its current value is written |##1|
+% inside this macro definition. |\cs_undefine:c| removes a control sequence
+% whose name is constructed from character tokens. The |c| argument type is
+% essential because the board number and column identifier are data, not
+% literal control-sequence tokens.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@normalizechoice #1
+  {
+    \tl_set:Nn \l__kanban_choice_tl {#1}
+    \tl_trim_spaces:N \l__kanban_choice_tl
+    \tl_set:Nx \l__kanban_choice_tl
+      {\exp_args:NV \tl_lower_case:n \l__kanban_choice_tl}
+    \cs_set:Npx \kb@choice {\tl_use:N \l__kanban_choice_tl}
+  }
+\cs_new_protected:Npn \kanban@cleanupboard
+  {
+    \int_step_inline:nn {\kanban@ncols}
+      {
+        \cs_undefine:c {kanban@name@##1}
+        \cs_undefine:c {kanban@color@##1}
+        \cs_undefine:c {kanban@headingtext@##1}
+        \cs_undefine:c
+          {kanban@list@\kanban@boardgroup @##1}
+        \cs_undefine:c
+          {kanban@count@\kanban@boardgroup @##1}
+      }
+  }
+%    \end{macrocode}
+%
+%
+%    \begin{macrocode}
+%</package>
+%    \end{macrocode}

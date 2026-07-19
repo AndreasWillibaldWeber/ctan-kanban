@@ -1,0 +1,433 @@
+% \iffalse meta-comment
+% Copyright (C) 2026 Andreas Willibald Weber
+%
+% This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at your
+% option) any later version. The latest version of the license is available at
+% https://www.latex-project.org/lppl.txt.
+%
+% This work has the LPPL maintenance status `maintained'. The Current
+% Maintainer of this work is Andreas Willibald Weber.
+%
+% This file is part of the `kanban' package; the complete list of files
+% constituting the work appears in the main source file kanban.dtx.
+% \fi
+%
+%    \begin{macrocode}
+%<*package>
+%    \end{macrocode}
+%
+% \subsection{Persistent configuration}
+%
+% Built-in palettes are registered through the public mechanism. Mode, date
+% format, start date, reference date, column list, palette, semantic labels,
+% and gap defaults then enter the dedicated |kanban/setup| LaTeX3 key family.
+% Package options are accumulated and passed through the same transaction so
+% package-level and document-level setup have identical validation and scope.
+% The functions in this subsection distinguish persistent assignment from
+% board-local assignment consistently: a package option or |\kbset| changes the
+% source for later snapshots, whereas an environment key changes only the
+% snapshot already being constructed.
+%
+% \paragraph{Built-in palette registration.}
+% The package's default, muted, and monochrome palettes should obey exactly the
+% same validation and registry rules as user-defined palettes. They are
+% therefore registered through the canonical public command rather than by
+% writing directly to internal property lists. The default palette is selected
+% immediately after registration so a document with no configuration still
+% produces the documented colors.
+%
+% These are ordinary calls to |\kanbandefinepalette|, whose two mandatory
+% arguments provide the registry name and comma list. The percent sign after
+% the opening brace suppresses an otherwise unwanted source-line space in the
+% argument. |\kanban@selectpalette| then invokes the validated persistent
+% selector described in the preceding subsection. Reusing public behavior in
+% this way makes built-in and user palettes follow one code path.
+%    \begin{macrocode}
+\kanbandefinepalette{default}{%
+  kanbanSlate,kanbanBlue,kanbanTeal,kanbanSage,
+  kanbanAmber,kanbanClay,kanbanRose,kanbanPlum}
+\kanbandefinepalette{muted}{kanbanMutedBlue,kanbanMutedGreen,
+  kanbanMutedPurple,kanbanMutedBrown}
+\kanbandefinepalette{monochrome}{black!85,black!75,black!65,black!55}
+\kanban@selectpalette{default}
+%    \end{macrocode}
+%
+% \paragraph{Mode selection.}
+% Visual mode is a constrained textual choice. The persistent selector records
+% a global |light| or |dark| default; the board selector records the same choice
+% locally. Unknown values do not reset the previous selection.
+%
+% |\newcommand| defines a checked LaTeX2e command and |[1]| declares one
+% argument. Both selectors first call the shared lowercase choice normalizer.
+% |\ifdefstring| from |etoolbox| compares the replacement text of a macro with
+% a literal string and accepts true and false branches. The global selector
+% uses |\gdef|, while the board selector uses |\def| so its result disappears
+% with the environment group. The final false branch emits a recoverable
+% |\PackageWarning|.
+%    \begin{macrocode}
+\newcommand\kanban@selectmode[1]{%
+  \kanban@normalizechoice{#1}%
+  \ifdefstring{\kb@choice}{light}{\gdef\kanban@mode{light}}{%
+    \ifdefstring{\kb@choice}{dark}{\gdef\kanban@mode{dark}}{%
+      \PackageWarning{kanban}
+        {unknown mode '#1'; keeping the current mode}}}}
+\newcommand\kanban@selectboardmode[1]{%
+  \kanban@normalizechoice{#1}%
+  \ifdefstring{\kb@choice}{light}{\def\kanban@boardmode{light}}{%
+    \ifdefstring{\kb@choice}{dark}{\def\kanban@boardmode{dark}}{%
+      \PackageWarning{kanban}
+        {unknown mode '#1'; keeping the current mode}}}}
+%    \end{macrocode}
+%
+% \paragraph{Date-format canonicalization and selection.}
+% Five canonical format names are supported, together with a small set of
+% readable aliases. Canonicalization is separated from assignment so the same
+% mapping serves both persistent and board-local selection. A recognized alias
+% writes one of |us|, |english|, |german|, |iso|, or |ymd|; an unknown choice
+% leaves the result empty and is diagnosed by the appropriate selector.
+%
+% |\def\kb@datechoice{}| initializes the result sentinel. Repeated
+% |\ifdefstring| tests implement the alias table, and a successful test replaces
+% the sentinel with its canonical value. |\ifdefempty| then distinguishes
+% failure from success. |\global\let| assigns the persistent format macro the
+% current meaning of the canonical result without retaining an intermediate
+% expansion dependency; the local |\let| does the same for a board snapshot.
+% |\MessageBreak| improves the line wrapping of the longer board warning.
+%    \begin{macrocode}
+\newcommand\kanban@canonicaldateformat[1]{%
+  \kanban@normalizechoice{#1}%
+  \def\kb@datechoice{}%
+  \ifdefstring{\kb@choice}{us}{\def\kb@datechoice{us}}{}%
+  \ifdefstring{\kb@choice}{american}{\def\kb@datechoice{us}}{}%
+  \ifdefstring{\kb@choice}{english}{\def\kb@datechoice{english}}{}%
+  \ifdefstring{\kb@choice}{uk}{\def\kb@datechoice{english}}{}%
+  \ifdefstring{\kb@choice}{british}{\def\kb@datechoice{english}}{}%
+  \ifdefstring{\kb@choice}{german}{\def\kb@datechoice{german}}{}%
+  \ifdefstring{\kb@choice}{de}{\def\kb@datechoice{german}}{}%
+  \ifdefstring{\kb@choice}{deutsch}{\def\kb@datechoice{german}}{}%
+  \ifdefstring{\kb@choice}{iso}{\def\kb@datechoice{iso}}{}%
+  \ifdefstring{\kb@choice}{ymd}{\def\kb@datechoice{ymd}}{}%
+  \ifdefstring{\kb@choice}{year-first}{\def\kb@datechoice{ymd}}{}}
+\newcommand\kanban@selectdateformat[1]{%
+  \kanban@canonicaldateformat{#1}%
+  \ifdefempty\kb@datechoice
+    {\PackageWarning{kanban}
+      {unknown date format '#1'; keeping the current date format}}
+    {\global\let\kanban@dateformat\kb@datechoice}}
+\newcommand\kanban@selectboarddateformat[1]{%
+  \kanban@canonicaldateformat{#1}%
+  \ifdefempty\kb@datechoice
+    {\PackageWarning{kanban}
+      {unknown board date format '#1';
+        \MessageBreak keeping the current date format}}
+    {\let\kanban@boarddateformat\kb@datechoice}}
+%    \end{macrocode}
+%
+% \paragraph{Validated column-gap assignment.}
+% A column gap must be a non-negative dimension. The persistent and board-local
+% setters share the safe grammar established by the deadline subsystem, assign
+% the accepted input to a candidate register, and compare the evaluated length
+% with zero before committing it to the appropriate scope.
+%
+% |\kanban@validatedimensionTF| supplies success and failure branches.
+% |\setlength| performs the actual LaTeX length assignment only after syntax
+% validation. The primitive |\ifdim| compares dimensions; its true branch for a
+% negative candidate issues the shared warning. A successful persistent update
+% uses |\global| before the register assignment, while the board update remains
+% local. The closing |\fi| terminates the primitive conditional.
+%    \begin{macrocode}
+\newcommand\kanban@setcolumnsep[1]{%
+  \kanban@validatedimensionTF{#1}{%
+    \setlength\kanban@candidatecolumnsep{#1}%
+    \ifdim\kanban@candidatecolumnsep<0pt
+      \kanban@dimensionwarning{columnsep}{#1}%
+    \else
+      \global\kanban@columnsep=\kanban@candidatecolumnsep
+    \fi
+  }{%
+    \kanban@dimensionwarning{columnsep}{#1}}}
+\newcommand\kanban@setboardcolumnsep[1]{%
+  \kanban@validatedimensionTF{#1}{%
+    \setlength\kanban@candidatecolumnsep{#1}%
+    \ifdim\kanban@candidatecolumnsep<0pt
+      \kanban@dimensionwarning{board columnsep}{#1}%
+    \else
+      \kanban@boardcolumnsep=\kanban@candidatecolumnsep
+    \fi
+  }{%
+    \kanban@dimensionwarning{board columnsep}{#1}}}
+%    \end{macrocode}
+%
+% \paragraph{Materialization of the visual mode.}
+% The mode name is semantic state; rendering requires concrete text, surface,
+% border, and default heading colors. The application function translates the
+% active board mode into those values after all board options have been
+% processed. Metadata chip colors are intentionally absent from this function
+% because their documented light-theme styling remains stable in both modes.
+%
+% |\ifdefstring| selects the dark branch when the board-mode macro expands to
+% |dark| and otherwise uses the light definitions. Each |\def| is local to the
+% board environment. The stored values are named |xcolor| colors or mix
+% expressions; later |tcolorbox| definitions expand them when drawing a card.
+%    \begin{macrocode}
+\newcommand\kanban@applymode{%
+  \ifdefstring{\kanban@boardmode}{dark}{%
+    \def\kanban@textcolor{white!88!black}%
+    \def\kanban@cardcolor{kanbanInk}%
+    \def\kanban@bordercolor{white!18!black}%
+    \def\kanban@headingtext{white}%
+  }{%
+    \def\kanban@textcolor{kanbanInk}%
+    \def\kanban@cardcolor{white}%
+    \def\kanban@bordercolor{black!15}%
+    \def\kanban@headingtext{white}%
+  }}
+%    \end{macrocode}
+%
+% \paragraph{Persistent and board-local semantic labels.}
+% Priority and completion labels are customizable text, but an empty label
+% would create an invisible chip with misleading spacing. The two setters
+% therefore reject blank input and dynamically address either the persistent
+% or board-local label family.
+%
+% |\ifblank| from |etoolbox| tests the argument without requiring it to be a
+% predefined macro. |\csgdef| globally defines a control sequence whose name is
+% assembled from character data, such as |kanban@highlabel|. |\csdef| performs
+% the analogous local definition for names such as
+% |kanban@boardhighlabel|. Dynamic |cs| forms keep four nearly identical label
+% setters in one implementation while the key family supplies the validated
+% label identifier.
+%    \begin{macrocode}
+\newcommand\kanban@setlabel[2]{%
+  \ifblank{#2}
+    {\PackageWarning{kanban}
+      {label '#1' must not be empty; keeping the current value}}
+    {\csgdef{kanban@#1label}{#2}}}
+\newcommand\kanban@setboardlabel[2]{%
+  \ifblank{#2}
+    {\PackageWarning{kanban}
+      {board label '#1' must not be empty; keeping the current value}}
+    {\csdef{kanban@board#1label}{#2}}}
+%    \end{macrocode}
+%
+% \paragraph{Nested label key families.}
+% Label customization is expressed as a subordinate key list, for example
+% |labels={high=URGENT,done=FINISHED}|. Separate persistent and board-local
+% families direct identical key names to setters with different assignment
+% scope. Each family also owns its unknown-key diagnostic, which identifies
+% whether the error occurred in global setup or in a board override.
+%
+% |\ExplSyntaxOn| is re-enabled for the LaTeX3 key definitions.
+% |\keys_define:nn| creates or extends a named family. A property written
+% |.code:n| stores executable code receiving the key value as |#1|. The
+% reserved |unknown| handler receives the misspelled key name through
+% |\l_keys_key_str| and issues the named diagnostic with
+% |\msg_warning:nnnn|. Defining nested families independently also prevents a
+% label name such as |mode| from being confused with a top-level setup key.
+%    \begin{macrocode}
+\ExplSyntaxOn
+\keys_define:nn {kanban/setup-labels}
+  {
+    high .code:n = {\kanban@setlabel{high}{#1}},
+    medium .code:n = {\kanban@setlabel{medium}{#1}},
+    low .code:n = {\kanban@setlabel{low}{#1}},
+    done .code:n = {\kanban@setlabel{done}{#1}},
+    unknown .code:n =
+      {\msg_warning:nnnn {kanban}{unknown-key}
+        {label}{\l_keys_key_str}}
+  }
+\keys_define:nn {kanban/board-labels}
+  {
+    high .code:n = {\kanban@setboardlabel{high}{#1}},
+    medium .code:n = {\kanban@setboardlabel{medium}{#1}},
+    low .code:n = {\kanban@setboardlabel{low}{#1}},
+    done .code:n = {\kanban@setboardlabel{done}{#1}},
+    unknown .code:n =
+      {\msg_warning:nnnn {kanban}{unknown-key}
+        {board~label}{\l_keys_key_str}}
+  }
+%    \end{macrocode}
+%
+% \paragraph{The persistent setup key family.}
+% The main setup family is the single semantic entry point for package options
+% and later calls to |\kanbansetup|. Immediate keys delegate to their validated
+% selectors. Date values are staged rather than applied immediately, because a
+% |date-format| key appearing later in the same comma list must take effect
+% before an ambiguous start or reference date is interpreted. Alias keys keep
+% legacy or concise spelling without duplicating implementation.
+%
+% In |l3keys|, |.code:n| executes an arbitrary handler with the supplied value.
+% |.meta:n| rewrites one key as another key assignment: |dateformat| becomes
+% |date-format| and |today| becomes |reference-date|. The date handlers use
+% |\tl_set:Nn| to retain the literal value and |\bool_set_true:N| to record that
+% the staged value must later be committed. The |labels| key calls
+% |\keys_set:nn| recursively on the subordinate family. The family-level
+% |unknown| handler supplies a uniform non-fatal warning for unsupported setup
+% names.
+%    \begin{macrocode}
+\keys_define:nn {kanban/setup}
+  {
+    columns .code:n = {\kanban@selectcolumns{#1}},
+    palette .code:n = {\kanban@selectpalette{#1}},
+    date-format .code:n = {\kanban@selectdateformat{#1}},
+    dateformat .meta:n = {date-format={#1}},
+    startdate .code:n =
+      {
+        \tl_set:Nn \l__kanban_pending_startdate_tl {#1}
+        \bool_set_true:N \l__kanban_pending_startdate_bool
+      },
+    reference-date .code:n =
+      {
+        \tl_set:Nn \l__kanban_pending_reference_date_tl {#1}
+        \bool_set_true:N \l__kanban_pending_reference_date_bool
+      },
+    today .meta:n = {reference-date={#1}},
+    mode .code:n = {\kanban@selectmode{#1}},
+    columnsep .code:n = {\kanban@setcolumnsep{#1}},
+    labels .code:n = {\keys_set:nn {kanban/setup-labels}{#1}},
+    unknown .code:n =
+      {\msg_warning:nnnn {kanban}{unknown-key}
+        {setup}{\l_keys_key_str}}
+  }
+%    \end{macrocode}
+%
+% \paragraph{A deferred setup transaction.}
+% Processing a setup list is a small transaction. It clears both staging flags,
+% lets |l3keys| process the complete list in source order, and only then applies
+% any staged dates under the final selected format. Consequently
+% |startdate=07/08/2026,date-format=english| and the reversed key order have the
+% same interpretation.
+%
+% |\keys_set:nn| parses and executes the comma-separated family input.
+% |\bool_if:NT| executes each commit only when its staging flag is true.
+% |\exp_args:NV| passes the stored value, rather than the token-list variable
+% itself, to the relevant setter. The function is protected because key
+% processing and assignment are not expandable operations. |\ExplSyntaxOff|
+% restores the normal catcodes before the public LaTeX2e interface is declared.
+%    \begin{macrocode}
+\cs_new_protected:Npn \kanban@processsetup #1
+  {
+    \bool_set_false:N \l__kanban_pending_startdate_bool
+    \bool_set_false:N \l__kanban_pending_reference_date_bool
+    \keys_set:nn {kanban/setup}{#1}
+    \bool_if:NT \l__kanban_pending_startdate_bool
+      {\exp_args:NV \kanban@setstartdate
+        \l__kanban_pending_startdate_tl}
+    \bool_if:NT \l__kanban_pending_reference_date_bool
+      {\exp_args:NV \kanban@setreferencedate
+        \l__kanban_pending_reference_date_tl}
+  }
+\ExplSyntaxOff
+%    \end{macrocode}
+% \begin{macro}{\kanbansetup}
+% \begin{macro}{\kbset}
+% The canonical setup command exposes the transaction above with one mandatory
+% key-list argument. The short alias follows the same collision-tolerant policy
+% as the palette alias. This keeps the public namespace convenient without
+% taking ownership of an existing command defined by the document class or
+% another package.
+%
+% |\NewDocumentCommand| with signature |m| reads one mandatory argument and
+% delegates it unchanged. The LaTeX2e test |\@ifundefined| chooses between
+% installing the alias with |\let| and preserving the occupied name with a
+% warning. Equivalence by |\let| ensures that |\kbset| and |\kanbansetup| have
+% exactly the same argument parser and behavior.
+%    \begin{macrocode}
+\NewDocumentCommand\kanbansetup{m}{\kanban@processsetup{#1}}
+\@ifundefined{kbset}
+  {\let\kbset\kanbansetup}
+  {\PackageWarning{kanban}
+    {\string\kbset\space is already defined;
+      \MessageBreak use \string\kanbansetup\space instead}}
+%    \end{macrocode}
+%
+% \paragraph{Collection and application of package options.}
+% LaTeX2e presents package options one at a time. The package collects them
+% into one token list and applies that list through the same deferred setup
+% transaction only after option processing has finished. Package options
+% therefore share validation, aliases, key-order independence, and diagnostics
+% with |\kanbansetup|.
+%
+% Formats dated 2021-06-01 or later parse raw option lists with the
+% brace-aware key--value processor, so the catch-all |\DeclareOption*|
+% collector receives every option intact through |\CurrentOption|, including
+% values with embedded commas such as |columns={A,B}|. The older 2020-10-01
+% format splits raw option lists at every comma and mishandles brace groups in
+% its option bookkeeping, which derails loading. On such formats the package
+% routes its options through \textsf{kvoptions} instead: every documented
+% setup key is declared as a \textsf{keyval} key whose handler re-wraps the
+% brace-stripped value before appending it to the same accumulator, and
+% unrecognized options fall through to the same catch-all collector.
+%
+% |\tl_new:N| allocates the global accumulator. |\tl_if_empty:NF| inserts a
+% comma only after the first option, and |\tl_gput_right:Nn| appends globally.
+% The expansion prefix |\exp_args:NNo| expands |\CurrentOption| once while
+% retaining the destination variable. Application uses |\exp_args:NV| to pass
+% the complete accumulated value to |\kanban@processsetup|. The final call to
+% |\kanban@applypackageoptions| commits the resulting setup list.
+% Unknown package options consequently produce the same warning as unknown
+% setup keys on both processing paths.
+%    \begin{macrocode}
+\ExplSyntaxOn
+\tl_new:N \g__kanban_package_options_tl
+\cs_new_protected:Npn \kanban@collectpackageoption
+  {
+    \tl_if_empty:NF \g__kanban_package_options_tl
+      {\tl_gput_right:Nn \g__kanban_package_options_tl {,}}
+    \exp_args:NNo \tl_gput_right:Nn
+      \g__kanban_package_options_tl {\CurrentOption}
+  }
+\cs_new_protected:Npn \kanban@collectkeyvalue #1#2
+  {
+    \tl_if_empty:NF \g__kanban_package_options_tl
+      {\tl_gput_right:Nn \g__kanban_package_options_tl {,}}
+    \tl_gput_right:Nn \g__kanban_package_options_tl {#1={#2}}
+  }
+\cs_new_protected:Npn \kanban@applypackageoptions
+  {
+    \tl_if_empty:NF \g__kanban_package_options_tl
+      {\exp_args:NV \kanban@processsetup
+        \g__kanban_package_options_tl}
+  }
+\ExplSyntaxOff
+\IfFormatAtLeastTF{2021-06-01}
+  {%
+    \DeclareOption*{\kanban@collectpackageoption}%
+    \ProcessOptions\relax
+  }
+  {%
+    \RequirePackage{kvoptions}%
+    \SetupKeyvalOptions{family=kanban,prefix=kanban@pkgopt@}%
+    \DeclareDefaultOption{\kanban@collectpackageoption}%
+    \define@key{kanban}{columns}%
+      {\kanban@collectkeyvalue{columns}{#1}}%
+    \define@key{kanban}{palette}%
+      {\kanban@collectkeyvalue{palette}{#1}}%
+    \define@key{kanban}{date-format}%
+      {\kanban@collectkeyvalue{date-format}{#1}}%
+    \define@key{kanban}{dateformat}%
+      {\kanban@collectkeyvalue{dateformat}{#1}}%
+    \define@key{kanban}{startdate}%
+      {\kanban@collectkeyvalue{startdate}{#1}}%
+    \define@key{kanban}{reference-date}%
+      {\kanban@collectkeyvalue{reference-date}{#1}}%
+    \define@key{kanban}{today}%
+      {\kanban@collectkeyvalue{today}{#1}}%
+    \define@key{kanban}{mode}%
+      {\kanban@collectkeyvalue{mode}{#1}}%
+    \define@key{kanban}{columnsep}%
+      {\kanban@collectkeyvalue{columnsep}{#1}}%
+    \define@key{kanban}{labels}%
+      {\kanban@collectkeyvalue{labels}{#1}}%
+    \ProcessKeyvalOptions*\relax
+  }
+\kanban@applypackageoptions
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+%
+%    \begin{macrocode}
+%</package>
+%    \end{macrocode}

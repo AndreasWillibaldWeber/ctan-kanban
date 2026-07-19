@@ -22,8 +22,11 @@ problems have different minimal examples or causes.
 
 ## Source of record
 
-`kanban.dtx` is the maintained source for both the package implementation and
-the manual. Do not edit the generated `kanban.sty` directly. The example
+The documented source is split into `kanban.dtx` (driver, user manual, and
+bootstrap) and the subsystem parts `kanban-registry.dtx`, `kanban-dates.dtx`,
+`kanban-config.dtx`, `kanban-render.dtx`, and `kanban-board.dtx`;
+`kanban.ins` assembles them, in that order, into the generated package. Do
+not edit the generated `kanban.sty` directly. The example
 documents are maintained as separate `.tex` files because they are also
 compiled as end-to-end demonstrations. `kanban.pdf`, `kanban.sty`, and the ZIP
 archives are release artifacts regenerated from these sources.

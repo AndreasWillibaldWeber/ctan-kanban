@@ -33,6 +33,8 @@ function copyctan()
   standard_copyctan()
   assert(fileexists(ctandir .. "/" .. ctanpkg .. "/RELEASING.md"),
     "kanban: CTAN archive is missing the release procedure")
+  assert(fileexists(ctandir .. "/" .. ctanpkg .. "/kanban-board.dtx"),
+    "kanban: CTAN archive is missing the split source parts")
   local ctan_testdir = ctandir .. "/" .. ctanpkg .. "/testfiles"
   local tds_testdir = tdsdir .. "/source/" .. tdsroot .. "/" ..
     module .. "/testfiles"
