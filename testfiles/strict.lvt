@@ -1,0 +1,31 @@
+% Run the public interface with expl3 declaration and deprecation checking
+% enabled. An undeclared variable or a deprecated function then raises an
+% error that fails this test.
+\RequirePackage[check-declarations]{expl3}
+\ExplSyntaxOn
+\debug_on:n {deprecation}
+\ExplSyntaxOff
+\input regression-test.tex
+\documentclass{article}
+\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban}
+\kbdefinepalette{strictplain}{kanbanBlue,kanbanTeal}
+\kbdefinepalette*{strictpairs}{kanbanSlate/white,kanbanMed/kanbanInk}
+\kbset{labels={high=URGENT},columnsep=1.5mm,date-format=german}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begin{kanban}[columns={Backlog,In progress,Done},palette=strictpairs,
+    date-format=us]
+  \kanbantask[prio=high,author=Alice,due=2026-07-01]
+    {Backlog}{An overdue card}
+  \kanbantask[prio=medium,due=07/18/2026]{In progress}{A card due now}
+  \kanbantask[due=M2,author=Bob]{In progress}{A project-month card}
+  \kanbantask[completed,deadline=12/31/2099]{Done}{A future card}
+\end{kanban}
+\begin{kanban}[columns={Queue,Review},break,mode=dark,palette=strictplain]
+  \kanbantask[due=31.12.2099]{Queue}{A break-layout card}
+  \kanbantask[late,due=Milestone]{Review}{A late descriptive label}
+\end{kanban}
+\TYPE{KANBAN STRICT EXPL3 CHECKS OK}
+\END
+\end{document}

@@ -8,8 +8,8 @@ KANBAN MEDIUM CHIP CONTRAST OK
 KANBAN PUBLIC HEADER STYLE OK
 KANBAN PUBLIC CARD STYLE OK
 KANBAN PUBLIC DEADLINE STYLE OK
-KANBAN WARNING: label 'high' must not be empty; keeping the current value
-KANBAN WARNING: palette 'broken' must use non-empty color/text pairs; definition ignored
+KANBAN WARNING: label 'high' must not be empty. The current value is kept
+KANBAN WARNING: palette 'broken' must use non-empty color/text pairs. The definition is ignored
 KANBAN EMPTY LABEL PRESERVES VALUE OK
 KANBAN BOARD HIGH LABEL OK
 KANBAN BOARD MEDIUM LABEL SNAPSHOT OK

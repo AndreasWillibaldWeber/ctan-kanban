@@ -1737,170 +1737,143 @@
 %
 % \section{Implementation}
 %
+% The implementation is organized as six documented parts that |kanban.ins|
+% assembles into one style file. This part holds the package declaration,
+% the dependencies, and the shared state. The remaining parts hold the
+% palette and column registries, the deadline engine, the persistent
+% configuration, the card renderers, and the board lifecycle. The commentary
+% explains the responsibility of each definition and the design decisions
+% behind it. It does not restate the semantics of the LaTeX3 programming
+% layer, which is documented in |interface3.pdf|.
+%
 % \subsection{Public command contracts}
 %
 % The implementation distinguishes persistent defaults, one-board state, and
 % task data. The |kanban| environment establishes a collection scope, copies
 % the persistent defaults, applies its local options, and selects one of the
 % two renderers. It is the only public operation that creates board state.
-% |\kanbantask|, or its exact short alias |\kbtask| when available, may mutate
-% that state only while a board is active; otherwise it reports an error and
-% discards the declaration. A nested board is rejected at
-% its entry point, and its task declarations enter a temporary discard state so
-% that the primary structural error is not obscured by secondary diagnostics.
+% |\kanbantask| may mutate that state only while a board is active. Otherwise
+% it reports an error and discards the declaration. A nested board is
+% rejected at its entry point, and its task declarations enter a temporary
+% discard state so that the structural error is not obscured by secondary
+% diagnostics.
 %
-% |\kanbansetup| changes persistent defaults for boards that begin later. When
-% the short name is unused, |\kbset| is defined by control-sequence equivalence,
-% not by a forwarding wrapper. The same rule applies to
-% |\kanbandefinepalette| and |\kbdefinepalette|, and to |\kanbantask| and
-% |\kbtask|. Existing short definitions are preserved and diagnosed. Palette
-% definition changes the registry; selection
+% |\kanbansetup| changes persistent defaults for boards that begin later.
+% When a short name is unused, the alias is defined by control-sequence
+% equivalence rather than by a forwarding wrapper. This applies to |\kbset|,
+% |\kbdefinepalette|, and |\kbtask|. Existing short definitions are preserved
+% and diagnosed. Palette definition changes the registry. Palette selection
 % changes the current palette name, its background list, and any paired
-% heading-foreground list. Redefining the selected name refreshes the
-% persistent lists for later boards, whereas a board already in progress keeps
-% its local snapshot. No generic |\task| command is defined,
-% because that generic name has a material risk of collision with classes and
-% unrelated packages.
+% foreground list. Redefining the selected name refreshes the persistent
+% lists for later boards, whereas a board already in progress keeps its local
+% snapshot. No generic |\task| command is defined, because that name has a
+% material risk of collision with classes and unrelated packages.
 %
 % \subsection{Configuration and data collection}
 %
-% A board begins by copying the current document defaults for columns, palette,
-% visual mode, date format, project start date, reference date, semantic labels,
-% and column separation into board-local state.
-% Its optional key list is then applied to that state. In particular, the
-% |columns| key replaces the copied column list for one board without changing
-% later boards. Every column name is trimmed and converted to uppercase. A
-% board-local LaTeX3 property list maps each normalized name to a consecutive
-% numeric identifier. Task lists and counters use the numeric identifier and a
-% monotonically increasing board identifier, so user-provided names never form
-% part of an internal control-sequence name. Duplicate normalized names are
-% diagnosed before rendering. Column lists, palette backgrounds, and optional
-% paired foregrounds are stored as LaTeX3 comma lists. Palette entries are
-% selected cyclically by column position, so a palette may contain either
-% fewer or more colors than a particular board requires. Configuration is
-% parsed by the namespaced LaTeX3 key families |kanban/task|, |kanban/board|,
-% and |kanban/setup|, with subordinate label families. Keeping these roles
-% explicit avoids leaking a generic key family into the document namespace.
-% Start and reference dates are deferred until the complete surrounding key
-% list has resolved its date format, then validated, expanded, and stored in
-% canonical ISO form. Package options are accumulated and passed through the
-% same setup transaction rather than maintaining a second parser.
+% A board begins by copying the current document defaults for columns,
+% palette, visual mode, date format, project start date, reference date,
+% semantic labels, and column separation into board-local state. Its
+% optional key list is then applied to that state. Every column name is
+% trimmed. Its uppercase form is the lookup key, and its original spelling is
+% the heading text. A board-local property list maps each key to a
+% consecutive numeric identifier. Task lists and counters use that identifier
+% together with a monotonically increasing board identifier, so user-provided
+% names never form part of an internal control-sequence name. Duplicate keys
+% are diagnosed before rendering. Configuration is parsed by the key families
+% |kanban/task|, |kanban/board|, and |kanban/setup|, with subordinate label
+% families. Start and reference dates are deferred until the complete
+% surrounding key list has resolved its date format. They are then validated
+% and stored in canonical ISO form. Package options are accumulated and
+% passed through the same setup transaction rather than through a second
+% parser.
 %
-% Task declarations do not typeset cards immediately. Instead, each declaration
+% Task declarations do not typeset cards immediately. Each declaration
 % normalizes and validates the target column, increments its counter, and
-% appends a protected call to the card renderer to that column's list. Empty and
-% unknown targets produce explicit errors and are not appended. Task text and
-% metadata remain unexpanded while they are stored. Collection is global only
-% for the lifetime of the active board, which means a declaration inside an
-% ordinary TeX group is retained. The board identifier isolates that temporary
-% state, and the generated names, colors, heading foregrounds, lists, and
-% counters are explicitly undefined after rendering. The lists are expanded
-% only when the environment closes. This
-% deferred model preserves declaration order within each column and allows
-% tasks for different columns to be interleaved freely in the document source.
-% After the columns are resolved, the package also evaluates the complete gap
-% width. Dimension syntax is checked before assignment, preventing malformed
-% input from reaching TeX's number scanner. A value that would leave no positive
-% width for cards is diagnosed once
-% and replaced locally by |0pt| before either renderer is entered.
+% appends a protected call to the card renderer to the list of that column.
+% Empty and unknown targets produce explicit errors and are not appended.
+% Task text and metadata remain unexpanded while they are stored. Collection
+% is global for the lifetime of the active board, so a declaration inside an
+% ordinary TeX group is retained. The deadline of an accepted task is checked
+% at this point, which gives every deadline warning the line number of the
+% task. After the columns are resolved, the package evaluates the complete
+% gap width. Dimension syntax is checked before assignment, and a value that
+% would leave no positive width for cards is diagnosed once and replaced
+% locally by |0pt|.
 %
 % \subsection{Rendering strategies}
 %
-% The fixed renderer creates two raster rows: one containing every heading and
-% one containing every transparent column body. Row-wise equalization gives all
-% headings the height of the tallest heading and all bodies the height of the
-% fullest body. The complete raster is enclosed in a minipage. This makes the
-% header and body rows indivisible, preventing an orphaned header row at the
-% foot of a page. A fixed board that does not fit in the remaining space moves
-% to the following page; a board taller than the page must instead use the
-% page-breakable layout.
+% The fixed renderer creates two raster rows, one containing every heading
+% and one containing every column body. Row-wise equalization gives all
+% headings the height of the tallest heading and all bodies the height of
+% the fullest body. The complete raster is enclosed in a minipage, which
+% makes the header and body rows indivisible and prevents an orphaned header
+% row at the foot of a page. The column body hides its frame and interior
+% rather than painting a transparent background, so the PDF contains no
+% transparency group and remains suitable for PDF/A workflows.
 %
 % When |break| is selected, the package constructs parallel \textsf{paracol}
-% columns. Header heights are synchronized through a board-specific equal-height
-% group, while the card lists remain outside an enclosing fixed-height box. Each
-% column may therefore continue naturally on a later page. Headers are emitted
-% once before the streams diverge and are not repeated on continuation pages;
-% this uses only the supported \textsf{paracol} interface. The two renderers
-% share the same card command and visual styles, but deliberately use different
-% body-height and pagination rules.
+% columns. Header heights are synchronized through a board-specific
+% equal-height group, while the card lists remain outside any fixed-height
+% box, so each column may continue on a later page. Headers are emitted once
+% before the streams diverge and are not repeated on continuation pages. The
+% two renderers share the same card command and visual styles but use
+% different body-height and pagination rules.
 %
 % \subsection{Metadata and validation}
 %
 % Calendar and project-month classification is performed when a card is
-% rendered. The deadline value is expanded into a temporary token list and is
-% matched against exact numeric forms. All five supported calendar notations
-% are reduced to the same year, month, and day components. Ambiguous year-last
-% slash values are interpreted according to the active date-format snapshot,
-% with a validity-based swap when only the opposite ordering forms a real
-% Gregorian date. The components are checked against month lengths and leap-year
-% rules before they are compared with the configured reference date, or the TeX
-% compilation date when no fixed reference has been supplied, and normalized
-% for display. Project-month values are classified only after a valid
-% start date has been established. Project-month numbers are bounded before
-% integer conversion. Canonical start-date storage separates project semantics
-% from later display-format changes. Project-month boundaries use the start-day number where
-% possible and the last valid day in shorter months, including the Gregorian
-% leap-year rule. Every other value remains ordinary label text, which prevents
-% descriptive or oversized labels from reaching numeric operations.
+% rendered, against the reference date of the board or the compilation date.
+% All five supported calendar notations are reduced to the same year, month,
+% and day components, which are checked against month lengths and the
+% leap-year rule and then normalized for display. Every notation requires a
+% four-digit year. Input with the shape of a date but a shorter year is
+% reported rather than misread. Ambiguous year-last slash values follow the
+% date-format snapshot of the board, with a validity-based swap when only the
+% opposite ordering forms a real date. Project-month numbers are bounded
+% before integer conversion, and project-month boundaries use the start-day
+% number where possible and the last valid day in shorter months. Every
+% other value remains ordinary label text.
 %
 % Card surfaces, metadata chips, and deadline indicators are named
-% \textsf{tcolorbox} styles. Seven empty, namespaced public styles are applied
-% after the structural defaults, which permits controlled presentation changes
-% without exposing internal environment names. The column-body style is used
-% by the fixed renderer only; the other six styles are shared by both
-% renderers. Semantic label text is copied
-% into the same board snapshot as the other persistent configuration. Built-in
-% header and semantic color pairs have been selected against a 4.5:1 reference
-% contrast threshold. The clock symbol is a small inline TikZ drawing.
-% Internal LaTeX2e control sequences consistently use the |kanban@| or |kb@|
-% prefix, while LaTeX3 variables and functions use the |__kanban| module name.
-% The public namespace is limited to the environment and commands documented in
-% the user-interface sections. Nested boards are detected before local board
-% state is initialized, preventing an inner environment from corrupting the
-% active outer collection. The regression suite verifies configuration scope,
-% diagnostics, canonical date snapshots, fixed reference dates, metadata flag
-% semantics, malformed dimensions, compatibility with the declared LaTeX format,
-% all three supported engines, all five date formats, explicit custom heading
-% foregrounds, full-width cards, synchronized break-layout headings, actual
-% cross-page continuation, and impossible-gap recovery. When Poppler is
-% available, continuous integration also rasterizes the manual and the first
-% page of every example and retains those images for visual review; exact pixel
-% equality is intentionally not asserted across differing TeX and rasterizer
-% releases. The release archive is inspected for its required source tests.
+% \textsf{tcolorbox} styles. Seven empty public styles are applied after the
+% structural defaults, which permits controlled presentation changes without
+% exposing internal environment names. Built-in header and semantic color
+% pairs were selected against a 4.5:1 contrast threshold. Internal LaTeX2e
+% control sequences use the |kanban@| or |kb@| prefix, and LaTeX3 variables
+% and functions use the |__kanban| module name. The package allocates its own
+% LaTeX3 variables for every role and does not rely on the scratch variables
+% of the kernel. The regression suite exercises configuration scope,
+% diagnostics, canonical date snapshots, fixed reference dates, metadata
+% flags, malformed dimensions, compatibility with the declared LaTeX format,
+% all three supported engines, all five date formats, custom heading
+% foregrounds, full-width cards, synchronized break-layout headings,
+% cross-page continuation, impossible-gap recovery, and a strict run with
+% expl3 declaration and deprecation checking enabled.
 %
 % \subsection{Bootstrap state}
 %
-% Bootstrap code establishes the conditions under which every later subsystem
-% operates. It identifies the package, loads the packages on which rendering
-% depends, and allocates the persistent and board-local state used by the
-% configuration, collection, validation, and rendering stages. This subsection
-% presents each new kind of definition separately. In every case, the
-% functional responsibility is stated first, followed by the implementation
-% method and the meaning of the LaTeX commands used to express it.
+% The bootstrap code identifies the package, loads the packages on which
+% rendering depends, and allocates the persistent and board-local state used
+% by the configuration, collection, validation, and rendering stages.
 %
 % \paragraph{Package declaration and runtime dependencies.}
-% The first responsibility is to make the generated style file identifiable
-% and to prevent it from running on a LaTeX format older than the declared
-% compatibility boundary. The package must also load each facility that its
-% public behavior requires rather than relying on another package to load that
-% facility incidentally.
-%
 % The docstrip guard |%<*package>| begins the part of the documented source
-% that is copied into |kanban.sty|; each source part opens and closes its own
-% guarded region, and |kanban.ins| assembles the parts in dependency order
-% (this file, then the registry, date, configuration, renderer, and board
-% parts). Within a guarded region,
-% |\NeedsTeXFormat| declares the minimum LaTeX format date.
-% |\ProvidesPackage| records the package name, release date, version, and short
-% description. LaTeX prints this information in the compilation log and uses
-% it when package versions are requested. Each |\RequirePackage| loads one
-% declared dependency, while allowing LaTeX to avoid loading a dependency a
-% second time if it is already present. Finally, |\tcbuselibrary| activates
-% optional components of |tcolorbox| that are not part of its base interface.
+% that is copied into |kanban.sty|. Each source part opens and closes its own
+% guarded region, and |kanban.ins| assembles the parts in dependency order.
+% The package declares the minimum LaTeX format and loads each facility that
+% its public behavior requires rather than relying on another package to load
+% that facility incidentally. \textsf{xcolor} provides named colors and color
+% expressions. \textsf{etoolbox} supplies Booleans, string tests, and
+% expandable list construction. \textsf{tikz} draws the clock symbol used by
+% deadlines. \textsf{tcolorbox} constructs headers, cards, chips, and the
+% fixed-board raster, with the |skins| and |raster| libraries.
+% \textsf{paracol} provides the independent page-breakable column streams of
+% the |break| renderer.
 %    \begin{macrocode}
 %<*package>
 \NeedsTeXFormat{LaTeX2e}[2020-10-01]
-\ProvidesPackage{kanban}[2026/07/18 v1.0.0 Kanban project boards]
+\ProvidesPackage{kanban}[2026/11/07 v1.0.0 Kanban project boards]
 \RequirePackage{xcolor}
 \RequirePackage{etoolbox}
 \RequirePackage{tikz}
@@ -1909,28 +1882,14 @@
 \tcbuselibrary{skins,raster}
 %    \end{macrocode}
 %
-% The dependencies have distinct responsibilities. |xcolor| provides named
-% colors and color expressions. |etoolbox| supplies booleans, string tests,
-% expandable list construction, and other LaTeX2e programming utilities.
-% |tikz| draws the small clock symbol used by deadlines. |tcolorbox| constructs
-% headers, cards, chips, and the fixed-board raster. |paracol| provides the
-% independent, page-breakable column streams used by the |break| renderer.
-% The |skins| library enables the required box decoration features, and the
-% |raster| library provides the row-and-column layout for fixed boards.
-%
 % \paragraph{Built-in color constants.}
-% The next definitions establish the package's semantic colors and the colors
-% from which the built-in palettes are assembled. Defining them once gives the
-% implementation stable symbolic names: later code refers to
-% |kanbanHigh| or |kanbanSlate| instead of repeating numerical color values.
-% This also keeps semantic meaning separate from the commands that draw a chip
-% or heading.
-%
-% |\definecolor| is provided by |xcolor|. Its first argument creates the color
-% name, the second selects the input model, and the third supplies the value in
-% that model. The |HTML| model accepts six hexadecimal digits in red--green--
-% blue order. These are ordinary named colors after their definitions, so they
-% may be used by |tcolorbox|, TikZ, and standard LaTeX color commands.
+% The semantic colors and the colors of the built-in palettes are defined
+% once under stable symbolic names. The three semantic colors represent
+% overdue or high-priority work, work due at the reference date, and
+% completed or low-priority work. The other names are palette entries. Text
+% colors are not hard-coded into the palette registry here, because a
+% starred palette definition may provide an explicit foreground for each
+% background.
 %    \begin{macrocode}
 \definecolor{kanbanInk}{HTML}{263238}
 \definecolor{kanbanHigh}{HTML}{B23A48}
@@ -1950,31 +1909,17 @@
 \definecolor{kanbanMutedBrown}{HTML}{8A6F5A}
 %    \end{macrocode}
 %
-% The three semantic colors represent overdue or high-priority work, work due
-% at the active reference date, and completed or low-priority work. The other
-% names are palette entries. Text colors are not hard-coded into the palette
-% registry here because a later starred palette definition may provide an
-% explicit foreground for each background.
-%
 % \paragraph{Boolean flags, board identity, and dimensions.}
-% Rendering needs a small set of state flags. They record whether a board uses
-% the page-breakable renderer, whether task declarations currently belong to
-% an active board, whether the environment should render when it closes, and
-% whether tasks inside a rejected nested board must be discarded. Two further
-% flags carry the result of deadline classification. A unique board number
-% prevents temporary data belonging to different boards from sharing names,
-% and dedicated dimensions hold the persistent gap, its board-local snapshot,
-% a validation candidate, and the combined width of all gaps.
-%
-% |\newbool| is an |etoolbox| definition command. It creates a named Boolean
-% that is subsequently changed with |\booltrue| or |\boolfalse| and inspected
-% with |\ifbool| or |\ifboolexpr|. |\newcounter| allocates a LaTeX counter;
-% unlike a raw count register, it can be advanced through the standard counter
-% interface. The internal macro |\kanban@boardgroup| stores the printable value
-% associated with the active counter. |\newlength| allocates a skip register,
-% and |\setlength| assigns the initial document-wide column gap. Separate
-% registers are important here: validation can inspect a candidate without
-% modifying a previously accepted value.
+% Rendering needs a small set of state flags. They record whether a board
+% uses the page-breakable renderer, whether task declarations currently
+% belong to an active board, whether the environment should render when it
+% closes, and whether tasks inside a rejected nested board must be discarded.
+% Two further flags carry the result of deadline classification. A unique
+% board number keeps the temporary data of different boards apart, and
+% dedicated length registers hold the persistent gap, its board-local
+% snapshot, a validation candidate, and the combined width of all gaps.
+% Separate registers let validation inspect a candidate without modifying a
+% previously accepted value.
 % \Needspace{16\baselineskip}
 %    \begin{macrocode}
 \newbool{kanban@break}
@@ -1992,30 +1937,16 @@
 \setlength\kanban@columnsep{2mm}
 %    \end{macrocode}
 %
-% The |@| in these names marks them as internal LaTeX2e control sequences. It
-% is a letter while a package file is read, but it is not normally a letter in
-% a user's document. This convention reduces accidental use without presenting
-% the names as a supported public API.
-%
 % \paragraph{Persistent defaults and board-local scalar snapshots.}
 % Configuration values such as the start date, reference date, date format,
 % visual mode, card colors, and semantic labels are simple token values. Most
-% occur in pairs: one member is the persistent default for later boards, and
+% occur in pairs. One member is the persistent default for later boards, and
 % the other is the snapshot used by the board currently being rendered. This
-% separation implements the documented package--setup--board precedence and
-% prevents a local override from altering subsequent boards.
-%
-% These internal scalar values are initialized with the TeX primitive |\def|.
-% A definition such as |\def\kanban@dateformat{us}| creates a parameterless
-% macro whose replacement text is |us|. Such macros are appropriate for small
-% values that will be copied or reassigned frequently. Unlike |\newcommand|,
-% |\def| does not check whether a command already exists; that is acceptable
-% for private, package-owned names established in one controlled bootstrap
-% location. Public commands are defined later with checking interfaces such as
-% |\NewDocumentCommand|. Because the following definitions are executed at
-% package load time, they establish document-wide initial values. Assignments
-% made inside a board environment can remain local to that environment's TeX
-% group.
+% separation implements the documented package, setup, and board precedence.
+% Empty date macros mean that no fixed date has been supplied, in which case
+% the compilation date is the reference. The color macros contain a named
+% color or an \textsf{xcolor} expression and are expanded only when a box is
+% rendered.
 %    \begin{macrocode}
 \def\kanban@startdate{}
 \def\kanban@thestart{}
@@ -2046,39 +1977,18 @@
 \def\kanban@boarddonelabel{DONE}
 %    \end{macrocode}
 %
-% Empty date macros mean that no fixed date has been supplied. The default
-% reference then comes from TeX's compilation date. The color macros contain
-% either a named color or an |xcolor| expression and are expanded only when a
-% box is rendered. The four persistent labels and their four board-local
-% counterparts allow semantic wording to be customized without changing the
-% priority and completion logic.
-%
-% \paragraph{LaTeX3 syntax and typed state containers.}
+% \paragraph{LaTeX3 state containers.}
 % Palettes and columns require structured data rather than isolated scalar
-% macros. Palette names must map to lists of colors, columns must map to numeric
-% identifiers, and parsing routines need temporary lists, token values,
-% sequences, Boolean flags, and integers. The implementation therefore enters
-% LaTeX3 syntax and allocates a typed variable for every distinct role.
-%
-% |\ExplSyntaxOn| changes the programming syntax so underscores and colons may
-% appear in control-sequence names and ordinary spaces are ignored. LaTeX3
-% names describe both scope and data type. The prefix |g__kanban| denotes
-% private global package state, whereas |l__kanban| denotes private local or
-% temporary state. These prefixes state the intended scope; the local or
-% global form of the assignment command still determines the actual TeX
-% assignment. The suffixes |_prop|, |_clist|, |_tl|, |_seq|, |_bool|, and
-% |_int| identify a property list, comma list, token list, sequence, Boolean,
-% and integer respectively. Function names use a colon followed by an argument
-% signature; for example, |:nN| means one braced token-list argument followed
-% by one control-sequence argument.
-%
-% Each allocation command creates one variable and reports an error if that
-% variable already exists. |\prop_new:N| creates a key--value mapping;
-% |\clist_new:N| creates a comma-separated list; |\tl_new:N| creates a general
-% token-list variable; |\seq_new:N| creates an ordered sequence;
-% |\bool_new:N| creates a LaTeX3 Boolean; and |\int_new:N| creates an integer.
-% The final |N| in each command signature means that the argument must be the
-% variable control sequence itself, not its textual name.
+% macros, and every role receives its own typed variable. The two global
+% property lists form the palette registry, one for heading backgrounds and
+% one for optional heading foregrounds. Global comma lists hold the selected
+% persistent palette and the default column keys, and a global property list
+% maps each column key to its heading text. Their local counterparts are the
+% snapshot for an active board. The remaining local containers support
+% palette-pair validation, column normalization, numeric column lookup,
+% normalized choices, and the deferred processing of start and reference
+% dates. The scratch variables of the kernel are not used, because other
+% packages may overwrite them between calls.
 % \Needspace{30\baselineskip}
 %    \begin{macrocode}
 \ExplSyntaxOn
@@ -2089,16 +1999,29 @@
 \tl_new:N \g__kanban_palette_name_tl
 \clist_new:N \l__kanban_board_palette_clist
 \clist_new:N \l__kanban_board_palette_fg_clist
+\clist_new:N \l__kanban_palette_colors_clist
 \clist_new:N \l__kanban_palette_bg_clist
 \clist_new:N \l__kanban_palette_fg_clist
+\tl_new:N \l__kanban_palette_bg_tl
+\tl_new:N \l__kanban_palette_fg_tl
+\tl_new:N \l__kanban_pair_bg_tl
+\tl_new:N \l__kanban_pair_fg_tl
+\tl_new:N \l__kanban_palette_item_tl
+\int_new:N \l__kanban_palette_count_int
+\int_new:N \l__kanban_palette_index_int
 \seq_new:N \l__kanban_palette_pair_seq
 \bool_new:N \l__kanban_bad_palette_bool
 \clist_new:N \g__kanban_columns_clist
+\prop_new:N \g__kanban_column_display_prop
 \clist_new:N \l__kanban_board_columns_clist
+\prop_new:N \l__kanban_board_column_display_prop
+\clist_new:N \l__kanban_columns_tmp_clist
+\prop_new:N \l__kanban_column_display_tmp_prop
 \prop_new:N \l__kanban_column_ids_prop
 \int_new:N \l__kanban_column_index_int
 \tl_new:N \l__kanban_palette_name_tl
 \tl_new:N \l__kanban_column_tl
+\tl_new:N \l__kanban_column_display_tl
 \tl_new:N \l__kanban_column_id_tl
 \tl_new:N \l__kanban_choice_tl
 \tl_new:N \l__kanban_pending_startdate_tl
@@ -2107,62 +2030,41 @@
 \bool_new:N \l__kanban_pending_reference_date_bool
 %    \end{macrocode}
 %
-% The two global property lists form the palette registry: one stores heading
-% backgrounds and the other stores optional heading foregrounds. Global comma
-% lists hold the currently selected persistent palette and column defaults.
-% Their local counterparts are the snapshot for an active board. The remaining
-% local containers support palette-pair validation, column normalization,
-% numeric column lookup, normalized choices, and the deferred processing of
-% start and reference dates. Deferring those dates is necessary because a
-% later |date-format| key in the same option list must be resolved before an
-% ambiguous date is interpreted.
-%
-% \paragraph{The initial column model.}
-% An environment with no |columns| key must still be valid. The package
-% therefore installs the three canonical default stages as soon as the global
-% column list has been allocated. The names are stored in normalized uppercase
-% form so task assignment can be case-insensitive from the beginning.
-%
-% |\clist_gset:Nn| assigns a comma list globally. Its |N| argument is the
-% destination variable, its |n| argument is literal braced input, and the |g|
-% indicates that the assignment survives TeX grouping. Later setup commands
-% use the same global list as the persistent source from which each board takes
-% its local snapshot.
-%    \begin{macrocode}
-\clist_gset:Nn \g__kanban_columns_clist {BACKLOG,DOING,DONE}
-%    \end{macrocode}
-%
 % \paragraph{Named diagnostics.}
-% The bootstrap stage finally defines reusable diagnostics for errors that may
-% arise in several configuration scopes. Naming each diagnostic keeps its main
-% message and corrective help text consistent whether invalid input originates
-% in a package option, |\kbset|, or a board option.
-%
-% |\msg_new:nnnn| creates a LaTeX3 message. The first argument is the module
-% name, the second is the message identifier, the third is the diagnostic text,
-% and the fourth is explanatory help. Parameter markers such as |#1| and |#2|
-% are placeholders supplied when the message is issued. Under
-% |\ExplSyntaxOn|, a tilde represents an explicit interword space. Defining a
-% message does not print it; later code selects its severity with commands such
-% as |\msg_warning:nnnn| and supplies the placeholder values.
+% Diagnostics that may arise in several configuration scopes are defined
+% once as named messages, so the main text and the help text stay consistent
+% whether invalid input originates in a package option, in |\kbset|, in a
+% board option, or in a task declaration. Each message states the line
+% context explicitly, because \textsf{l3msg} warnings do not add it on their
+% own.
 % \Needspace{14\baselineskip}
 %    \begin{macrocode}
 \msg_new:nnnn {kanban}{invalid-date-setting}
-  {Invalid~#1~'#2';~keeping~the~current~value.}
-  {Use~a~valid~Gregorian~date~in~one~of~the~documented~numeric~forms.}
+  {Invalid~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Use~a~valid~Gregorian~date~with~a~four-digit~year~in~one~of~the
+    ~documented~numeric~forms,~for~example~2026-07-18.}
 \msg_new:nnnn {kanban}{invalid-dimension}
-  {Invalid~#1~value~'#2';~keeping~the~current~value.}
+  {Invalid~#1~value~'#2'~\msg_line_context:.~The~current~value
+    ~is~kept.}
   {Use~a~non-negative~explicit~dimension,~such~as~2mm,~or~a~registered
     ~LaTeX~length.}
 \msg_new:nnnn {kanban}{unknown-key}
-  {Unknown~#1~option~'#2';~the~option~was~ignored.}
+  {Unknown~#1~option~'#2'~\msg_line_context:.~The~option~is~ignored.}
   {Check~the~spelling~and~the~documented~scope~of~the~key.}
+\msg_new:nnnn {kanban}{invalid-deadline}
+  {Invalid~deadline~date~'#1'~\msg_line_context:.~The~card~shows~a
+    ~neutral~label.}
+  {Write~calendar~deadlines~with~a~four-digit~year~in~one~of~the
+    ~documented~numeric~forms,~for~example~2026-07-18.}
+\msg_new:nnnn {kanban}{invalid-project-month}
+  {Invalid~project-month~deadline~'#1'~\msg_line_context:.~The~card
+    ~shows~a~neutral~label.}
+  {Write~project~months~as~M~followed~by~an~integer~from~1~to~999999.}
 %    \end{macrocode}
 %
-% At this point the package has allocated, but has not yet populated, the
-% palette registries and board-local lookup structures. The following
-% subsections define the functions that validate and populate those containers.
-%
+% At this point the package has allocated, but not yet populated, the
+% palette registries and the column maps. The following parts define the
+% functions that validate and populate those containers.
 %
 %    \begin{macrocode}
 %</package>

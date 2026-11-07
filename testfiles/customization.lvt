@@ -36,13 +36,13 @@
   {\TYPE{KANBAN PUBLIC DEADLINE STYLE FAILED}}
 \begingroup
   \makeatletter
-  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
   \makeatother
   \kbset{labels={high=}}
 \endgroup
 \begingroup
   \makeatletter
-  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
   \makeatother
   \kbdefinepalette*{broken}{red/}
 \endgroup

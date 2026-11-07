@@ -36,6 +36,10 @@
 \kbexpectneutral{29.02.2025}{KANBAN INVALID LEAP DATE NEUTRAL}
 \kbexpectneutral{2025-02-29}{KANBAN INVALID ISO LEAP DATE NEUTRAL}
 \kbexpectneutral{31.04.2026}{KANBAN INVALID MONTH DAY NEUTRAL}
+\kbexpectneutral{18.07.26}{KANBAN TWO-DIGIT YEAR NEUTRAL}
+\kbexpectneutral{7/8/26}{KANBAN TWO-DIGIT SLASH YEAR NEUTRAL}
+\kbexpectoverdue{2026-7-8}{KANBAN LOOSE ISO DATE CLASSIFIED}
+\kbexpectoverdue{2026/7/8}{KANBAN LOOSE YEAR-FIRST DATE CLASSIFIED}
 \kbexpectneutral{Milestone}{KANBAN M LABEL NEUTRAL}
 \kbexpectneutral{Editorial review.}{KANBAN PUNCTUATED LABEL NEUTRAL}
 \kbexpectneutral{M0}{KANBAN ZERO PROJECT MONTH NEUTRAL}
@@ -45,6 +49,28 @@
 \kbexpectcurrent{M1}{KANBAN PROJECT MONTH CURRENT}
 \kbexpectneutral{M2}{KANBAN PROJECT MONTH FUTURE}
 \makeatother
+\endgroup
+\begingroup
+  % Deadline diagnostics are issued when a task is declared. Capture them
+  % semantically, because the console rendering of l3msg varies across TeX
+  % Live releases.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnn #1#2#3
+    {\TYPE{KANBAN~WARNING:~#2~'#3'}}
+  \ExplSyntaxOff
+  \begin{kanban}[columns={Queue}]
+    \kanbantask[due=29.02.2025]{Queue}{An invalid leap date}
+    \kanbantask[due=2025-02-29]{Queue}{An invalid ISO leap date}
+    \kanbantask[due=31.04.2026]{Queue}{An invalid month day}
+    \kanbantask[due=18.07.26]{Queue}{A two-digit year}
+    \kanbantask[due=7/8/26]{Queue}{A two-digit slash year}
+    \kanbantask[due=M0]{Queue}{A zero project month}
+    \kanbantask[due=M1000000]{Queue}{An out-of-range project month}
+    \kanbantask[due=Milestone]{Queue}{A descriptive label}
+    \kanbantask[due=2026-7-8]{Queue}{A loose ISO date}
+    \kanbantask[due=12/31/2099]{Queue}{A valid date}
+    \TYPE{KANBAN DEADLINE DIAGNOSTICS AT DECLARATION OK}
+  \end{kanban}
 \endgroup
 \begin{kanban}[columns={Queue}]
   \kbitem=0

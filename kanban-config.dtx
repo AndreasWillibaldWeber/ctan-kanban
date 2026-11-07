@@ -9,7 +9,7 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package; the complete list of files
+% This file is part of the `kanban' package. The complete list of files
 % constituting the work appears in the main source file kanban.dtx.
 % \fi
 %
@@ -19,30 +19,23 @@
 %
 % \subsection{Persistent configuration}
 %
-% Built-in palettes are registered through the public mechanism. Mode, date
-% format, start date, reference date, column list, palette, semantic labels,
-% and gap defaults then enter the dedicated |kanban/setup| LaTeX3 key family.
-% Package options are accumulated and passed through the same transaction so
-% package-level and document-level setup have identical validation and scope.
-% The functions in this subsection distinguish persistent assignment from
-% board-local assignment consistently: a package option or |\kbset| changes the
-% source for later snapshots, whereas an environment key changes only the
-% snapshot already being constructed.
+% Built-in palettes and the default column list are registered through the
+% same mechanisms that documents use. Mode, date format, start date,
+% reference date, column list, palette, semantic labels, and gap defaults
+% then enter the dedicated |kanban/setup| key family. Package options are
+% accumulated and passed through the same transaction, so package-level and
+% document-level setup have identical validation and scope. Throughout this
+% part, a package option or |\kbset| changes the source for later snapshots,
+% whereas an environment key changes only the snapshot being constructed.
 %
-% \paragraph{Built-in palette registration.}
-% The package's default, muted, and monochrome palettes should obey exactly the
-% same validation and registry rules as user-defined palettes. They are
-% therefore registered through the canonical public command rather than by
-% writing directly to internal property lists. The default palette is selected
-% immediately after registration so a document with no configuration still
-% produces the documented colors.
-%
-% These are ordinary calls to |\kanbandefinepalette|, whose two mandatory
-% arguments provide the registry name and comma list. The percent sign after
-% the opening brace suppresses an otherwise unwanted source-line space in the
-% argument. |\kanban@selectpalette| then invokes the validated persistent
-% selector described in the preceding subsection. Reusing public behavior in
-% this way makes built-in and user palettes follow one code path.
+% \paragraph{Built-in palettes and default columns.}
+% The default, muted, and monochrome palettes obey exactly the same
+% validation and registry rules as user-defined palettes, because they are
+% registered through the public command. The default palette is selected
+% immediately so that a document with no configuration produces the
+% documented colors. The default column list is installed through the
+% persistent column selector for the same reason. Its spelling is the text
+% shown in the headings, and its uppercase form is the lookup key.
 %    \begin{macrocode}
 \kanbandefinepalette{default}{%
   kanbanSlate,kanbanBlue,kanbanTeal,kanbanSage,
@@ -51,49 +44,34 @@
   kanbanMutedPurple,kanbanMutedBrown}
 \kanbandefinepalette{monochrome}{black!85,black!75,black!65,black!55}
 \kanban@selectpalette{default}
+\kanban@selectcolumns{Backlog,Doing,Done}
 %    \end{macrocode}
 %
 % \paragraph{Mode selection.}
-% Visual mode is a constrained textual choice. The persistent selector records
-% a global |light| or |dark| default; the board selector records the same choice
-% locally. Unknown values do not reset the previous selection.
-%
-% |\newcommand| defines a checked LaTeX2e command and |[1]| declares one
-% argument. Both selectors first call the shared lowercase choice normalizer.
-% |\ifdefstring| from |etoolbox| compares the replacement text of a macro with
-% a literal string and accepts true and false branches. The global selector
-% uses |\gdef|, while the board selector uses |\def| so its result disappears
-% with the environment group. The final false branch emits a recoverable
-% |\PackageWarning|.
+% Visual mode is a constrained textual choice. The persistent selector
+% records a global |light| or |dark| default and the board selector records
+% the same choice locally. Unknown values keep the previous selection.
 %    \begin{macrocode}
 \newcommand\kanban@selectmode[1]{%
   \kanban@normalizechoice{#1}%
   \ifdefstring{\kb@choice}{light}{\gdef\kanban@mode{light}}{%
     \ifdefstring{\kb@choice}{dark}{\gdef\kanban@mode{dark}}{%
       \PackageWarning{kanban}
-        {unknown mode '#1'; keeping the current mode}}}}
+        {unknown mode '#1'.\MessageBreak The current mode is kept}}}}
 \newcommand\kanban@selectboardmode[1]{%
   \kanban@normalizechoice{#1}%
   \ifdefstring{\kb@choice}{light}{\def\kanban@boardmode{light}}{%
     \ifdefstring{\kb@choice}{dark}{\def\kanban@boardmode{dark}}{%
       \PackageWarning{kanban}
-        {unknown mode '#1'; keeping the current mode}}}}
+        {unknown mode '#1'.\MessageBreak The current mode is kept}}}}
 %    \end{macrocode}
 %
 % \paragraph{Date-format canonicalization and selection.}
-% Five canonical format names are supported, together with a small set of
-% readable aliases. Canonicalization is separated from assignment so the same
-% mapping serves both persistent and board-local selection. A recognized alias
-% writes one of |us|, |english|, |german|, |iso|, or |ymd|; an unknown choice
-% leaves the result empty and is diagnosed by the appropriate selector.
-%
-% |\def\kb@datechoice{}| initializes the result sentinel. Repeated
-% |\ifdefstring| tests implement the alias table, and a successful test replaces
-% the sentinel with its canonical value. |\ifdefempty| then distinguishes
-% failure from success. |\global\let| assigns the persistent format macro the
-% current meaning of the canonical result without retaining an intermediate
-% expansion dependency; the local |\let| does the same for a board snapshot.
-% |\MessageBreak| improves the line wrapping of the longer board warning.
+% Five canonical format names are supported together with a small set of
+% readable aliases. Canonicalization is separated from assignment so that the
+% same alias table serves persistent and board-local selection. A recognized
+% value writes one of |us|, |english|, |german|, |iso|, or |ymd|. An unknown
+% value leaves the result empty and is diagnosed by the selector.
 %    \begin{macrocode}
 \newcommand\kanban@canonicaldateformat[1]{%
   \kanban@normalizechoice{#1}%
@@ -113,29 +91,23 @@
   \kanban@canonicaldateformat{#1}%
   \ifdefempty\kb@datechoice
     {\PackageWarning{kanban}
-      {unknown date format '#1'; keeping the current date format}}
+      {unknown date format '#1'.
+        \MessageBreak The current date format is kept}}
     {\global\let\kanban@dateformat\kb@datechoice}}
 \newcommand\kanban@selectboarddateformat[1]{%
   \kanban@canonicaldateformat{#1}%
   \ifdefempty\kb@datechoice
     {\PackageWarning{kanban}
-      {unknown board date format '#1';
-        \MessageBreak keeping the current date format}}
+      {unknown board date format '#1'.
+        \MessageBreak The current date format is kept}}
     {\let\kanban@boarddateformat\kb@datechoice}}
 %    \end{macrocode}
 %
 % \paragraph{Validated column-gap assignment.}
-% A column gap must be a non-negative dimension. The persistent and board-local
-% setters share the safe grammar established by the deadline subsystem, assign
-% the accepted input to a candidate register, and compare the evaluated length
+% A column gap must be a non-negative dimension. The persistent and
+% board-local setters share the safe grammar of the deadline part, assign the
+% accepted input to a candidate register, and compare the evaluated length
 % with zero before committing it to the appropriate scope.
-%
-% |\kanban@validatedimensionTF| supplies success and failure branches.
-% |\setlength| performs the actual LaTeX length assignment only after syntax
-% validation. The primitive |\ifdim| compares dimensions; its true branch for a
-% negative candidate issues the shared warning. A successful persistent update
-% uses |\global| before the register assignment, while the board update remains
-% local. The closing |\fi| terminates the primitive conditional.
 %    \begin{macrocode}
 \newcommand\kanban@setcolumnsep[1]{%
   \kanban@validatedimensionTF{#1}{%
@@ -160,16 +132,11 @@
 %    \end{macrocode}
 %
 % \paragraph{Materialization of the visual mode.}
-% The mode name is semantic state; rendering requires concrete text, surface,
-% border, and default heading colors. The application function translates the
-% active board mode into those values after all board options have been
-% processed. Metadata chip colors are intentionally absent from this function
-% because their documented light-theme styling remains stable in both modes.
-%
-% |\ifdefstring| selects the dark branch when the board-mode macro expands to
-% |dark| and otherwise uses the light definitions. Each |\def| is local to the
-% board environment. The stored values are named |xcolor| colors or mix
-% expressions; later |tcolorbox| definitions expand them when drawing a card.
+% The mode name is semantic state. Rendering needs concrete text, surface,
+% border, and default heading colors, which this function derives from the
+% active board mode after all board options have been processed. Metadata
+% chip colors are absent here because their light styling is stable in both
+% modes.
 %    \begin{macrocode}
 \newcommand\kanban@applymode{%
   \ifdefstring{\kanban@boardmode}{dark}{%
@@ -187,44 +154,30 @@
 %
 % \paragraph{Persistent and board-local semantic labels.}
 % Priority and completion labels are customizable text, but an empty label
-% would create an invisible chip with misleading spacing. The two setters
-% therefore reject blank input and dynamically address either the persistent
-% or board-local label family.
-%
-% |\ifblank| from |etoolbox| tests the argument without requiring it to be a
-% predefined macro. |\csgdef| globally defines a control sequence whose name is
-% assembled from character data, such as |kanban@highlabel|. |\csdef| performs
-% the analogous local definition for names such as
-% |kanban@boardhighlabel|. Dynamic |cs| forms keep four nearly identical label
-% setters in one implementation while the key family supplies the validated
-% label identifier.
+% would create an invisible chip with misleading spacing. Both setters reject
+% blank input. The label identifier supplied by the key family selects the
+% persistent or board-local macro by name.
 %    \begin{macrocode}
 \newcommand\kanban@setlabel[2]{%
   \ifblank{#2}
     {\PackageWarning{kanban}
-      {label '#1' must not be empty; keeping the current value}}
+      {label '#1' must not be empty.
+        \MessageBreak The current value is kept}}
     {\csgdef{kanban@#1label}{#2}}}
 \newcommand\kanban@setboardlabel[2]{%
   \ifblank{#2}
     {\PackageWarning{kanban}
-      {board label '#1' must not be empty; keeping the current value}}
+      {board label '#1' must not be empty.
+        \MessageBreak The current value is kept}}
     {\csdef{kanban@board#1label}{#2}}}
 %    \end{macrocode}
 %
 % \paragraph{Nested label key families.}
-% Label customization is expressed as a subordinate key list, for example
+% Label customization is expressed as a subordinate key list such as
 % |labels={high=URGENT,done=FINISHED}|. Separate persistent and board-local
 % families direct identical key names to setters with different assignment
-% scope. Each family also owns its unknown-key diagnostic, which identifies
-% whether the error occurred in global setup or in a board override.
-%
-% |\ExplSyntaxOn| is re-enabled for the LaTeX3 key definitions.
-% |\keys_define:nn| creates or extends a named family. A property written
-% |.code:n| stores executable code receiving the key value as |#1|. The
-% reserved |unknown| handler receives the misspelled key name through
-% |\l_keys_key_str| and issues the named diagnostic with
-% |\msg_warning:nnnn|. Defining nested families independently also prevents a
-% label name such as |mode| from being confused with a top-level setup key.
+% scope. Each family owns its unknown-key diagnostic, which states whether
+% the mistake occurred in global setup or in a board override.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \keys_define:nn {kanban/setup-labels}
@@ -250,21 +203,12 @@
 %    \end{macrocode}
 %
 % \paragraph{The persistent setup key family.}
-% The main setup family is the single semantic entry point for package options
-% and later calls to |\kanbansetup|. Immediate keys delegate to their validated
-% selectors. Date values are staged rather than applied immediately, because a
-% |date-format| key appearing later in the same comma list must take effect
-% before an ambiguous start or reference date is interpreted. Alias keys keep
-% legacy or concise spelling without duplicating implementation.
-%
-% In |l3keys|, |.code:n| executes an arbitrary handler with the supplied value.
-% |.meta:n| rewrites one key as another key assignment: |dateformat| becomes
-% |date-format| and |today| becomes |reference-date|. The date handlers use
-% |\tl_set:Nn| to retain the literal value and |\bool_set_true:N| to record that
-% the staged value must later be committed. The |labels| key calls
-% |\keys_set:nn| recursively on the subordinate family. The family-level
-% |unknown| handler supplies a uniform non-fatal warning for unsupported setup
-% names.
+% The setup family is the single entry point for package options and for
+% |\kanbansetup|. Immediate keys delegate to their validated selectors. Date
+% values are staged rather than applied at once, because a |date-format| key
+% appearing later in the same list must take effect before an ambiguous start
+% or reference date is interpreted. Alias keys provide the compact and the
+% legacy spellings without a second implementation.
 %    \begin{macrocode}
 \keys_define:nn {kanban/setup}
   {
@@ -293,18 +237,11 @@
 %    \end{macrocode}
 %
 % \paragraph{A deferred setup transaction.}
-% Processing a setup list is a small transaction. It clears both staging flags,
-% lets |l3keys| process the complete list in source order, and only then applies
+% Processing a setup list is a small transaction. It clears both staging
+% flags, processes the complete list in source order, and only then applies
 % any staged dates under the final selected format. Consequently
-% |startdate=07/08/2026,date-format=english| and the reversed key order have the
-% same interpretation.
-%
-% |\keys_set:nn| parses and executes the comma-separated family input.
-% |\bool_if:NT| executes each commit only when its staging flag is true.
-% |\exp_args:NV| passes the stored value, rather than the token-list variable
-% itself, to the relevant setter. The function is protected because key
-% processing and assignment are not expandable operations. |\ExplSyntaxOff|
-% restores the normal catcodes before the public LaTeX2e interface is declared.
+% |startdate=07/08/2026,date-format=english| and the reversed key order have
+% the same interpretation.
 %    \begin{macrocode}
 \cs_new_protected:Npn \kanban@processsetup #1
   {
@@ -320,54 +257,40 @@
   }
 \ExplSyntaxOff
 %    \end{macrocode}
+%
 % \begin{macro}{\kanbansetup}
 % \begin{macro}{\kbset}
-% The canonical setup command exposes the transaction above with one mandatory
-% key-list argument. The short alias follows the same collision-tolerant policy
-% as the palette alias. This keeps the public namespace convenient without
-% taking ownership of an existing command defined by the document class or
-% another package.
-%
-% |\NewDocumentCommand| with signature |m| reads one mandatory argument and
-% delegates it unchanged. The LaTeX2e test |\@ifundefined| chooses between
-% installing the alias with |\let| and preserving the occupied name with a
-% warning. Equivalence by |\let| ensures that |\kbset| and |\kanbansetup| have
-% exactly the same argument parser and behavior.
+% The canonical setup command exposes the transaction with one mandatory
+% key-list argument. The short alias follows the same collision-tolerant
+% policy as the palette alias. Equivalence by |\let| gives both names exactly
+% the same argument parser and behavior.
 %    \begin{macrocode}
 \NewDocumentCommand\kanbansetup{m}{\kanban@processsetup{#1}}
 \@ifundefined{kbset}
   {\let\kbset\kanbansetup}
   {\PackageWarning{kanban}
-    {\string\kbset\space is already defined;
-      \MessageBreak use \string\kanbansetup\space instead}}
+    {\string\kbset\space is already defined.
+      \MessageBreak Use \string\kanbansetup\space instead}}
 %    \end{macrocode}
 %
 % \paragraph{Collection and application of package options.}
 % LaTeX2e presents package options one at a time. The package collects them
-% into one token list and applies that list through the same deferred setup
-% transaction only after option processing has finished. Package options
-% therefore share validation, aliases, key-order independence, and diagnostics
-% with |\kanbansetup|.
+% into one token list and applies that list through the deferred setup
+% transaction after option processing has finished. Package options
+% therefore share validation, aliases, key-order independence, and
+% diagnostics with |\kanbansetup|.
 %
 % Formats dated 2021-06-01 or later parse raw option lists with the
-% brace-aware key--value processor, so the catch-all |\DeclareOption*|
-% collector receives every option intact through |\CurrentOption|, including
-% values with embedded commas such as |columns={A,B}|. The older 2020-10-01
-% format splits raw option lists at every comma and mishandles brace groups in
-% its option bookkeeping, which derails loading. On such formats the package
-% routes its options through \textsf{kvoptions} instead: every documented
-% setup key is declared as a \textsf{keyval} key whose handler re-wraps the
-% brace-stripped value before appending it to the same accumulator, and
-% unrecognized options fall through to the same catch-all collector.
-%
-% |\tl_new:N| allocates the global accumulator. |\tl_if_empty:NF| inserts a
-% comma only after the first option, and |\tl_gput_right:Nn| appends globally.
-% The expansion prefix |\exp_args:NNo| expands |\CurrentOption| once while
-% retaining the destination variable. Application uses |\exp_args:NV| to pass
-% the complete accumulated value to |\kanban@processsetup|. The final call to
-% |\kanban@applypackageoptions| commits the resulting setup list.
-% Unknown package options consequently produce the same warning as unknown
-% setup keys on both processing paths.
+% brace-aware key--value processor, so the catch-all collector receives every
+% option intact, including values with embedded commas such as
+% |columns={A,B}|. The 2020-10-01 format splits raw option lists at every
+% comma and mishandles brace groups in its option bookkeeping. On such
+% formats the package routes its options through \textsf{kvoptions}. Every
+% documented setup key is declared as a \textsf{keyval} key whose handler
+% re-wraps the brace-stripped value before appending it to the same
+% accumulator, and unrecognized options fall through to the same catch-all
+% collector. Unknown package options consequently produce the same warning
+% as unknown setup keys on both paths.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \tl_new:N \g__kanban_package_options_tl
@@ -426,7 +349,6 @@
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
-%
 %
 %    \begin{macrocode}
 %</package>

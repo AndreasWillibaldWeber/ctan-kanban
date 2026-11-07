@@ -9,7 +9,7 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package; the complete list of files
+% This file is part of the `kanban' package. The complete list of files
 % constituting the work appears in the main source file kanban.dtx.
 % \fi
 %
@@ -19,27 +19,20 @@
 %
 % \subsection{Task collection}
 %
-% The task key family stores metadata without expanding the card text. A valid
-% declaration appends one protected renderer call to the selected board-local
-% list. Invalid or missing targets are diagnosed and never affect the counter.
-% Collection and rendering are separate phases: this permits the environment
-% to determine the tallest heading, the highest column, and the final column
-% counts before any task card is typeset.
+% The task key family stores metadata without expanding the card text. A
+% valid declaration appends one protected renderer call to the selected
+% board-local list. Invalid or missing targets are diagnosed and never affect
+% the counter. Collection and rendering are separate phases. This permits the
+% environment to determine the tallest heading, the highest column, and the
+% final column counts before any task card is typeset.
 %
 % \paragraph{Task-option keys.}
-% The task family translates user-facing metadata into temporary task macros.
-% Priority uses the validated semantic setter; author and deadline preserve
-% their token lists; |due| aliases |deadline|; and |late| and |completed| are
-% valueless flags. An unknown task option is ignored with a scoped warning.
-%
-% |\keys_define:nn| creates the |kanban/task| family. A |.code:n| handler sees
-% the supplied value as |#1|. |.meta:n| redirects |due| through the canonical
-% deadline handler. |.value_forbidden:n = true| tells |l3keys| that a Boolean
-% flag must appear without |=...|, thereby distinguishing |completed| from a
-% misleading form such as |completed=false|. The unknown handler uses
-% |\l_keys_key_str| in the common named warning. The protected wrapper invokes
-% |\keys_set:nn| and allows the surrounding LaTeX2e collector to remain outside
-% LaTeX3 syntax.
+% The task family translates user-facing metadata into temporary task
+% macros. Priority uses the validated semantic setter. Author and deadline
+% keep their token lists. The |due| key aliases |deadline|, and |late| and
+% |completed| are valueless flags, so a misleading form such as
+% |completed=false| is rejected. An unknown task option is ignored with a
+% scoped warning.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \keys_define:nn {kanban/task}
@@ -62,31 +55,21 @@
 %    \end{macrocode}
 %
 % \paragraph{Validation and deferred task collection.}
-% The collector first gives every metadata field an empty value and processes
-% the option list. It then requires an active board, a non-empty normalized
-% target, and a target present in the board's identifier map. Each failed
-% condition emits a specific error and ignores the task. A task inside a
-% deliberately rejected nested board is silently discarded because the nesting
-% error has already explained the cause; an ordinary task outside any board is
-% diagnosed independently.
+% The collector first gives every metadata field an empty value and
+% processes the option list. It then requires an active board, a non-empty
+% normalized target, and a target present in the identifier map of the
+% board. Each failed condition emits a specific error and ignores the task.
+% A task inside a rejected nested board is discarded silently because the
+% nesting error has already explained the cause. A task outside any board is
+% diagnosed on its own.
 %
-% |\ifbool| reads the |etoolbox| lifecycle flags. |\ifdefempty| tests the
-% normalized column and identifier macros. |\PackageError| takes an error
-% message and explanatory help; |\string| prints a command name without
-% executing it, and |\MessageBreak| controls diagnostic layout. The nested
-% branch structure ensures that neither counter nor list is modified until all
-% target checks have succeeded.
-%
-% For a valid target, |\numgdef| globally defines the dynamic count macro to its
-% current integer expression plus one. |\csxappto| globally appends expanded
-% material to the dynamic task-list macro. Expansion is carefully selective:
-% |\noexpand| retains the renderer command for the later rendering phase;
-% |\csuse| resolves the already fixed column color; and |\unexpanded| protects
-% the task body and all metadata from premature expansion. The
-% |\expandafter| forms obtain the contents of temporary metadata macros before
-% protecting those contents. The stored result is therefore a self-contained
-% seven-argument call to |\kanban@rendercard| rather than a reference to task
-% state that will be overwritten by the next declaration.
+% For a valid target, the counter is incremented globally and a
+% self-contained seven-argument call to |\kanban@rendercard| is appended
+% globally to the task list of the column. The renderer command is kept
+% unexpanded for the rendering phase, the column color is resolved at once
+% because it is already fixed, and the task body and all metadata are
+% protected from expansion. The deadline is then checked once, so that any
+% warning names the line of the declaration.
 %    \begin{macrocode}
 \newcommand\kanban@dotask[3][]{%
   \def\kbtask@prio{}\def\kbtask@author{}\def\kbtask@deadline{}%
@@ -96,15 +79,15 @@
     {\kanban@normtaskcol{#2}%
      \ifdefempty\kbtask@column
        {\PackageError{kanban}
-         {task has no assigned column; valid columns:
-           \kanban@availablecolumns}
+         {task has no assigned column.
+           \MessageBreak Valid columns: \kanban@availablecolumns}
          {The first mandatory argument of
            \string\kanbantask\space must name a column from the
            enclosing board.\MessageBreak The task was ignored.}}
        {\ifdefempty\kbtask@columnid
        {\PackageError{kanban}
-         {unknown kanban column '#2'; valid columns:
-           \kanban@availablecolumns}
+         {unknown kanban column '#2'.
+           \MessageBreak Valid columns: \kanban@availablecolumns}
          {Column names are matched without regard to letter case.
            \MessageBreak
            The task was ignored because its normalized target is not in
@@ -123,6 +106,8 @@
            {\unexpanded\expandafter{\kbtask@deadline}}%
            {\unexpanded\expandafter{\kbtask@late}}%
            {\unexpanded\expandafter{\kbtask@completed}}}%
+         \expandafter\kanban@diagnosedeadline\expandafter{%
+           \kbtask@deadline}%
        }}}
     {\ifbool{kanban@discardtasks}{}
       {\PackageError{kanban}
@@ -130,57 +115,42 @@
         {Move the task declaration between \string\begin{kanban} and
           \string\end{kanban}. The task was ignored.}}}}
 %    \end{macrocode}
+%
 % \begin{macro}{\kanbantask}
 % \begin{macro}{\kbtask}
-% The canonical public command supplies the compact task declaration syntax and
-% delegates all key processing, validation, and collection to the internal
-% implementation above. The concise command is installed by control-sequence
-% equivalence only when its name is free; an existing definition is preserved
-% with a warning.
-%
-% |\NewDocumentCommand| uses the signature |O{}mm|. |O{}| reads an optional
-% bracketed key list and supplies an empty default when it is absent; the two
-% |m| arguments read the target column and task body. The wrapper forwards the
-% optional list in brackets because |\kanban@dotask| is a traditional LaTeX2e
-% command with an optional argument. |\@ifundefined| performs the alias
-% collision test, |\let| installs exact equivalence, and |\string| plus
-% |\space| prints the affected command name legibly in the warning.
+% The canonical public command supplies the compact task declaration syntax
+% and delegates all key processing, validation, and collection to the
+% internal implementation. The concise command is installed by equivalence
+% only when its name is free. An existing definition is preserved with a
+% warning.
 %    \begin{macrocode}
 \NewDocumentCommand\kanbantask{O{}mm}{%
   \kanban@dotask[#1]{#2}{#3}}
 \@ifundefined{kbtask}
   {\let\kbtask\kanbantask}
   {\PackageWarning{kanban}
-    {\string\kbtask\space is already defined;
-      \MessageBreak use \string\kanbantask\space instead}}
+    {\string\kbtask\space is already defined.
+      \MessageBreak Use \string\kanbantask\space instead}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 %
 % \subsection{Board lifecycle}
 %
-% Board keys update only the active board snapshot. Column setup allocates its
-% isolated lists, prepares both rendering sequences, and validates the complete
-% gap width before typesetting begins. The entry routine also rejects nesting
-% before any outer state can be replaced. The environment itself supplies a TeX
-% group, so assignments intentionally divided into persistent and local forms
-% acquire the documented lifetime without a separate restoration procedure.
+% Board keys update only the active board snapshot. Column setup allocates
+% the isolated lists, prepares both rendering sequences, and validates the
+% complete gap width before typesetting begins. The entry routine rejects
+% nesting before any outer state can be replaced. The environment supplies a
+% TeX group, so assignments divided into persistent and local forms acquire
+% the documented lifetime without a separate restoration procedure.
 %
 % \paragraph{Board column selection and board-option keys.}
-% A blank board column value means ``use the persistent default'', while a
-% non-blank value is normalized as a board-local override. The board key family
-% then provides local counterparts to the persistent setup keys and adds the
-% valueless |break| switch. Start and reference dates use the same deferred
-% strategy as persistent setup so key order cannot alter ambiguous-date parsing.
-%
-% |\ifblank| selects default initialization or validated local selection.
-% |\keys_define:nn| creates the |kanban/board| family. The |break| handler calls
-% |\booltrue|, and |.value_forbidden:n| requires flag syntax without a value.
-% |.code:n| handlers delegate to the board-local selectors; |.meta:n| provides
-% the documented spelling aliases; and the date handlers stage values with
-% |\tl_set:Nn| and |\bool_set_true:N|. The nested |labels| key invokes the
-% board-label family. As in the other key families, the |unknown| handler uses
-% |\l_keys_key_str| to identify the ignored option precisely.
+% A blank board column value means ``use the persistent default''. A
+% non-blank value is normalized as a board-local override. The board key
+% family provides local counterparts to the persistent setup keys and adds
+% the valueless |break| switch. Start and reference dates use the same
+% deferred strategy as persistent setup, so key order cannot alter
+% ambiguous-date parsing.
 %    \begin{macrocode}
 \newcommand\kanban@setboardcolumns[1]{%
   \ifblank{#1}
@@ -216,18 +186,11 @@
 %    \end{macrocode}
 %
 % \paragraph{A deferred board-option transaction.}
-% Board-option processing mirrors persistent setup but commits staged dates to
-% local snapshot setters. All immediate options, including a possible
-% |date-format| override, are therefore resolved before the dates are parsed.
-% The transaction runs after the persistent values have been copied into the
-% board, so omitted keys naturally inherit their defaults.
-%
-% |\bool_set_false:N| resets the two staging sentinels, |\keys_set:nn| processes
-% the complete option list, and |\bool_if:NT| performs only the requested
-% commits. |\exp_args:NV| supplies each stored token-list value to its setter.
-% The protected definition prevents assignment code from being expanded in a
-% moving context. |\ExplSyntaxOff| returns to the LaTeX2e syntax used by the
-% dynamic renderer-sequence construction below.
+% Board-option processing mirrors persistent setup but commits staged dates
+% to the local snapshot setters. All immediate options, including a possible
+% |date-format| override, are resolved before the dates are parsed. The
+% transaction runs after the persistent values have been copied into the
+% board, so omitted keys inherit their defaults.
 %    \begin{macrocode}
 \cs_new_protected:Npn \kanban@processboardoptions #1
   {
@@ -246,21 +209,12 @@
 %
 % \paragraph{Per-column state and renderer-sequence construction.}
 % Each normalized column is represented internally by a numeric identifier.
-% Setup stores its display name, initializes its board-qualified deferred task
-% list and counter, assigns the cyclic palette background and foreground, and
-% appends one adapter call to each renderer sequence. Board qualification is
-% used for card lists and counts because those definitions are global during
-% collection; simple color and name definitions are removed explicitly when
-% the board closes.
-%
-% |\csdef| and |\csgdef| from |etoolbox| define dynamically named local and
-% global control sequences. |\csedef| performs a local expanded definition, so
-% the selected colors are fixed immediately. |\numdef| evaluates and stores the
-% incremented number of columns. |\eappto| appends expanded material to the
-% header, fixed-body, and break-layout sequences, while |\noexpand| preserves
-% the adapter command for execution at rendering time. |\ifnumequal| treats the
-% first break column specially; later columns prepend |\switchcolumn| so
-% |paracol| receives one stream per board column.
+% Setup stores the display name, initializes the board-qualified deferred
+% task list and counter, assigns the cyclic palette background and
+% foreground, and appends one adapter call to each renderer sequence. Card
+% lists and counts carry the board number because those definitions are
+% global during collection. Later columns in the break sequence are preceded
+% by |\switchcolumn| so that |paracol| receives one stream per board column.
 %    \begin{macrocode}
 \newcommand\kanban@setupcolumn[2]{%
   \csdef{kanban@name@#2}{#1}%
@@ -279,18 +233,10 @@
 %
 % \paragraph{Whole-board geometry validation.}
 % A syntactically valid non-negative gap may still be impossible for a board
-% with many columns. Before fixed rendering, the validator computes the total
-% width of the $N-1$ inter-column gaps and requires that total to be strictly
+% with many columns. Before rendering, the validator computes the total width
+% of the $N-1$ inter-column gaps and requires that total to be strictly
 % smaller than |\linewidth|. An impossible value produces an actionable error
-% and falls back to zero for this board, allowing the document to continue.
-%
-% The primitive |\ifnum| skips multiplication for a one-column board.
-% Dimension-register assignment copies the accepted board gap to
-% |\kanban@totalgaps|, and |\multiply| scales it by the integer expression
-% |\numexpr\kanban@ncols-1\relax|. |\ifdim| compares the result with the
-% available line width. Its empty true branch accepts valid geometry; the false
-% branch calls |\PackageError| and locally assigns |0pt|. Each primitive
-% conditional is terminated by its matching |\fi|.
+% and falls back to zero for this board, which lets the document continue.
 %    \begin{macrocode}
 \newcommand\kanban@validateboardgeometry{%
   \ifnum\kanban@ncols>1\relax
@@ -308,25 +254,16 @@
 %    \end{macrocode}
 %
 % \paragraph{Environment entry and state snapshot.}
-% Opening a board must either reject unsupported nesting or create a complete,
-% isolated snapshot before tasks are read. The successful path resets lifecycle
-% flags, advances the unique board identifier, copies every persistent scalar
-% and list default, processes local overrides, materializes the visual mode,
-% clears renderer sequences, registers all columns, validates aggregate
-% geometry, and suppresses source whitespace before the first task.
-%
-% The initial |\ifbool| detects an already active board before any outer state
-% is overwritten. A rejected inner environment clears its render and active
-% flags locally, sets |kanban@discardtasks|, and issues one |\PackageError|; its
-% body can then be read safely without being attached to the outer board. On a
-% valid entry, |\stepcounter| advances the LaTeX counter and |\arabic| supplies
-% its printable value. |\edef| takes expanded scalar snapshots, while |\let|
-% copies the current label meanings. Length-register assignment copies the
-% persistent gap. The previously defined initialization and option functions
-% then build the structured state. Finally, |\def| empties the three deferred
-% sequences and resets the numeric column macro, and |\ignorespaces| removes
-% indentation introduced by the source layout immediately after
-% |\begin{kanban}|.
+% Opening a board either rejects unsupported nesting or creates a complete
+% isolated snapshot before tasks are read. A rejected inner environment
+% clears its render and active flags locally, sets the discard flag, and
+% issues one error, so its body can be read safely without being attached
+% to the outer board. The successful path resets the lifecycle flags,
+% advances the unique board identifier, copies every persistent scalar and
+% list default, processes local overrides, materializes the visual mode,
+% clears the renderer sequences, registers all columns, validates the
+% aggregate geometry, and suppresses source whitespace before the first
+% task.
 %    \begin{macrocode}
 \newcommand\kanban@begin[1]{%
    \ifbool{kanban@active}
@@ -362,35 +299,23 @@
    \kanban@validateboardgeometry
    \ignorespaces}}
 %    \end{macrocode}
+%
 % \begin{macro}{\kanban}
 % \begin{macro}{\endkanban}
 % The public environment has one optional board-key list and no mandatory
-% column argument; columns come from the current persistent default unless a
-% board-local |columns| key overrides it. Closing the environment selects the
-% page-breakable |paracol| renderer or the indivisible fixed raster. A rejected
-% nested environment has its render flag cleared and therefore produces no
-% board. Successfully rendered boards release their dynamically named state
-% afterward.
+% column argument. Columns come from the persistent default unless a
+% board-local |columns| key overrides them. Closing the environment selects
+% the page-breakable |paracol| renderer or the indivisible fixed raster. A
+% rejected nested environment has its render flag cleared and therefore
+% produces no board. Successfully rendered boards release their dynamically
+% named state afterward, and the environment group restores all remaining
+% local snapshots.
 %
-% |\NewDocumentEnvironment| defines both the begin and end commands and checks
-% that the environment name is new. Its signature |O{}| reads an optional key
-% list with an empty default. The begin code delegates to |\kanban@begin|. In
-% the end code, |\ifbool{kanban@render}| guards the complete rendering and
-% cleanup path. |\par\medskip| leaves the task-declaration paragraph and
-% separates the board from preceding text.
-%
-% In break mode, |\setlength| assigns the board gap to |paracol|'s standard
-% |\columnsep|, |\begin{paracol}{\kanban@ncols}| opens the requested number of
-% independent streams, and the prepared sequence supplies headers, cards, and
-% |\switchcolumn| calls. In fixed mode, |\noindent| suppresses paragraph
-% indentation and a full-line |minipage| makes the board indivisible. The
-% |tcbraster| has one column per Kanban stage and two rows: all headers followed
-% by all bodies. Its keys set the available width, board gap, zero row gap,
-% equal height within each row, and top alignment. Executing
-% |\kanban@headseq\kanban@colseq| fills the raster in row-major order.
-% After either renderer, |\vspace{2mm}| provides documented following space and
-% |\kanban@cleanupboard| undefines per-column state. The environment's ordinary
-% TeX group then restores all remaining local snapshots automatically.
+% In break mode, the board gap is assigned to the standard |\columnsep| used
+% by |paracol|, and the prepared sequence supplies headers, cards, and
+% |\switchcolumn| calls. In fixed mode, a full-line |minipage| makes the
+% board indivisible. The raster has one column per Kanban stage and two rows,
+% all headers followed by all bodies, with equal heights within each row.
 %    \begin{macrocode}
 \NewDocumentEnvironment{kanban}{O{}}
   {\kanban@begin{#1}}

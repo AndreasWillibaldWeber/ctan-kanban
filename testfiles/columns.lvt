@@ -36,6 +36,11 @@
 \begin{kanban}
   \kbcheckboardcolumns{BACKLOG,DOING,DONE}{KANBAN OMITTED COLUMNS}
   \kbcheckdefaultids
+  \makeatletter
+  \ifcsstring{kanban@name@1}{Backlog}
+    {\TYPE{KANBAN DEFAULT HEADING SPELLING OK}}
+    {\TYPE{KANBAN DEFAULT HEADING SPELLING FAILED}}
+  \makeatother
   \kanbantask{backlog}{Default first column}
   \kanbantask{Doing}{Default second column}
   \kanbantask{dOnE}{Default third column}
@@ -52,9 +57,14 @@
 \end{kanban}
 \begin{kanban}[columns={One,tWo}]
   \kbcheckboardcolumns{ONE,TWO}{KANBAN LOCAL COLUMNS}
+  \makeatletter
+  \ifcsstring{kanban@name@2}{tWo}
+    {\TYPE{KANBAN HEADING SPELLING PRESERVED OK}}
+    {\TYPE{KANBAN HEADING SPELLING PRESERVED FAILED}}
+  \makeatother
   \kanbantask{oNe}{Local first column}
   \makeatletter
-  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}\def\MessageBreak{}
   \makeatother
   \kanbantask{}{Missing target}
   \kanbantask{Missing}{Unknown target}
@@ -69,10 +79,15 @@
 \kbcheckglobalcolumns{QUEUED,ACTIVE,COMPLETE}{KANBAN LOCAL SCOPE}
 \begingroup
   \makeatletter
-  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}\def\MessageBreak{}
   \makeatother
   \begin{kanban}[columns={Alpha,aLpHa}]
     \kbcheckboardcolumns{ALPHA}{KANBAN DUPLICATE NORMALIZATION}
+    \makeatletter
+    \ifcsstring{kanban@name@1}{Alpha}
+      {\TYPE{KANBAN DUPLICATE KEEPS FIRST SPELLING OK}}
+      {\TYPE{KANBAN DUPLICATE KEEPS FIRST SPELLING FAILED}}
+    \makeatother
     \kanbantask{alpha}{Deduplicated column}
   \end{kanban}
 \endgroup
@@ -86,6 +101,14 @@
   \fi
   \xdef\kbtestboardid{\kanban@boardgroup}
   \makeatother
+\end{kanban}
+\begin{kanban}[columns={ Spaced name , Other}]
+  \makeatletter
+  \ifcsstring{kanban@name@1}{Spaced name}
+    {\TYPE{KANBAN HEADING TRIMMED OK}}
+    {\TYPE{KANBAN HEADING TRIMMED FAILED}}
+  \makeatother
+  \kanbantask{spaced name}{A trimmed heading}
 \end{kanban}
 \def\kbmacrocolumn{Macro Stage}
 \begin{kanban}[columns={\kbmacrocolumn}]
@@ -106,7 +129,7 @@
 \begin{kanban}[columns={Outer}]
   \begingroup
     \makeatletter
-    \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+    \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}\def\MessageBreak{}
     \makeatother
     \begin{kanban}[columns={Inner}]
       \kanbantask{Inner}{Ignored nested task}
@@ -124,7 +147,7 @@
 \end{kanban}
 \begingroup
   \makeatletter
-  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}\def\MessageBreak{}
   \makeatother
   \kanbantask{ONE}{Outside board}
 \endgroup

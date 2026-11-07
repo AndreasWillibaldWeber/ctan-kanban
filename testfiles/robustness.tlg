@@ -3,23 +3,26 @@ Don't change this file in any respect.
 KANBAN INVALID STARTDATE PRESERVES VALUE OK
 KANBAN EXPANDED CURRENT DATE OK
 KANBAN VALID LEAP DATE OK
-Package kanban Warning: invalid deadline date '29.02.2025'; displaying a neutral label on input line ....
 KANBAN INVALID LEAP DATE NEUTRAL OK
-Package kanban Warning: invalid deadline date '....-..-..'; displaying a neutral label on input line ....
 KANBAN INVALID ISO LEAP DATE NEUTRAL OK
-Package kanban Warning: invalid deadline date '31.04.2026'; displaying a neutral label on input line ....
 KANBAN INVALID MONTH DAY NEUTRAL OK
+KANBAN TWO-DIGIT YEAR NEUTRAL OK
+KANBAN TWO-DIGIT SLASH YEAR NEUTRAL OK
+KANBAN LOOSE ISO DATE CLASSIFIED OK
+KANBAN LOOSE YEAR-FIRST DATE CLASSIFIED OK
 KANBAN M LABEL NEUTRAL OK
 KANBAN PUNCTUATED LABEL NEUTRAL OK
-Package kanban Warning: invalid project-month deadline 'M0';
-(kanban)                neutral style used on input line ....
 KANBAN ZERO PROJECT MONTH NEUTRAL OK
-Package kanban Warning: invalid project-month deadline 'M1000000';
-(kanban)                neutral style used on input line ....
 KANBAN OUT-OF-RANGE PROJECT MONTH NEUTRAL OK
-Package kanban Warning: invalid project-month deadline 'M999999999999999999999999999999999999';
-(kanban)                neutral style used on input line ....
 KANBAN HUGE PROJECT MONTH NEUTRAL OK
 KANBAN PROJECT MONTH CURRENT OK
 KANBAN PROJECT MONTH FUTURE OK
+KANBAN WARNING: invalid-deadline '29.02.2025'
+KANBAN WARNING: invalid-deadline '....-..-..'
+KANBAN WARNING: invalid-deadline '31.04.2026'
+KANBAN WARNING: invalid-deadline '18.07.26'
+KANBAN WARNING: invalid-deadline '7/8/26'
+KANBAN WARNING: invalid-project-month 'M0'
+KANBAN WARNING: invalid-project-month 'M1000000'
+KANBAN DEADLINE DIAGNOSTICS AT DECLARATION OK
 KANBAN LARGE COLLECTION COUNT OK

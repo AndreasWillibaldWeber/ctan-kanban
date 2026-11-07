@@ -9,7 +9,7 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package; the complete list of files
+% This file is part of the `kanban' package. The complete list of files
 % constituting the work appears in the main source file kanban.dtx.
 % \fi
 %
@@ -19,30 +19,23 @@
 %
 % \subsection{Deadline engine}
 %
-% Deadline classification uses exact regular expressions before any numeric
-% conversion. The five supported notations enter one component validator and
-% one formatter; bounded project-month labels use a separate validated path,
-% while arbitrary descriptive labels remain neutral and unchanged. The engine
-% deliberately separates syntax recognition, Gregorian validation, display
-% formatting, and temporal classification. This separation permits a task to
-% retain a neutral descriptive deadline without misclassifying it as a broken
-% date.
+% Deadline classification uses anchored regular expressions before any
+% numeric conversion. The five supported notations enter one component
+% validator and one formatter. Bounded project-month labels use a separate
+% validated path, and arbitrary descriptive labels remain neutral and
+% unchanged. The engine separates syntax recognition, Gregorian validation,
+% display formatting, and temporal classification. This separation lets a
+% task keep a neutral descriptive deadline without misclassifying it as a
+% broken date. Diagnostics are issued when a task is declared, so a warning
+% names the line of the task rather than the end of the board.
 %
 % \paragraph{Typed parsing and calendar state.}
-% Date processing requires the original token list, regular-expression capture
-% groups, numeric components, maximum-day calculations, project-month state,
-% reference-date state, and explicit status flags. Allocating a distinct typed
-% variable for each role makes intermediate state visible and prevents the
-% same scratch register from carrying unrelated meanings across nested tests.
-%
-% |\tl_new:N| allocates the normalized input token list. |\seq_new:N| creates
-% the sequence into which a regular expression writes its complete match and
-% capture groups. Each |\int_new:N| allocates an integer variable for a
-% calendar or project component. Each |\bool_new:N| allocates a LaTeX3 Boolean
-% used to distinguish valid data from recognized-but-invalid syntax and from
-% neutral text. Allocation initializes these variables to empty, zero, or
-% false according to their type; individual parsing operations still reset the
-% relevant flags explicitly.
+% Date processing needs the normalized input, the capture groups of the last
+% match, numeric components, maximum-day calculations, project-month state,
+% reference-date state, display fragments, and explicit status flags. Each
+% role has its own variable, so no scratch register carries two meanings
+% across nested tests. The scratch variables of the kernel are deliberately
+% not used, because other packages may overwrite them between calls.
 %    \begin{macrocode}
 \tl_new:N \l__kanban_deadline_tl
 \seq_new:N \l__kanban_deadline_match_seq
@@ -50,7 +43,11 @@
 \int_new:N \l__kanban_deadline_month_int
 \int_new:N \l__kanban_deadline_year_int
 \int_new:N \l__kanban_deadline_max_day_int
+\int_new:N \l__kanban_swap_int
+\int_new:N \l__kanban_deadline_key_int
+\int_new:N \l__kanban_reference_key_int
 \int_new:N \l__kanban_project_month_int
+\int_new:N \l__kanban_current_month_int
 \int_new:N \l__kanban_project_start_day_int
 \int_new:N \l__kanban_project_start_month_int
 \int_new:N \l__kanban_project_start_year_int
@@ -58,73 +55,55 @@
 \int_new:N \l__kanban_reference_day_int
 \int_new:N \l__kanban_reference_month_int
 \int_new:N \l__kanban_reference_year_int
+\tl_new:N \l__kanban_reference_tl
+\tl_new:N \l__kanban_display_day_tl
+\tl_new:N \l__kanban_display_month_tl
+\tl_new:N \l__kanban_display_year_tl
+\tl_new:N \l__kanban_display_format_tl
+\tl_new:N \l__kanban_dimension_tl
 \bool_new:N \l__kanban_valid_date_bool
 \bool_new:N \l__kanban_valid_project_month_bool
 \bool_new:N \l__kanban_date_syntax_bool
+\bool_new:N \l__kanban_date_components_bool
 \bool_new:N \l__kanban_ambiguous_slash_bool
 \bool_new:N \l__kanban_project_month_syntax_bool
 %    \end{macrocode}
 %
-% \paragraph{Maximum days in a Gregorian month.}
-% Component validation needs the number of permitted days in the parsed month.
-% The helper implements the Gregorian leap-year rule: February has 29 days in
-% years divisible by 400 or divisible by 4 but not by 100; April, June,
-% September, and November have 30; all remaining valid months have 31.
+% The two syntax flags have distinct meanings. The syntax flag records that
+% the input has the shape of a date, which is the condition for a warning.
+% The components flag records that one of the exact notations captured year,
+% month, and day, which is the condition for validation.
 %
-% |\int_case:nnF| compares its first integer expression with each listed case
-% and executes the fallback |F| branch when no case matches. Nested
-% |\int_compare:nNnTF| functions express the leap-year decisions, and
-% |\int_mod:nn| supplies divisibility remainders. |\int_set:Nn| assigns the
-% selected maximum to the dedicated integer. Braced integer expressions are
-% evaluated by the LaTeX3 integer layer, so no explicit |\numexpr| is required.
+% \paragraph{Maximum days in a Gregorian month.}
+% Component validation needs the number of permitted days in the parsed
+% month. February has 29 days in years divisible by 400, or divisible by 4
+% but not by 100. April, June, September, and November have 30 days. All
+% other valid months have 31. The divisibility predicate reads the year
+% component that the parser has already assigned.
 %    \begin{macrocode}
+\prg_new_conditional:Npnn \__kanban_year_divisible:n #1 {p}
+  {
+    \int_compare:nNnTF
+      {\int_mod:nn {\l__kanban_deadline_year_int} {#1}} = {0}
+      {\prg_return_true:}
+      {\prg_return_false:}
+  }
 \cs_new_protected:Npn \__kanban_set_max_day:
   {
     \int_case:nnF {\l__kanban_deadline_month_int}
       {
         {2}
           {
-            \int_compare:nNnTF
+            \bool_if:nTF
               {
-                \int_mod:nn
-                  {\l__kanban_deadline_year_int}
-                  {400}
+                \__kanban_year_divisible_p:n {400}
+                || (
+                     \__kanban_year_divisible_p:n {4}
+                     && ! \__kanban_year_divisible_p:n {100}
+                   )
               }
-              = {0}
-              {
-                \int_set:Nn \l__kanban_deadline_max_day_int
-                  {29}
-              }
-              {
-                \int_compare:nNnTF
-                  {
-                    \int_mod:nn
-                      {\l__kanban_deadline_year_int}
-                      {100}
-                  }
-                  = {0}
-                  {
-                    \int_set:Nn \l__kanban_deadline_max_day_int
-                      {28}
-                  }
-                  {
-                    \int_compare:nNnTF
-                      {
-                        \int_mod:nn
-                          {\l__kanban_deadline_year_int}
-                          {4}
-                      }
-                      = {0}
-                      {
-                        \int_set:Nn \l__kanban_deadline_max_day_int
-                          {29}
-                      }
-                      {
-                        \int_set:Nn \l__kanban_deadline_max_day_int
-                          {28}
-                      }
-                  }
-              }
+              {\int_set:Nn \l__kanban_deadline_max_day_int {29}}
+              {\int_set:Nn \l__kanban_deadline_max_day_int {28}}
           }
         {4}{\int_set:Nn \l__kanban_deadline_max_day_int {30}}
         {6}{\int_set:Nn \l__kanban_deadline_max_day_int {30}}
@@ -136,20 +115,14 @@
 %    \end{macrocode}
 %
 % \paragraph{Gregorian component validation and capture conversion.}
-% Once a notation has assigned year, month, and day, the validator checks that
-% the year is positive, the month lies between 1 and 12, and the day lies in
-% the range permitted by the month and leap-year calculation. The capture
-% helper provides the single conversion path from regular-expression text to a
-% LaTeX3 integer.
-%
-% |\bool_set_false:N| establishes failure as the initial result. The one-branch
-% form |\int_compare:nNnT| executes its body only when the comparison is true;
-% nesting these tests means that the maximum-day helper is never called with an
-% invalid month. The final test sets the validity Boolean with
-% |\bool_set_true:N|. In the capture helper, |\seq_item:Nn| retrieves a capture
-% group and |\int_set:Nn| parses its digit tokens as an integer. Its |:Nn|
-% signature accepts the destination integer variable followed by the
-% one-based sequence position.
+% Once a notation has assigned year, month, and day, the validator checks
+% that the year is positive, that the month lies between 1 and 12, and that
+% the day lies in the range permitted by the month and the leap-year rule.
+% The tests are nested so that the maximum-day helper never sees an invalid
+% month. The capture helpers provide the single conversion path from
+% regular-expression text to integers. The three-argument helper receives the
+% capture positions of year, month, and day and also records that the input
+% had both date syntax and complete components.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_validate_date:
   {
@@ -177,102 +150,80 @@
     \int_set:Nn #1
       {\seq_item:Nn \l__kanban_deadline_match_seq {#2}}
   }
+\cs_new_protected:Npn \__kanban_set_components:nnn #1#2#3
+  {
+    \bool_set_true:N \l__kanban_date_syntax_bool
+    \bool_set_true:N \l__kanban_date_components_bool
+    \__kanban_set_match:Nn \l__kanban_deadline_year_int {#1}
+    \__kanban_set_match:Nn \l__kanban_deadline_month_int {#2}
+    \__kanban_set_match:Nn \l__kanban_deadline_day_int {#3}
+  }
 %    \end{macrocode}
 %
 % \paragraph{Recognition of the five date notations.}
-% The central parser recognizes dotted day-first dates, hyphenated ISO dates,
+% The parser recognizes dotted day-first dates, hyphenated ISO dates,
 % slash-separated year-first dates, and the two locale-dependent slash forms.
-% It first records whether the input has date syntax, then assigns all three
-% components, and only afterward invokes Gregorian validation. For an ambiguous
-% slash date, the selected date format determines the first interpretation. If
-% that interpretation is impossible, the parser swaps day and month once and
-% validates the alternative. This fallback accepts unambiguous human input
-% such as |31/12/2026| without weakening the documented display format.
+% Every notation requires a four-digit year. Month and day may have one or
+% two digits. For an ambiguous year-last slash date, the selected date format
+% determines the first interpretation. If that interpretation is impossible,
+% the parser swaps day and month once and validates the alternative, which
+% accepts unambiguous input such as |31/12/2026| under any format.
 %
-% |\regex_extract_once:nnNTF| matches an anchored regular expression once and
-% stores the full match plus parenthesized captures in a sequence. The
-% |\exp_args:NnV| prefix passes the value of the normalized input variable to
-% the regular-expression function. |\A| and |\Z| anchor the complete string;
-% bracket expressions and repetition counts describe the numeric fields.
-% Nested |TF| forms implement an ordered grammar without numeric conversion of
-% unmatched text. |\str_if_eq_p:ee| supplies expandable equality predicates to
-% |\bool_if:nTF|, while |\bool_if:nT| combines the ambiguity and validity flags.
-% |\int_set_eq:NN| copies integer values during the one-time day/month swap.
+% Input that has the shape of a date but matches none of the exact notations,
+% for example a two-digit year, sets only the syntax flag. Such input is
+% reported as an invalid date and is never silently treated as a label. This
+% protects against |18.07.26| being read as a date in the year 26.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_parse_date:nn #1#2
   {
     \bool_set_false:N \l__kanban_valid_date_bool
     \bool_set_false:N \l__kanban_date_syntax_bool
+    \bool_set_false:N \l__kanban_date_components_bool
     \bool_set_false:N \l__kanban_ambiguous_slash_bool
     \tl_set:Nx \l__kanban_deadline_tl {#1}
     \tl_trim_spaces:N \l__kanban_deadline_tl
     \exp_args:NnV \regex_extract_once:nnNTF
-      {\A([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{1,4})\Z}
+      {\A([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{4})\Z}
       \l__kanban_deadline_tl
       \l__kanban_deadline_match_seq
-      {
-        \bool_set_true:N \l__kanban_date_syntax_bool
-        \__kanban_set_match:Nn \l__kanban_deadline_day_int {2}
-        \__kanban_set_match:Nn \l__kanban_deadline_month_int {3}
-        \__kanban_set_match:Nn \l__kanban_deadline_year_int {4}
-      }
+      {\__kanban_set_components:nnn {4}{3}{2}}
       {
         \exp_args:NnV \regex_extract_once:nnNTF
-          {\A([0-9]{4})-([0-9]{2})-([0-9]{2})\Z}
+          {\A([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})\Z}
           \l__kanban_deadline_tl
           \l__kanban_deadline_match_seq
-          {
-            \bool_set_true:N \l__kanban_date_syntax_bool
-            \__kanban_set_match:Nn \l__kanban_deadline_year_int {2}
-            \__kanban_set_match:Nn \l__kanban_deadline_month_int {3}
-            \__kanban_set_match:Nn \l__kanban_deadline_day_int {4}
-          }
+          {\__kanban_set_components:nnn {2}{3}{4}}
           {
             \exp_args:NnV \regex_extract_once:nnNTF
-              {\A([0-9]{4})/([0-9]{2})/([0-9]{2})\Z}
+              {\A([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})\Z}
               \l__kanban_deadline_tl
               \l__kanban_deadline_match_seq
+              {\__kanban_set_components:nnn {2}{3}{4}}
               {
-                \bool_set_true:N \l__kanban_date_syntax_bool
-                \__kanban_set_match:Nn
-                  \l__kanban_deadline_year_int {2}
-                \__kanban_set_match:Nn
-                  \l__kanban_deadline_month_int {3}
-                \__kanban_set_match:Nn
-                  \l__kanban_deadline_day_int {4}
-              }
-              {
-                \exp_args:NnV \regex_extract_once:nnNT
-                  {\A([0-9]{1,2})/([0-9]{1,2})/([0-9]{1,4})\Z}
+                \exp_args:NnV \regex_extract_once:nnNTF
+                  {\A([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})\Z}
                   \l__kanban_deadline_tl
                   \l__kanban_deadline_match_seq
                   {
-                    \bool_set_true:N \l__kanban_date_syntax_bool
                     \bool_set_true:N \l__kanban_ambiguous_slash_bool
-                    \__kanban_set_match:Nn
-                      \l__kanban_deadline_year_int {4}
                     \bool_if:nTF
                       {
                         \str_if_eq_p:ee {#2} {english}
                         || \str_if_eq_p:ee {#2} {german}
                       }
-                      {
-                        \__kanban_set_match:Nn
-                          \l__kanban_deadline_day_int {2}
-                        \__kanban_set_match:Nn
-                          \l__kanban_deadline_month_int {3}
-                      }
-                      {
-                        \__kanban_set_match:Nn
-                          \l__kanban_deadline_month_int {2}
-                        \__kanban_set_match:Nn
-                          \l__kanban_deadline_day_int {3}
-                      }
+                      {\__kanban_set_components:nnn {4}{3}{2}}
+                      {\__kanban_set_components:nnn {4}{2}{3}}
+                  }
+                  {
+                    \exp_args:NnV \regex_match:nnT
+                      {\A[0-9]{1,4}[.\-/][0-9]{1,2}[.\-/][0-9]{1,4}\Z}
+                      \l__kanban_deadline_tl
+                      {\bool_set_true:N \l__kanban_date_syntax_bool}
                   }
               }
           }
       }
-    \bool_if:NT \l__kanban_date_syntax_bool
+    \bool_if:NT \l__kanban_date_components_bool
       {\__kanban_validate_date:}
     \bool_if:nT
       {
@@ -280,32 +231,25 @@
         && ! \l__kanban_valid_date_bool
       }
       {
-        \int_set_eq:NN \l_tmpa_int \l__kanban_deadline_day_int
+        \int_set_eq:NN \l__kanban_swap_int \l__kanban_deadline_day_int
         \int_set_eq:NN \l__kanban_deadline_day_int
           \l__kanban_deadline_month_int
-        \int_set_eq:NN \l__kanban_deadline_month_int \l_tmpa_int
+        \int_set_eq:NN \l__kanban_deadline_month_int \l__kanban_swap_int
         \__kanban_validate_date:
       }
   }
 %    \end{macrocode}
 %
 % \paragraph{Canonical and display formatting.}
-% Internally, accepted dates are stored in one unambiguous year--month--day
-% representation. At rendering time, the same numeric components are formatted
-% according to the board's selected notation. Keeping canonical storage and
-% presentation separate ensures that changing |date-format| affects input
-% interpretation and display, but not chronological comparison.
-%
-% The two padding helpers are deliberately expandable functions defined with
-% |\cs_new:Npn| rather than protected functions. |\int_compare:nNnT| emits a
-% leading zero when required, and |\int_to_arabic:n| emits the decimal digits.
-% The canonical function composes these expandable results directly. By
-% contrast, |\kanban@preparedeadline| is protected because it performs
-% assignments and parsing. It initially preserves the literal deadline, so
-% invalid dates and descriptive labels remain printable. For a valid date,
-% |\tl_set:Nx| materializes padded components, |\str_case:VnF| selects a format
-% by the value of the board-format token list, and |\cs_set:Npx| defines the
-% final display macro with the selected separators already expanded.
+% Accepted dates are stored internally in one unambiguous year, month, and
+% day representation. At rendering time the same numeric components are
+% formatted according to the notation selected for the board. Keeping
+% canonical storage and presentation separate ensures that |date-format|
+% affects input interpretation and display but never chronological
+% comparison. The padding helpers are expandable so that the canonical form
+% can be produced inside an expanded definition. The display macro keeps the
+% literal deadline for invalid dates and descriptive labels, so those values
+% remain printable.
 %    \begin{macrocode}
 \cs_new:Npn \__kanban_two_digits:n #1
   {
@@ -331,30 +275,61 @@
     \__kanban_parse_date:nn {#1} {\kanban@boarddateformat}
     \bool_if:NT \l__kanban_valid_date_bool
       {
-        \tl_set:Nx \l_tmpa_tl
+        \tl_set:Nx \l__kanban_display_day_tl
           {\__kanban_two_digits:n {\l__kanban_deadline_day_int}}
-        \tl_set:Nx \l_tmpb_tl
+        \tl_set:Nx \l__kanban_display_month_tl
           {\__kanban_two_digits:n {\l__kanban_deadline_month_int}}
-        \tl_set:Nx \l_tmpc_tl
+        \tl_set:Nx \l__kanban_display_year_tl
           {\__kanban_four_digits:n {\l__kanban_deadline_year_int}}
-        \tl_set:Nx \l_tmpd_tl {\kanban@boarddateformat}
-        \str_case:VnF \l_tmpd_tl
+        \tl_set:Nx \l__kanban_display_format_tl
+          {\kanban@boarddateformat}
+        \str_case:VnF \l__kanban_display_format_tl
           {
             {us}
-              {\cs_set:Npx \kb@displaydeadline
-                {\l_tmpb_tl/\l_tmpa_tl/\l_tmpc_tl}}
+              {
+                \cs_set:Npx \kb@displaydeadline
+                  {
+                    \l__kanban_display_month_tl /
+                    \l__kanban_display_day_tl /
+                    \l__kanban_display_year_tl
+                  }
+              }
             {english}
-              {\cs_set:Npx \kb@displaydeadline
-                {\l_tmpa_tl/\l_tmpb_tl/\l_tmpc_tl}}
+              {
+                \cs_set:Npx \kb@displaydeadline
+                  {
+                    \l__kanban_display_day_tl /
+                    \l__kanban_display_month_tl /
+                    \l__kanban_display_year_tl
+                  }
+              }
             {german}
-              {\cs_set:Npx \kb@displaydeadline
-                {\l_tmpa_tl.\l_tmpb_tl.\l_tmpc_tl}}
+              {
+                \cs_set:Npx \kb@displaydeadline
+                  {
+                    \l__kanban_display_day_tl .
+                    \l__kanban_display_month_tl .
+                    \l__kanban_display_year_tl
+                  }
+              }
             {iso}
-              {\cs_set:Npx \kb@displaydeadline
-                {\l_tmpc_tl-\l_tmpb_tl-\l_tmpa_tl}}
+              {
+                \cs_set:Npx \kb@displaydeadline
+                  {
+                    \l__kanban_display_year_tl -
+                    \l__kanban_display_month_tl -
+                    \l__kanban_display_day_tl
+                  }
+              }
             {ymd}
-              {\cs_set:Npx \kb@displaydeadline
-                {\l_tmpc_tl/\l_tmpb_tl/\l_tmpa_tl}}
+              {
+                \cs_set:Npx \kb@displaydeadline
+                  {
+                    \l__kanban_display_year_tl /
+                    \l__kanban_display_month_tl /
+                    \l__kanban_display_day_tl
+                  }
+              }
           }
           { }
       }
@@ -362,19 +337,12 @@
 %    \end{macrocode}
 %
 % \paragraph{Project-month syntax.}
-% Project deadlines such as |M1| are relative to a configured project start
-% date rather than to a calendar date written on the card. The parser accepts
-% a positive integer of at most six digits, records recognized but invalid
-% |M|-prefixed numeric syntax separately, and leaves all other text neutral.
-% The upper bound prevents pathological integer input while remaining far
-% beyond ordinary project durations.
-%
-% |\regex_match:nnT| records the broad |M| followed by digits syntax, whereas
-% |\regex_extract_once:nnNTF| applies the stricter nonzero bounded grammar and
-% captures the integer. |\AM[0-9]+\Z| uses |+| for one or more digits;
-% |[1-9][0-9]{0,5}| excludes zero and limits the accepted width. A successful
-% capture is converted with |\seq_item:Nn| and |\int_set:Nn|, after which
-% |\bool_set_true:N| marks the value as suitable for classification.
+% Project deadlines such as |M1| are relative to the configured start date
+% rather than to a calendar date written on the card. The parser accepts a
+% positive integer of at most six digits. It records recognized but invalid
+% |M|-prefixed numeric syntax separately and leaves all other text neutral.
+% The bound keeps malformed input away from integer arithmetic while
+% remaining far beyond any realistic project duration.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_parse_project_month:n #1
   {
@@ -400,28 +368,18 @@
 %    \end{macrocode}
 %
 % \paragraph{Reference-date loading and calendar classification.}
-% Classification is evaluated against a board-local reference date. If none
-% was configured, the engine reads TeX's compilation year, month, and day. A
-% configured value is already canonical, so the loader may extract it with one
-% exact expression. Calendar dates are then converted to order-preserving
-% integers of the form $10000y+100m+d$: a smaller value is overdue, and an
-% equal value is due now.
-%
-% |\tl_if_blank:VTF| selects the live-date or configured-date path. |\year|,
-% |\month|, and |\day| are TeX integer parameters.
-%
-% |\regex_extract_once:nnN| is used only in the configured branch. It is safe
-% there because the setter has already validated and canonicalized every
-% non-empty reference date. The classifier
-% uses |\int_set:Nn| for both sortable values and nested
-% |\int_compare:nNnTF| tests for the three possible temporal relations.
-% |\booltrue| sets the existing |etoolbox| status flags consumed by the card
-% renderer; leaving both false denotes a future or neutral deadline.
+% Classification is evaluated against the board-local reference date. If
+% none was configured, the engine reads the compilation year, month, and day
+% from TeX. A configured value is already canonical, so one exact expression
+% extracts it. Calendar dates are then converted to order-preserving integers
+% of the form $10000y+100m+d$. A smaller value is overdue and an equal value
+% is due now. The two |etoolbox| Booleans are the only facts the card
+% renderer consumes.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_load_reference_date:
   {
-    \tl_set:Nx \l_tmpa_tl {\kanban@thereference}
-    \tl_if_blank:VTF \l_tmpa_tl
+    \tl_set:Nx \l__kanban_reference_tl {\kanban@thereference}
+    \tl_if_blank:VTF \l__kanban_reference_tl
       {
         \int_set:Nn \l__kanban_reference_year_int {\year}
         \int_set:Nn \l__kanban_reference_month_int {\month}
@@ -430,7 +388,7 @@
       {
         \exp_args:NnV \regex_extract_once:nnN
           {\A([0-9]{4})-([0-9]{2})-([0-9]{2})\Z}
-          \l_tmpa_tl \l__kanban_deadline_match_seq
+          \l__kanban_reference_tl \l__kanban_deadline_match_seq
         \int_set:Nn \l__kanban_reference_year_int
           {\seq_item:Nn \l__kanban_deadline_match_seq {2}}
         \int_set:Nn \l__kanban_reference_month_int
@@ -442,43 +400,38 @@
 \cs_new_protected:Npn \__kanban_classify_calendar_date:
   {
     \__kanban_load_reference_date:
-    \int_set:Nn \l_tmpa_int
+    \int_set:Nn \l__kanban_deadline_key_int
       {\l__kanban_deadline_year_int * 10000
         + \l__kanban_deadline_month_int * 100
         + \l__kanban_deadline_day_int}
-    \int_set:Nn \l_tmpb_int
+    \int_set:Nn \l__kanban_reference_key_int
       {\l__kanban_reference_year_int * 10000
         + \l__kanban_reference_month_int * 100
         + \l__kanban_reference_day_int}
-    \int_compare:nNnTF {\l_tmpa_int} < {\l_tmpb_int}
+    \int_compare:nNnTF
+      {\l__kanban_deadline_key_int} < {\l__kanban_reference_key_int}
       {\booltrue{kb@overdue}}
       {
-        \int_compare:nNnT {\l_tmpa_int} = {\l_tmpb_int}
+        \int_compare:nNnT
+          {\l__kanban_deadline_key_int} = {\l__kanban_reference_key_int}
           {\booltrue{kb@duenow}}
       }
   }
 %    \end{macrocode}
 %
 % \paragraph{Project-month classification.}
-% A project month begins on the configured start-day number, not necessarily on
-% the first day of a calendar month. The classifier computes the nominal month
-% offset from the project start, clamps the boundary day to the last valid day
-% of shorter reference months, and subtracts one when the reference date has
-% not yet reached that boundary. It then compares the resulting project-month
-% number with the requested |M| value.
-%
-% The month offset is an ordinary LaTeX3 integer expression. |\int_set_eq:NN|
-% temporarily places the reference year and month in the date component
-% variables so the shared maximum-day function can be reused. The boundary is
-% clamped through |\int_compare:nNnT| and another equality assignment.
-% |\int_decr:N| adjusts the current project month before the final greater-than
-% and equality tests set the same two semantic |etoolbox| Booleans used by
-% calendar dates.
+% A project month begins on the configured start-day number, not necessarily
+% on the first day of a calendar month. The classifier computes the nominal
+% month offset from the project start, clamps the boundary day to the last
+% valid day of a shorter reference month, and subtracts one when the
+% reference date has not yet reached that boundary. The reference year and
+% month are placed temporarily in the date component variables so that the
+% shared maximum-day function can be reused.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_classify_project_month:
   {
     \__kanban_load_reference_date:
-    \int_set:Nn \l_tmpa_int
+    \int_set:Nn \l__kanban_current_month_int
       {(\l__kanban_reference_year_int
           - \l__kanban_project_start_year_int) * 12
         + (\l__kanban_reference_month_int
@@ -498,32 +451,27 @@
     \int_compare:nNnT
       {\l__kanban_reference_day_int}
       < {\l__kanban_project_boundary_day_int}
-      {\int_decr:N \l_tmpa_int}
-    \int_compare:nNnTF {\l_tmpa_int} > {\l__kanban_project_month_int}
+      {\int_decr:N \l__kanban_current_month_int}
+    \int_compare:nNnTF
+      {\l__kanban_current_month_int}
+      > {\l__kanban_project_month_int}
       {\booltrue{kb@overdue}}
       {
         \int_compare:nNnT
-          {\l_tmpa_int} = {\l__kanban_project_month_int}
+          {\l__kanban_current_month_int}
+          = {\l__kanban_project_month_int}
           {\booltrue{kb@duenow}}
       }
   }
 %    \end{macrocode}
-% \begin{macro}{\kb@evaloverdue}
-% This internal entry point is responsible for reducing every deadline token
-% list to two renderer-facing facts: overdue and due now. It resets both facts,
-% tries the calendar grammar first, and otherwise distinguishes an invalid date
-% from a project month and from an arbitrary neutral label. A project month is
-% classified only when the board has a valid start-date snapshot. Card
-% rendering therefore consumes only the two resulting Booleans and does not
-% need to understand date syntax.
 %
-% |\boolfalse| clears the |etoolbox| flags at every call. The nested
-% |\bool_if:NTF| tests branch on the LaTeX3 parser results. Valid calendar input
-% delegates directly to the calendar classifier. Recognized but invalid syntax
-% produces |\PackageWarning| and remains neutral. For a valid project month,
-% the start date is parsed through the same component path and copied with
-% |\int_set_eq:NN| before classification. |\MessageBreak| introduces a
-% controlled line break in a long diagnostic without changing its meaning.
+% \begin{macro}{\kb@evaloverdue}
+% This internal entry point reduces every deadline value to two
+% renderer-facing facts, overdue and due now. It resets both facts, tries the
+% calendar grammar first, and otherwise distinguishes a project month from a
+% neutral label. A project month is classified only when the board has a
+% valid start-date snapshot. The function issues no diagnostics, because
+% every invalid value has already been reported when its task was declared.
 %    \begin{macrocode}
 \cs_new_protected:Npn \kb@evaloverdue #1
   {
@@ -533,12 +481,10 @@
     \bool_if:NTF \l__kanban_valid_date_bool
       {\__kanban_classify_calendar_date:}
       {
-        \bool_if:NTF \l__kanban_date_syntax_bool
-          {\PackageWarning{kanban}
-            {invalid~deadline~date~'#1';~displaying~a~neutral~label}}
+        \bool_if:NF \l__kanban_date_syntax_bool
           {
             \__kanban_parse_project_month:n {#1}
-            \bool_if:NTF \l__kanban_valid_project_month_bool
+            \bool_if:NT \l__kanban_valid_project_month_bool
               {
                 \__kanban_parse_date:nn
                   {\kanban@thestart} {\kanban@boarddateformat}
@@ -553,33 +499,51 @@
                     \__kanban_classify_project_month:
                   }
               }
-              {
-                \bool_if:NT \l__kanban_project_month_syntax_bool
-                  {\PackageWarning{kanban}
-                    {invalid~project-month~deadline~'#1';
-                      \MessageBreak neutral~style~used}}
-              }
           }
       }
   }
 %    \end{macrocode}
 % \end{macro}
 %
+% \paragraph{Deadline diagnostics at declaration time.}
+% The collector calls this check for every accepted task that carries a
+% deadline. A value with date syntax that fails validation, and a value with
+% project-month syntax that lies outside the accepted range, each produce one
+% named warning. Because the check runs while the task declaration is being
+% read, the warning carries the line number of the task. Descriptive labels
+% produce no diagnostic.
+%    \begin{macrocode}
+\cs_new_protected:Npn \__kanban_deadline_diagnose:n #1
+  {
+    \__kanban_parse_date:nn {#1} {\kanban@boarddateformat}
+    \bool_if:NF \l__kanban_valid_date_bool
+      {
+        \bool_if:NTF \l__kanban_date_syntax_bool
+          {\msg_warning:nnn {kanban}{invalid-deadline}{#1}}
+          {
+            \__kanban_parse_project_month:n {#1}
+            \bool_if:nT
+              {
+                \l__kanban_project_month_syntax_bool
+                && ! \l__kanban_valid_project_month_bool
+              }
+              {\msg_warning:nnn {kanban}{invalid-project-month}{#1}}
+          }
+      }
+  }
+\cs_new_protected:Npn \kanban@diagnosedeadline #1
+  {\tl_if_blank:nF {#1} {\__kanban_deadline_diagnose:n {#1}}}
+%    \end{macrocode}
+%
 % \paragraph{Validated persistent and board-local date setters.}
 % Start and reference dates enter the package through several configuration
-% scopes, but all accepted non-empty values must be stored canonically. The
-% persistent setters update defaults for future boards globally. The board
-% setters update only the current environment. Empty values deliberately clear
-% the corresponding setting, while invalid non-empty values retain the
-% previously accepted value and issue the shared named warning.
-%
-% |\tl_if_blank:nTF| handles clearing separately from validation. Persistent
-% values use the global TeX definitions |\gdef| and |\xdef|; board snapshots
-% use the local |\def| and |\edef|. The |e| or |x| forms expand
-% |\__kanban_canonical_date:| so the stored text is a self-contained canonical
-% date rather than a reference to mutable parsing integers. |\msg_warning:nnnn|
-% issues the message defined during bootstrap and supplies its two placeholders
-% with the setting name and rejected value.
+% scopes, but every accepted non-empty value is stored canonically. The
+% persistent setters update the defaults for future boards globally. The
+% board setters update only the current environment. Empty values clear the
+% corresponding setting. Invalid non-empty values keep the previously
+% accepted value and issue the shared named warning. The expanded definitions
+% store a self-contained canonical date rather than a reference to the
+% mutable parsing integers.
 %    \begin{macrocode}
 \cs_new_protected:Npn \kanban@setstartdate #1
   {
@@ -635,22 +599,11 @@
 % The column-gap setters must reject malformed input before TeX attempts a
 % dimension assignment, because an unrestricted assignment can consume later
 % document tokens while searching for a unit. The validator accepts either a
-% complete explicit dimension in a standard TeX unit or one existing dimension
-% or skip register. It does not evaluate arbitrary macros or dimension
-% expressions at this boundary.
-%
-% |\prg_new_protected_conditional:Npnn| defines a protected LaTeX3 conditional
-% together with the requested |T|, |F|, and |TF| variants. The first helper uses
-% |\token_if_dim_register:NTF| and |\token_if_skip_register:NTF| to recognize a
-% single register token, and completes each path with |\prg_return_true:| or
-% |\prg_return_false:|. The second helper trims the candidate and applies an
-% anchored regular expression covering an optional sign, decimal syntax, and
-% the standard TeX units. |(?:...)| groups without creating captures. If that
-% grammar fails, |\tl_if_single_token:nTF| ensures that only one token is passed
-% to the register conditional. The final two protected wrappers translate the
-% LaTeX3 conditional and named message back to the LaTeX2e configuration layer.
-% |\ExplSyntaxOff| then restores normal document syntax before the next group of
-% traditional package definitions.
+% complete explicit dimension in a standard TeX unit or one existing
+% dimension or skip register. It does not evaluate arbitrary macros or
+% dimension expressions at this boundary. The two LaTeX2e-facing wrappers
+% translate the conditional and the named message for the configuration
+% layer.
 %    \begin{macrocode}
 \prg_new_protected_conditional:Npnn
   \__kanban_dimension_register:N #1 {T,F,TF}
@@ -666,17 +619,18 @@
 \prg_new_protected_conditional:Npnn
   \__kanban_dimension_valid:n #1 {T,F,TF}
   {
-    \tl_set:Nx \l_tmpa_tl {#1}
-    \tl_trim_spaces:N \l_tmpa_tl
+    \tl_set:Nx \l__kanban_dimension_tl {#1}
+    \tl_trim_spaces:N \l__kanban_dimension_tl
     \exp_args:NnV \regex_match:nnTF
       {\A[+\-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)
         (?:pt|pc|in|bp|cm|mm|dd|cc|sp|ex|em)\Z}
-      \l_tmpa_tl
+      \l__kanban_dimension_tl
       {\prg_return_true:}
       {
-        \exp_args:NV \tl_if_single_token:nTF \l_tmpa_tl
+        \exp_args:NV \tl_if_single_token:nTF \l__kanban_dimension_tl
           {
-            \exp_args:NV \__kanban_dimension_register:NTF \l_tmpa_tl
+            \exp_args:NV \__kanban_dimension_register:NTF
+              \l__kanban_dimension_tl
               {\prg_return_true:}
               {\prg_return_false:}
           }
@@ -689,7 +643,6 @@
   {\msg_warning:nnnn {kanban}{invalid-dimension}{#1}{#2}}
 \ExplSyntaxOff
 %    \end{macrocode}
-%
 %
 %    \begin{macrocode}
 %</package>

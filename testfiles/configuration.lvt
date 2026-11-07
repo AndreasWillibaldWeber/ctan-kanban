@@ -91,7 +91,7 @@
   \kanbantask{Todo}{Exercise board-local settings}
   \begingroup
     \makeatletter
-    \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}
+    \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
     \makeatother
     \kanbantask[prio=urgent]{Todo}{Exercise priority validation}
   \endgroup
@@ -148,7 +148,7 @@
 \endgroup
 \begingroup
   \makeatletter
-  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}
+  \def\PackageError#1#2#3{\TYPE{KANBAN ERROR: #2}}\def\MessageBreak{}
   \makeatother
   \begin{kanban}[columns={One,Two},columnsep=\linewidth]
     \makeatletter
