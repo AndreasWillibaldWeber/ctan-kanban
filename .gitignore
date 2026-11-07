@@ -9,8 +9,7 @@
 /kanban.pdf
 /kanban-ctan.zip
 /kanban.tds.zip
-/kanban-*-example.pdf
-/kanban-example.pdf
+/examples/*.pdf
 
 # TeX auxiliary files
 *.aux

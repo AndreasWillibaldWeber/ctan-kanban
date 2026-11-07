@@ -15,39 +15,34 @@ testfiledir = "testfiles"
 demofiles = {"examples/kanban-example.tex", "examples/kanban-*-example.tex"}
 textfiles = {
   "README.md",
-  "CONTRIBUTING.md",
-  "RELEASING.md",
   "CHANGELOG.md",
+  "DEPENDS.txt",
   "LICENSE"
 }
-packtdszip = true
+-- CTAN does not require a TDS archive for a package with a standard layout.
+-- The TDS tree is still assembled below build/distrib/tds for inspection.
+packtdszip = false
 tagfiles = {"kanban.dtx", "README.md"}
 
--- Keep the CTAN source archive self-testing without making the regression
--- files part of the docstrip unpacking input.  The latter would make l3build
--- discover duplicate tests in testfiledir and unpackdir.
+-- Ship the regression suite in the CTAN archive without making it part of
+-- the docstrip unpacking input. The latter would make l3build discover
+-- duplicate tests in testfiledir and unpackdir.
 assert(type(copyctan) == "function",
   "kanban: this l3build release does not provide copyctan()")
 local standard_copyctan = copyctan
 function copyctan()
   standard_copyctan()
-  assert(fileexists(ctandir .. "/" .. ctanpkg .. "/RELEASING.md"),
-    "kanban: CTAN archive is missing the release procedure")
   assert(fileexists(ctandir .. "/" .. ctanpkg .. "/kanban-board.dtx"),
     "kanban: CTAN archive is missing the split source parts")
+  assert(fileexists(ctandir .. "/" .. ctanpkg .. "/DEPENDS.txt"),
+    "kanban: CTAN archive is missing the dependency list")
   local ctan_testdir = ctandir .. "/" .. ctanpkg .. "/testfiles"
-  local tds_testdir = tdsdir .. "/source/" .. tdsroot .. "/" ..
-    module .. "/testfiles"
   mkdir(ctan_testdir)
-  mkdir(tds_testdir)
   for _, pattern in ipairs({"*.lvt", "*.tlg"}) do
     cp(pattern, testfiledir, ctan_testdir)
-    cp(pattern, testfiledir, tds_testdir)
   end
-  assert(fileexists(ctan_testdir .. "/compatibility.lvt"),
+  assert(fileexists(ctan_testdir .. "/strict.lvt"),
     "kanban: CTAN archive is missing the regression suite")
-  assert(fileexists(tds_testdir .. "/compatibility.lvt"),
-    "kanban: TDS archive is missing the regression suite")
 end
 
 function update_tag(file, content, tagname, tagdate)

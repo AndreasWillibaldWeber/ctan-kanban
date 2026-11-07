@@ -1,0 +1,6 @@
+hard xcolor
+hard etoolbox
+hard pgf
+hard tcolorbox
+hard paracol
+soft kvoptions
