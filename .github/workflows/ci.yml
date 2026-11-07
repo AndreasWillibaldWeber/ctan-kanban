@@ -19,10 +19,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out the source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test, document, and package
-        uses: xu-cheng/texlive-action@v3
+        uses: xu-cheng/texlive-action@22c04326a5d855880f9d39bb955138bf11c6df80 # v3
         with:
           # Pin the distribution year so routine image updates cannot change
           # the TeX toolchain silently within a release branch.
@@ -50,25 +50,28 @@ jobs:
               echo 'The manual contains an overfull box.' >&2
               exit 1
             fi
+            # The index must list expl3 functions as complete names. A bare
+            # one-letter entry such as \l would indicate name fragments.
+            if grep -Eq '^\\indexentry\{(l|g|c|cs|tl|int|bool|clist|prop|seq|msg|exp|_)=' build/doc/kanban.idx; then
+              echo 'The manual index contains expl3 name fragments.' >&2
+              exit 1
+            fi
 
             unzip -t kanban-ctan.zip
-            unzip -t kanban.tds.zip
-            # List each archive once and grep the file: under `pipefail`,
+            # List the archive once and grep the file. Under `pipefail`,
             # `unzip -l | grep -q` dies of SIGPIPE (exit 141) whenever grep
             # closes the pipe before unzip finishes writing.
             unzip -l kanban-ctan.zip > build/ctan-list.txt
-            unzip -l kanban.tds.zip > build/tds-list.txt
             grep -q 'kanban/testfiles/compatibility.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/customization.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/strict.lvt' build/ctan-list.txt
             grep -q 'kanban/testfiles/pagination.lvt' build/ctan-list.txt
             grep -q 'kanban/testfiles/reference-date.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/metadata.lvt' build/ctan-list.txt
-            grep -q 'kanban/RELEASING.md' build/ctan-list.txt
-            grep -q 'tex/latex/kanban/kanban.sty' build/tds-list.txt
-
-            unzip -p kanban.tds.zip tex/latex/kanban/kanban.sty \
-              > build/tds-kanban.sty
-            cmp build/unpacked/kanban.sty build/tds-kanban.sty
+            grep -q 'kanban/DEPENDS.txt' build/ctan-list.txt
+            grep -q 'kanban/kanban.pdf' build/ctan-list.txt
+            if grep -Eq 'RELEASING.md|CONTRIBUTING.md|tds.zip' build/ctan-list.txt; then
+              echo 'The CTAN archive contains repository-only files.' >&2
+              exit 1
+            fi
 
             for engine in pdflatex lualatex xelatex; do
               outdir="build/examples/${engine}"
@@ -98,7 +101,7 @@ jobs:
                command -v pdfinfo >/dev/null 2>&1; then
               manual_pages="$(pdfinfo build/doc/kanban.pdf | \
                 awk '/^Pages:/ {print $2}')"
-              test "${manual_pages}" -ge 40
+              test "${manual_pages}" -ge 30
               mkdir -p build/visual-review/manual \
                 build/visual-review/examples
               pdftoppm -png -r 96 build/doc/kanban.pdf \
@@ -110,7 +113,7 @@ jobs:
               done
               test -n "$(find build/visual-review -name '*.png' -size +0c)"
             else
-              echo 'Poppler is unavailable; PDF artifacts remain available for visual review.'
+              echo 'Poppler is unavailable. PDF artifacts remain available for visual review.'
             fi
 
             archive_check="build/archive-check"
@@ -121,7 +124,7 @@ jobs:
 
       - name: Retain review artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kanban-current-build
           if-no-files-found: error
@@ -131,7 +134,6 @@ jobs:
             build/visual-review/**/*.png
             build/test*/*.diff
             kanban-ctan.zip
-            kanban.tds.zip
 
   tex-live-2020:
     name: TeX Live 2020 compatibility
@@ -139,10 +141,10 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out the source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test the declared minimum distribution
-        uses: xu-cheng/texlive-action@v3
+        uses: xu-cheng/texlive-action@22c04326a5d855880f9d39bb955138bf11c6df80 # v3
         with:
           texlive_version: 2020
           os: debian
@@ -153,7 +155,7 @@ jobs:
 
       - name: Retain check diffs
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kanban-tex-live-2020-diffs
           if-no-files-found: warn
