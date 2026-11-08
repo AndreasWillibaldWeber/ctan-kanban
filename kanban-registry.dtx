@@ -45,8 +45,8 @@
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\msg_warning:nnxx {kanban}{empty-palette}
-            {\exp_not:V \l__kanban_palette_name_tl}{colors}}
+          {\use:x {\msg_warning:nnnn {kanban}{empty-palette}
+            {\exp_not:V \l__kanban_palette_name_tl}{colors}}}
           {
             \prop_gput:NVV \g__kanban_palettes_prop
               \l__kanban_palette_name_tl \l__kanban_palette_colors_clist
@@ -111,14 +111,14 @@
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\msg_warning:nnxx {kanban}{empty-palette}
-            {\exp_not:V \l__kanban_palette_name_tl}{color/text~pairs}}
+          {\use:x {\msg_warning:nnnn {kanban}{empty-palette}
+            {\exp_not:V \l__kanban_palette_name_tl}{color/text~pairs}}}
           {
             \clist_map_function:NN \l__kanban_palette_colors_clist
               \__kanban_palette_pair:n
             \bool_if:NTF \l__kanban_bad_palette_bool
-              {\msg_warning:nnx {kanban}{malformed-palette-pair}
-                {\exp_not:V \l__kanban_palette_name_tl}}
+              {\use:x {\msg_warning:nnn {kanban}{malformed-palette-pair}
+                {\exp_not:V \l__kanban_palette_name_tl}}}
               {
                 \prop_gput:NVV \g__kanban_palettes_prop
                   \l__kanban_palette_name_tl
@@ -164,8 +164,8 @@
         \tl_gset_eq:NN \g__kanban_palette_name_tl
           \l__kanban_palette_name_tl
       }
-      {\msg_warning:nnxx {kanban}{unknown-palette}
-        {palette}{\exp_not:V \l__kanban_palette_name_tl}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-palette}
+        {palette}{\exp_not:V \l__kanban_palette_name_tl}}}
   }
 \cs_new_protected:Npn \__kanban_palette_select_board:n #1
   {
@@ -182,8 +182,8 @@
             \l__kanban_palette_fg_tl}
           {\clist_clear:N \l__kanban_board_palette_fg_clist}
       }
-      {\msg_warning:nnxx {kanban}{unknown-palette}
-        {board~palette}{\exp_not:V \l__kanban_palette_name_tl}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-palette}
+        {board~palette}{\exp_not:V \l__kanban_palette_name_tl}}}
   }
 \cs_new_protected:Npn \kanban@paletteboardinit
   {

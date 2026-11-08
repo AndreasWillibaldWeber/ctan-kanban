@@ -2306,7 +2306,12 @@
 % after |\msg_line_context:| is absorbed as the end of that control word, so
 % a word space at that position is written as |\c_space_tl|. The
 % LaTeX2e-facing wrapper lets the parts written in LaTeX2e syntax issue a
-% named message with two parameters.
+% named message with two parameters. A call site that needs an expanded
+% argument, such as the name of an unknown key, expands the complete call
+% with |\use:x| and then invokes the base message function. The x-type
+% message variants are separate definitions on older kernels, so a call
+% through them would bypass a test harness that intercepts the base
+% function.
 % \Needspace{14\baselineskip}
 %    \begin{macrocode}
 \msg_new:nnnn {kanban}{invalid-date-setting}

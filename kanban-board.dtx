@@ -48,8 +48,8 @@
     completed .code:n = {\def\kbtask@completed{1}},
     completed .value_forbidden:n = true,
     unknown .code:n =
-      {\msg_warning:nnxx {kanban}{unknown-key}
-        {task}{\l_keys_key_str}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
+        {task}{\l_keys_key_str}}}
   }
 \cs_new_protected:Npn \kanban@processtaskoptions #1
   {\keys_set:nn {kanban/task}{#1}}
@@ -184,8 +184,8 @@
     columnsep .code:n = {\kanban@setboardcolumnsep{#1}},
     labels .code:n = {\keys_set:nn {kanban/board-labels}{#1}},
     unknown .code:n =
-      {\msg_warning:nnxx {kanban}{unknown-key}
-        {board}{\l_keys_key_str}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
+        {board}{\l_keys_key_str}}}
   }
 %    \end{macrocode}
 %

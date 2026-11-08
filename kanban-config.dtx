@@ -181,8 +181,8 @@
     low .code:n = {\kanban@setlabel{low}{#1}},
     done .code:n = {\kanban@setlabel{done}{#1}},
     unknown .code:n =
-      {\msg_warning:nnxx {kanban}{unknown-key}
-        {label}{\l_keys_key_str}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
+        {label}{\l_keys_key_str}}}
   }
 \keys_define:nn {kanban/board-labels}
   {
@@ -191,8 +191,8 @@
     low .code:n = {\kanban@setboardlabel{low}{#1}},
     done .code:n = {\kanban@setboardlabel{done}{#1}},
     unknown .code:n =
-      {\msg_warning:nnxx {kanban}{unknown-key}
-        {board~label}{\l_keys_key_str}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
+        {board~label}{\l_keys_key_str}}}
   }
 %    \end{macrocode}
 %
@@ -225,8 +225,8 @@
     columnsep .code:n = {\kanban@setcolumnsep{#1}},
     labels .code:n = {\keys_set:nn {kanban/setup-labels}{#1}},
     unknown .code:n =
-      {\msg_warning:nnxx {kanban}{unknown-key}
-        {setup}{\l_keys_key_str}}
+      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
+        {setup}{\l_keys_key_str}}}
   }
 %    \end{macrocode}
 %
