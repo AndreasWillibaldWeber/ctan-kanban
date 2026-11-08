@@ -1,6 +1,6 @@
 # kanban
 
-Current release: **1.0.0** (2026-11-07)
+Current release: **1.0.0** (2026-11-15)
 
 `kanban` typesets Kanban project boards in LaTeX. A board consists of named
 columns and task cards. Each card may carry a priority, an author, a

@@ -3,7 +3,7 @@
 The package uses semantic versioning. Each release lists its user-visible
 changes here.
 
-## 1.0.0 (2026-11-07)
+## 1.0.0 (2026-11-15)
 
 Initial public release.
 
