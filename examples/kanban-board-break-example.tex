@@ -17,7 +17,9 @@
 \section*{A page-breakable Kanban board}
 
 % The break option selects the paracol-based layout. Column bodies may continue
-% on later pages and are intentionally not forced to a common height.
+% on later pages and are intentionally not forced to a common height. Twelve
+% cards carry a background tint in one of four colors. A tint travels with its
+% card onto the continuation page.
 \begin{kanban}[
   columns={Backlog,In progress,Review,Done},
   break,
@@ -25,7 +27,7 @@
 ]
   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]{Backlog}
     {\workitem{Confirm the public interface}}
-  \kanbantask[author=Alice]{Backlog}
+  \kanbantask[bg=yellow,author=Alice]{Backlog}
     {\workitem{Collect compatibility requirements}}
   \kanbantask[author=Bob]{Backlog}
     {\workitem{Inspect package dependencies}}
@@ -33,13 +35,13 @@
     {\workitem{Review the date model}}
   \kanbantask[author=Carol]{Backlog}
     {\workitem{Check palette contrast}}
-  \kanbantask[author=Carol]{Backlog}
+  \kanbantask[bg=kanbanRose,author=Carol]{Backlog}
     {\workitem{Plan the documentation examples}}
   \kanbantask[author=David]{Backlog}
     {\workitem{Prepare the release checklist}}
   \kanbantask[author=David]{Backlog}
     {\workitem{Confirm the archive structure}}
-  \kanbantask[author=Alice]{Backlog}
+  \kanbantask[bg=kanbanTeal,author=Alice]{Backlog}
     {\workitem{Check the installation instructions}}
   \kanbantask[author=Bob]{Backlog}
     {\workitem{Assess the supported engines}}
@@ -49,17 +51,17 @@
     {\workitem{Review the configuration hierarchy}}
   \kanbantask[author=Alice]{Backlog}
     {\workitem{Plan the final quality checks}}
-  \kanbantask[author=Bob]{Backlog}
+  \kanbantask[bg=orange,author=Bob]{Backlog}
     {\workitem{Confirm the submission schedule}}
 
   \kanbantask[prio=medium,author=Alice,
     due=07/18/2026]{In progress}
     {\workitem{Implement the configuration keys}}
-  \kanbantask[author=Alice]{In progress}
+  \kanbantask[bg=kanbanTeal,author=Alice]{In progress}
     {\workitem{Synchronize the header heights}}
   \kanbantask[author=Bob]{In progress}
     {\workitem{Synchronize fixed column heights}}
-  \kanbantask[author=Bob]{In progress}
+  \kanbantask[bg=orange,author=Bob]{In progress}
     {\workitem{Remove the outer side rules}}
   \kanbantask[author=Carol]{In progress}
     {\workitem{Extend the manual}}
@@ -67,7 +69,7 @@
     {\workitem{Compile the example documents}}
   \kanbantask[author=David]{In progress}
     {\workitem{Run the pdfTeX tests}}
-  \kanbantask[author=David]{In progress}
+  \kanbantask[bg=yellow,author=David]{In progress}
     {\workitem{Run the LuaTeX tests}}
   \kanbantask[author=Alice]{In progress}
     {\workitem{Compile the minimal example}}
@@ -79,22 +81,22 @@
     {\workitem{Inspect the dark board}}
   \kanbantask[author=Alice]{In progress}
     {\workitem{Regenerate the documented source}}
-  \kanbantask[author=Bob]{In progress}
+  \kanbantask[bg=kanbanRose,author=Bob]{In progress}
     {\workitem{Assemble the distribution archive}}
 
   \kanbantask[author=Alice,deadline=12/31/2099]{Review}
     {\workitem{Inspect the generated style file}}
-  \kanbantask[author=Bob]{Review}
+  \kanbantask[bg=kanbanRose,author=Bob]{Review}
     {\workitem{Compare the regression logs}}
   \kanbantask[author=Carol]{Review}
     {\workitem{Proofread the user interface section}}
-  \kanbantask[author=David]{Review}
+  \kanbantask[bg=yellow,author=David]{Review}
     {\workitem{Inspect the rendered examples}}
   \kanbantask[author=Alice]{Review}
     {\workitem{Check the CTAN metadata}}
   \kanbantask[author=Bob]{Review}
     {\workitem{Validate the source archive}}
-  \kanbantask[author=Carol]{Review}
+  \kanbantask[bg=orange,author=Carol]{Review}
     {\workitem{Confirm the license statements}}
   \kanbantask[author=David]{Review}
     {\workitem{Approve the release candidate}}
@@ -102,7 +104,7 @@
     {\workitem{Check the example comments}}
   \kanbantask[author=Bob]{Review}
     {\workitem{Review the package metadata}}
-  \kanbantask[author=Carol]{Review}
+  \kanbantask[bg=kanbanTeal,author=Carol]{Review}
     {\workitem{Verify the change history}}
   \kanbantask[author=David]{Review}
     {\workitem{Check the installation archive}}

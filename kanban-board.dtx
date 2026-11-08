@@ -52,8 +52,8 @@
 \usepackage{pdflscape}
 \usepackage{kanban-board}
 \tcbuselibrary{breakable}
-\newcommand{\kanbanManualBreakCard}[3]{%
-  \kanbantask[author=#2]{#1}{#3. Document the assumptions, record the
+\newcommand{\kanbanManualBreakCard}[4][]{%
+  \kanbantask[author=#3,#1]{#2}{#4. Document the assumptions, record the
     outcome, and retain the evidence required for the next project review.}}
 \newcommand{\kanbanManualBreakDeadlineCard}[4]{%
   \kanbantask[author=#2,#3]{#1}{#4. Document the assumptions, record the
@@ -1848,7 +1848,7 @@
 %   \kanbantask[prio=medium,author=Bob,
 %     due=07/18/2026]
 %     {In progress}{Write regression tests}
-%   \kanbantask[author=Carol,deadline=12/31/2099]
+%   \kanbantask[bg=yellow,author=Carol,deadline=12/31/2099]
 %     {Review}{Proofread the manual}
 %   \kanbantask[completed,due=12/31/2099]
 %     {Done}{Select the package license}
@@ -1864,7 +1864,10 @@
 % The next board begins below this paragraph and contains enough material to
 % continue onto the following page. Its headings are printed once at the
 % beginning. The cards that do not fit on this page continue in their
-% respective column streams on the next page.
+% respective column streams on the next page. Twelve cards carry a
+% background tint in one of four colors, three cards per color, so the
+% demonstration also shows that a tint travels with its card onto the
+% continuation page.
 %
 % \Needspace{14\baselineskip}
 % \begin{kanban}[
@@ -1872,45 +1875,57 @@
 % ]
 %   \kanbanManualBreakDeadlineCard{Backlog}{Alice}
 %     {deadline=01/01/2000}{Confirm the public interface}
-%   \kanbanManualBreakCard{Backlog}{Bob}{Collect compatibility requirements}
+%   \kanbanManualBreakCard[bg=yellow]{Backlog}{Bob}
+%     {Collect compatibility requirements}
 %   \kanbanManualBreakCard{Backlog}{Carol}{Review package dependencies}
 %   \kanbanManualBreakCard{Backlog}{David}{Define the project date policy}
 %   \kanbanManualBreakCard{Backlog}{Alice}{Select the release palette}
 %   \kanbanManualBreakCard{Backlog}{Bob}{Identify supported engines}
-%   \kanbanManualBreakCard{Backlog}{Carol}{Plan the documentation structure}
+%   \kanbanManualBreakCard[bg=kanbanRose]{Backlog}{Carol}
+%     {Plan the documentation structure}
 %   \kanbanManualBreakCard{Backlog}{David}{Prepare the release checklist}
-%   \kanbanManualBreakCard{Backlog}{Alice}{Confirm the archive structure}
+%   \kanbanManualBreakCard[bg=kanbanTeal]{Backlog}{Alice}
+%     {Confirm the archive structure}
 %   \kanbanManualBreakCard{Backlog}{Bob}{Review installation instructions}
 %   \kanbanManualBreakCard{Backlog}{Carol}{Assess documented limitations}
-%   \kanbanManualBreakCard{Backlog}{David}{Schedule the release review}
+%   \kanbanManualBreakCard[bg=orange]{Backlog}{David}
+%     {Schedule the release review}
 %
 %   \kanbanManualBreakDeadlineCard{In progress}{Alice}
 %     {due=07/18/2026}
 %     {Implement configuration keys}
 %   \kanbanManualBreakCard{In progress}{Bob}{Apply the visual modes}
-%   \kanbanManualBreakCard{In progress}{Carol}{Synchronize header heights}
+%   \kanbanManualBreakCard[bg=kanbanTeal]{In progress}{Carol}
+%     {Synchronize header heights}
 %   \kanbanManualBreakCard{In progress}{David}{Equalize fixed column bodies}
-%   \kanbanManualBreakCard{In progress}{Alice}{Remove outer side rules}
+%   \kanbanManualBreakCard[bg=orange]{In progress}{Alice}
+%     {Remove outer side rules}
 %   \kanbanManualBreakCard{In progress}{Bob}{Extend the user manual}
 %   \kanbanManualBreakCard{In progress}{Carol}{Compile example documents}
-%   \kanbanManualBreakCard{In progress}{David}{Add regression assertions}
+%   \kanbanManualBreakCard[bg=yellow]{In progress}{David}
+%     {Add regression assertions}
 %   \kanbanManualBreakCard{In progress}{Alice}{Run the pdfTeX checks}
 %   \kanbanManualBreakCard{In progress}{Bob}{Run the LuaTeX checks}
-%   \kanbanManualBreakCard{In progress}{Carol}{Generate the release archive}
+%   \kanbanManualBreakCard[bg=kanbanRose]{In progress}{Carol}
+%     {Generate the release archive}
 %   \kanbanManualBreakCard{In progress}{David}{Inspect the rendered output}
 %
 %   \kanbanManualBreakDeadlineCard{Review}{Alice}
 %     {deadline=12/31/2099}{Inspect the generated style file}
-%   \kanbanManualBreakCard{Review}{Bob}{Compare regression logs}
+%   \kanbanManualBreakCard[bg=kanbanRose]{Review}{Bob}
+%     {Compare regression logs}
 %   \kanbanManualBreakCard{Review}{Carol}{Proofread the public interface}
-%   \kanbanManualBreakCard{Review}{David}{Examine color contrast}
+%   \kanbanManualBreakCard[bg=yellow]{Review}{David}
+%     {Examine color contrast}
 %   \kanbanManualBreakCard{Review}{Alice}{Validate the documented source}
 %   \kanbanManualBreakCard{Review}{Bob}{Review the CTAN metadata}
 %   \kanbanManualBreakCard{Review}{Carol}{Check the license statements}
-%   \kanbanManualBreakCard{Review}{David}{Inspect the manual PDF}
+%   \kanbanManualBreakCard[bg=orange]{Review}{David}
+%     {Inspect the manual PDF}
 %   \kanbanManualBreakCard{Review}{Alice}{Test the installation procedure}
 %   \kanbanManualBreakCard{Review}{Bob}{Verify all example files}
-%   \kanbanManualBreakCard{Review}{Carol}{Confirm the change history}
+%   \kanbanManualBreakCard[bg=kanbanTeal]{Review}{Carol}
+%     {Confirm the change history}
 %   \kanbanManualBreakCard{Review}{David}{Approve the release candidate}
 % \end{kanban}
 %
