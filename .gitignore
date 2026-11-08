@@ -4,11 +4,11 @@
 # Local quality-assurance output
 /tmp/
 
-# Generated package and release artifacts
-/kanban-board.sty
-/kanban-board.pdf
-/kanban-board.zip
-/kanban-board.tds.zip
+# Generated package and release artifacts. Every style file, PDF, and
+# archive in the repository root is generated, whatever its name.
+/*.sty
+/*.pdf
+/*.zip
 /examples/*.pdf
 
 # TeX auxiliary files
