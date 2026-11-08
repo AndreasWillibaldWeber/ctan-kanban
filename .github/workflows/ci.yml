@@ -30,6 +30,17 @@ jobs:
           os: debian
           run: |
             set -euo pipefail
+            # The release version and date must agree in every metadata
+            # location. l3build tag rewrites all of them, and this check
+            # catches a forgotten run or a pattern that no longer matches.
+            version="$(sed -n 's/.*\\ProvidesPackage{kanban}\[[0-9/]* v\([0-9.]*\) .*/\1/p' kanban.dtx)"
+            slashdate="$(sed -n 's/.*\\ProvidesPackage{kanban}\[\([0-9/]*\) v.*/\1/p' kanban.dtx)"
+            isodate="${slashdate//\//-}"
+            test -n "${version}" && test -n "${slashdate}"
+            grep -Fq "\\changes{v${version}}{${slashdate}}" kanban.dtx
+            grep -Fq "Current release: **${version}** (${isodate})" README.md
+            grep -Fq "## ${version} (${isodate})" CHANGELOG.md
+            grep -Fq "placeholder: ${version} (${isodate})" .github/ISSUE_TEMPLATE/bug_report.yml
             # The container image ships zip but not unzip, which the archive
             # inspection steps below require.
             apt-get update -qq

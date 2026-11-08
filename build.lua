@@ -22,7 +22,14 @@ textfiles = {
 -- CTAN does not require a TDS archive for a package with a standard layout.
 -- The TDS tree is still assembled below build/distrib/tds for inspection.
 packtdszip = false
-tagfiles = {"kanban.dtx", "README.md"}
+-- Every file that carries the release version or date. One l3build tag
+-- call rewrites all of them, and the CI workflow checks that they agree.
+tagfiles = {
+  "kanban.dtx",
+  "README.md",
+  "CHANGELOG.md",
+  ".github/ISSUE_TEMPLATE/bug_report.yml"
+}
 
 -- Ship the regression suite in the CTAN archive without making it part of
 -- the docstrip unpacking input. The latter would make l3build discover
@@ -46,7 +53,11 @@ function copyctan()
 end
 
 function update_tag(file, content, tagname, tagdate)
+  assert(tagname,
+    "kanban: l3build tag needs a version number, for example 1.0.0")
   local slashdate = string.gsub(tagdate, "-", "/")
+  -- The version is used inside Lua patterns, so its dots must be escaped.
+  local version_pattern = string.gsub(tagname, "%p", "%%%0")
   if file == "kanban.dtx" then
     content = string.gsub(
       content,
@@ -54,11 +65,30 @@ function update_tag(file, content, tagname, tagdate)
       "\\ProvidesPackage{kanban}[" .. slashdate .. " v" ..
         tagname .. " Kanban project boards]"
     )
+    content = string.gsub(
+      content,
+      "\\changes{v" .. version_pattern .. "}{%d%d%d%d/%d%d/%d%d}",
+      "\\changes{v" .. tagname .. "}{" .. slashdate .. "}"
+    )
   elseif file == "README.md" then
     content = string.gsub(
       content,
       "Current release: %*%*[^*]+%*%* %([^%)]+%)",
       "Current release: **" .. tagname .. "** (" .. tagdate .. ")"
+    )
+  elseif file == "CHANGELOG.md" then
+    -- Only the heading of the tagged version changes. Older releases keep
+    -- their dates.
+    content = string.gsub(
+      content,
+      "## " .. version_pattern .. " %([^%)]+%)",
+      "## " .. tagname .. " (" .. tagdate .. ")"
+    )
+  elseif file == "bug_report.yml" then
+    content = string.gsub(
+      content,
+      "placeholder: %d+%.%d+%.%d+ %([^%)]+%)",
+      "placeholder: " .. tagname .. " (" .. tagdate .. ")"
     )
   end
   return content

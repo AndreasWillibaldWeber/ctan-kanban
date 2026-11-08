@@ -28,11 +28,14 @@ support rather than by editing derived files.
 l3build tag --date YYYY-MM-DD X.Y.Z
 ```
 
-The command updates `\ProvidesPackage` in `kanban.dtx` and the release line
-in `README.md`. Update the `\changes` entry in `kanban.dtx`, the heading in
-`CHANGELOG.md`, and the version placeholder in the issue template by hand,
-then inspect the complete diff. `kanban.sty` is generated from the `.dtx`
-files and must not become an independent source of edits.
+The command rewrites every location that carries the version or the date:
+the package declaration and the change history entry in `kanban.dtx`, the
+release line in `README.md`, the heading of the tagged version in
+`CHANGELOG.md`, and the version placeholder in the issue template. The
+version number is mandatory. Continuous integration fails when these
+locations disagree, so a forgotten run cannot reach an upload. Inspect the
+diff before proceeding. `kanban.sty` is generated from the `.dtx` files and
+must not become an independent source of edits.
 
 ## 2. Run the reproducible build
 
