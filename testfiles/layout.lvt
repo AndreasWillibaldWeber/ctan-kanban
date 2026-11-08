@@ -8,7 +8,7 @@
   \makeatletter
   \setlength\linewidth{120pt}
   \setbox2=\vbox{\hsize=120pt
-    \kanban@rendercard{kanbanBlue}{Measured card}{}{}{}{}{}}
+    \kanban@rendercard{kanbanBlue}{Measured card}{}{}{}{}{}{}}
   \ifdim\wd2=120pt
     \TYPE{KANBAN FULL-WIDTH CARD OK}
   \else

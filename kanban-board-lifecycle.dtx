@@ -30,11 +30,11 @@
 %
 % \paragraph{Task-option keys.}
 % The task family translates user-facing metadata into temporary task
-% macros. Priority uses the validated semantic setter. Author and deadline
-% keep their token lists. The |due| key aliases |deadline|, and |late| and
-% |completed| are valueless flags, so a misleading form such as
-% |completed=false| is rejected. An unknown task option is ignored with a
-% scoped warning.
+% macros. Priority and background use validated setters. Author and deadline
+% keep their token lists. The |due| key aliases |deadline| and |background|
+% aliases |bg|. The |late| and |completed| keys are valueless flags, so a
+% misleading form such as |completed=false| is rejected. An unknown task
+% option is ignored with a scoped warning.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \keys_define:nn {kanban/task}
@@ -47,6 +47,8 @@
     late .value_forbidden:n = true,
     completed .code:n = {\def\kbtask@completed{1}},
     completed .value_forbidden:n = true,
+    bg .code:n = {\kanban@setbackground{#1}},
+    background .meta:n = {bg={#1}},
     unknown .code:n =
       {\use:x {\msg_warning:nnnn {kanban-board}{unknown-key}
         {task}{\l_keys_key_str}}}
@@ -66,7 +68,7 @@
 % diagnosed on its own.
 %
 % For a valid target, the counter is incremented globally and a
-% self-contained seven-argument call to |\kanban@rendercard| is appended
+% self-contained eight-argument call to |\kanban@rendercard| is appended
 % globally to the task list of the column. The renderer command is kept
 % unexpanded for the rendering phase, the column color is resolved at once
 % because it is already fixed, and the task body and all metadata are
@@ -75,7 +77,7 @@
 %    \begin{macrocode}
 \newcommand\kanban@dotask[3][]{%
   \def\kbtask@prio{}\def\kbtask@author{}\def\kbtask@deadline{}%
-  \def\kbtask@late{}\def\kbtask@completed{}%
+  \def\kbtask@late{}\def\kbtask@completed{}\def\kbtask@bg{}%
   \kanban@processtaskoptions{#1}%
   \ifbool{kanban@active}
     {\kanban@normtaskcol{#2}%
@@ -107,7 +109,8 @@
            {\unexpanded\expandafter{\kbtask@author}}%
            {\unexpanded\expandafter{\kbtask@deadline}}%
            {\unexpanded\expandafter{\kbtask@late}}%
-           {\unexpanded\expandafter{\kbtask@completed}}}%
+           {\unexpanded\expandafter{\kbtask@completed}}%
+           {\unexpanded\expandafter{\kbtask@bg}}}%
          \expandafter\kanban@diagnosedeadline\expandafter{%
            \kbtask@deadline}%
        }}}

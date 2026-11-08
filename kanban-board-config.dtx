@@ -130,7 +130,10 @@
 % \paragraph{Materialization of the visual mode.}
 % The mode name is semantic state. Rendering needs concrete text, surface,
 % border, and default heading colors, which this function derives from the
-% active board mode after all board options have been processed. Metadata
+% active board mode after all board options have been processed. The tint
+% percentage used for optional card backgrounds also depends on the mode. A
+% light surface needs only a touch of color, whereas a dark surface needs a
+% stronger share to stay visible while keeping the text contrast. Metadata
 % chip colors are absent here because their light styling is stable in both
 % modes.
 %    \begin{macrocode}
@@ -138,11 +141,13 @@
   \ifdefstring{\kanban@boardmode}{dark}{%
     \def\kanban@textcolor{white!88!black}%
     \def\kanban@cardcolor{kanbanInk}%
+    \def\kanban@cardtint{20}%
     \def\kanban@bordercolor{white!18!black}%
     \def\kanban@headingtext{white}%
   }{%
     \def\kanban@textcolor{kanbanInk}%
     \def\kanban@cardcolor{white}%
+    \def\kanban@cardtint{15}%
     \def\kanban@bordercolor{black!15}%
     \def\kanban@headingtext{white}%
   }}

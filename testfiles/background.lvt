@@ -1,0 +1,66 @@
+\input regression-test.tex
+\documentclass{article}
+\usepackage[reference-date=2026-07-18]{kanban-board}
+\newcommand\kbbrand{kanbanTeal}
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\makeatletter
+\newcommand\kbexpectbackground[3]{%
+  \def\kbtask@bg{unset}%
+  \kanban@processtaskoptions{#1}%
+  \ifdefstring{\kbtask@bg}{#2}
+    {\TYPE{#3 OK}}
+    {\TYPE{#3 FAILED: \kbtask@bg}}}
+\begingroup
+  % Capture the diagnostic semantically. The console rendering of l3msg
+  % varies across TeX Live releases.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnn #1#2#3
+    {\TYPE{KANBAN~WARNING:~#2~'#3'}}
+  \ExplSyntaxOff
+  \kbexpectbackground{bg=yellow}{yellow}{KANBAN BACKGROUND NAME}
+  \kbexpectbackground{background=orange}{orange}{KANBAN BACKGROUND ALIAS}
+  \kbexpectbackground{bg={ teal }}{teal}{KANBAN BACKGROUND TRIMMED}
+  \kbexpectbackground{bg=-red}{-red}{KANBAN BACKGROUND COMPLEMENT}
+  \kbexpectbackground{bg=red!30!blue}{red!30!blue}
+    {KANBAN BACKGROUND EXPRESSION}
+  \kbexpectbackground{bg=\kbbrand!60}{kanbanTeal!60}
+    {KANBAN BACKGROUND MACRO EXPANDED}
+  \kbexpectbackground{bg=}{}{KANBAN BACKGROUND BLANK}
+  \kbexpectbackground{bg=nosuchcolor}{}{KANBAN BACKGROUND UNKNOWN NAME}
+  \kbexpectbackground{bg=red!50!nosuch}{}
+    {KANBAN BACKGROUND UNKNOWN NAME IN EXPRESSION}
+  \kbexpectbackground{bg=\emph{x}}{}{KANBAN BACKGROUND ROBUST COMMAND}
+  \kbexpectbackground{bg=red!!}{}{KANBAN BACKGROUND MALFORMED}
+\endgroup
+\begin{kanban}[columns={Light}]
+  \kanban@resolvecardback{}
+  \ifdefstring{\kb@cardback}{white}
+    {\TYPE{KANBAN LIGHT DEFAULT SURFACE OK}}
+    {\TYPE{KANBAN LIGHT DEFAULT SURFACE FAILED}}
+  \kanban@resolvecardback{yellow}
+  \ifdefstring{\kb@cardback}{kb@tintbase!15!white}
+    {\TYPE{KANBAN LIGHT TINT OK}}
+    {\TYPE{KANBAN LIGHT TINT FAILED: \kb@cardback}}
+  \@ifundefinedcolor{kb@tintbase}
+    {\TYPE{KANBAN TINT BASE COLOR FAILED}}
+    {\TYPE{KANBAN TINT BASE COLOR OK}}
+  \kanbantask[bg=yellow,prio=high]{Light}{A tinted light card}
+  \kanbantask{Light}{A default light card}
+\end{kanban}
+\begin{kanban}[columns={Dark},mode=dark]
+  \kanban@resolvecardback{}
+  \ifdefstring{\kb@cardback}{kanbanInk}
+    {\TYPE{KANBAN DARK DEFAULT SURFACE OK}}
+    {\TYPE{KANBAN DARK DEFAULT SURFACE FAILED}}
+  \kanban@resolvecardback{red!30!blue}
+  \ifdefstring{\kb@cardback}{kb@tintbase!20!kanbanInk}
+    {\TYPE{KANBAN DARK TINT OK}}
+    {\TYPE{KANBAN DARK TINT FAILED: \kb@cardback}}
+  \kanbantask[bg=red!30!blue,completed]{Dark}{A tinted dark card}
+\end{kanban}
+\makeatother
+\TYPE{KANBAN BACKGROUND TINTS OK}
+\END
+\end{document}

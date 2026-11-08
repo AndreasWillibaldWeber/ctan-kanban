@@ -13,8 +13,9 @@ reference date for reproducible builds. Project-relative deadlines such as
 
 - Fixed horizontal boards with synchronized headings and column bodies, and
   page-breakable boards built on `paracol`.
-- Light and dark card modes, built-in and user-defined color palettes, and a
-  configurable gap between columns.
+- Light and dark card modes, optional background tints for individual
+  cards, built-in and user-defined color palettes, and a configurable gap
+  between columns.
 - Calendar deadlines in US, English, German, ISO, and year-first notation
   with Gregorian validation, and project months relative to a start date.
 - A three-level configuration hierarchy of package options, `\kanbansetup`,

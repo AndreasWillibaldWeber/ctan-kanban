@@ -205,7 +205,8 @@
 \CodelineIndex
 \RecordChanges
 \DoNotIndex{\NeedsTeXFormat,\ProvidesPackage,\RequirePackage}
-\DoNotIndex{\definecolor,\newbool,\newcounter,\newlength,\setlength}
+\DoNotIndex{\definecolor,\colorlet,\@ifundefinedcolor}
+\DoNotIndex{\newbool,\newcounter,\newlength,\setlength}
 \DoNotIndex{\def,\gdef,\edef,\let,\newcommand,\renewcommand}
 \DoNotIndex{\NewDocumentCommand,\NewDocumentEnvironment}
 \DoNotIndex{\DeclareOption,\ProcessOptions,\PackageError,\PackageWarning}
@@ -302,8 +303,9 @@
 % calendar dates or as months relative to a project start date. Two rendering
 % layouts are provided: a fixed horizontal board suited to short summaries and
 % a page-breakable layout for longer task lists. Named palettes and light or
-% dark board modes can be selected at package, document, or board level.
-% Deadline chips distinguish overdue, current, and future values. A reference
+% dark board modes can be selected at package, document, or board level, and
+% a single card may carry a tinted background. Deadline chips distinguish
+% overdue, current, and future values. A reference
 % date can be fixed for reproducible output. Otherwise the compilation date is
 % used. Five common numeric date formats are available, with US notation as the
 % initial default.
@@ -358,8 +360,8 @@
 %   as a concise alias when that short name is available.
 % \item[Shared setup] |\kanbansetup{key=value,...}|, with |\kbset| as a
 %   concise alias when that short name is available.
-% \item[Visual choices] Named palettes, light or dark mode, and fixed or
-%   page-breakable layouts.
+% \item[Visual choices] Named palettes, light or dark mode, tinted card
+%   backgrounds, and fixed or page-breakable layouts.
 % \item[Date choices] US, English, German, ISO, and slash-separated year-first
 %   display formats, with validated Gregorian classification.
 % \item[Column geometry] Synchronized headings and transparent column bodies
@@ -733,6 +735,10 @@
 % \item[|completed|]
 %   Adds a green marker, labelled \textsc{done} by default. Completion is
 %   presentational: it does not move the task or suppress its deadline.
+% \item[|bg=|\meta{color}]
+%   Tints the surface of the card with the given \textsf{xcolor} color or
+%   mixing expression. The alias |background| has exactly the same meaning.
+%   Section~\ref{sec:tints} describes the result in both modes.
 % \end{description}
 %
 % Task options are local to one declaration. An unknown option name generates
@@ -741,7 +747,9 @@
 % Unknown task option 'colour' on line 12. The option is ignored.
 % \end{kanbanManualMessage}
 % Priority values are trimmed and compared without regard to letter case. An
-% unrecognized value produces a warning, and the priority chip is omitted.
+% unrecognized value produces a warning, and the priority chip is omitted. A
+% background value must name a color known to \textsf{xcolor}. An unknown
+% value produces a warning, and the card keeps the default surface.
 %
 % Several options may be combined in one declaration:
 % \begin{lstlisting}
@@ -1261,6 +1269,58 @@
 % geometry and explicit deadline states. A separate custom-palette example is
 % provided as |kanban-board-palette-example.tex|.
 %
+% \subsection{Card background tints}
+% \label{sec:tints}
+%
+% The surface of an individual card can carry a touch of color. The task
+% option |bg| accepts an \textsf{xcolor} color name or a mixing expression of
+% the form \meta{name}|!|\meta{percentage}|!|\meta{name}, optionally negated
+% with a leading minus sign. The alias |background| is accepted as well. In
+% light mode the surface is white with 15 percent of the color. In dark mode
+% the surface is the dark card color with 20 percent of the color. The larger
+% share keeps the tint visible on a dark surface, and the text keeps a
+% contrast ratio above 4.5:1 with the built-in text colors for any tint.
+% Heading, column accent, metadata chips, and text colors are unchanged, so
+% a tint groups cards visually without competing with the semantic colors.
+% \begin{lstlisting}
+% \begin{kanban}[columns={Planned,Active,Complete}]
+%   \kanbantask[bg=yellow,prio=high]{Planned}{Clarify the scope}
+%   \kanbantask[bg=kanbanTeal!60,author=Bob]{Active}{Write the draft}
+%   \kanbantask[background=-red,completed]{Complete}{Archive the notes}
+%   \kanbantask{Complete}{A card with the default surface}
+% \end{kanban}
+% \end{lstlisting}
+% It produces the following board:
+%
+% \begin{kanban}[columns={Planned,Active,Complete}]
+%   \kanbantask[bg=yellow,prio=high]{Planned}{Clarify the scope}
+%   \kanbantask[bg=kanbanTeal!60,author=Bob]{Active}{Write the draft}
+%   \kanbantask[background=-red,completed]{Complete}{Archive the notes}
+%   \kanbantask{Complete}{A card with the default surface}
+% \end{kanban}
+%
+% The same declarations on a dark board mix the tints into the dark surface:
+%
+% \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
+%   \kanbantask[bg=yellow,prio=high]{Planned}{Clarify the scope}
+%   \kanbantask[bg=kanbanTeal!60,author=Bob]{Active}{Write the draft}
+%   \kanbantask[background=-red,completed]{Complete}{Archive the notes}
+%   \kanbantask{Complete}{A card with the default surface}
+% \end{kanban}
+%
+% The value is checked when the task is declared. Every name in the
+% expression must be known to \textsf{xcolor} at that point, and the
+% expression must follow the mixing grammar above. Any other value, including
+% a robust command, produces a warning that names the line of the task, and
+% the card keeps the default surface:
+% \begin{kanbanManualMessage}
+% Unknown color 'nosuchcolor' on line 12. The card keeps the default
+% background.
+% \end{kanbanManualMessage}
+% A tint is a property of one card. There is no board-level or document-level
+% default, because a tint marks an exception rather than a theme. The mixing
+% percentages are fixed in this release.
+%
 % \subsection{Labels and public style hooks}
 %
 % The visible semantic labels can be adapted without redefining internal
@@ -1361,14 +1421,16 @@
 % ``Invalid board startdate'', ``Invalid board reference-date'', and
 % ``Invalid board columnsep value''. A malformed or negative column
 % separation is intercepted before TeX emits a low-level number or unit
-% error. An unknown priority omits the chip. A deadline that resembles a
-% calendar date or a project month but lies outside the validated range is
-% displayed as a neutral label:
+% error. An unknown priority omits the chip. An unknown card background keeps
+% the default surface. A deadline that resembles a calendar date or a project
+% month but lies outside the validated range is displayed as a neutral label:
 % \begin{kanbanManualMessage}
 % Unknown priority 'urgent' on line 14. The priority chip is omitted.\\
-% Invalid deadline date '18.07.26' on line 15. The card shows a neutral
+% Unknown color 'nosuchcolor' on line 15. The card keeps the default
+% background.\\
+% Invalid deadline date '18.07.26' on line 16. The card shows a neutral
 % label.\\
-% Invalid project-month deadline 'M0' on line 16. The card shows a neutral
+% Invalid project-month deadline 'M0' on line 17. The card shows a neutral
 % label.
 % \end{kanbanManualMessage}
 % Deadline warnings are issued when the task is declared, so the line is
@@ -1413,6 +1475,7 @@
 % |invalid-date-setting| & Invalid start date or reference date \\
 % |invalid-dimension| & Invalid column separation \\
 % |unknown-priority| & Unknown priority \\
+% |unknown-color| & Unknown card background \\
 % |invalid-deadline| & Invalid deadline date \\
 % |invalid-project-month| & Invalid project-month deadline \\
 % |alias-taken| & Short command already defined \\
@@ -1465,6 +1528,9 @@
 %   letter case. Date-format values and their documented aliases follow the
 %   same normalization rule. A robust command in any of these values is
 %   reported as unknown. Palette names remain case-sensitive.
+% \item A card background must be a color name known to \textsf{xcolor} or a
+%   mixing expression of the form \meta{name}|!|\meta{number}|!|\meta{name}
+%   whose names are all known. Any other value is reported and ignored.
 % \item Column separation must be a non-negative explicit dimension, a single
 %   LaTeX length register, or a single TeX length parameter, and the sum of
 %   all inter-column gaps must be smaller than the available line width.
@@ -1610,17 +1676,18 @@
 % The source below keeps the column structure constant so that the change in
 % visual treatment can be assessed directly. Author chips and neutral deadline
 % chips keep the same light treatment in both boards. Red and amber deadline
-% states retain their semantic colors.
+% states retain their semantic colors. Two cards in each board carry a
+% background tint, which is mixed into the surface of the respective mode.
 %
 % \begin{samepage}
 % \begin{lstlisting}
 % \begin{kanban}[columns={Planned,Active,Complete},mode=light]
 %   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
 %     {Planned}{Confirm the requirements}
-%   \kanbantask[author=Bob,
+%   \kanbantask[bg=yellow,author=Bob,
 %     due=07/18/2026]
 %     {Active}{Implement the package interface}
-%   \kanbantask[completed,deadline=12/31/2099]
+%   \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
 %     {Complete}{Create the test files}
 % \end{kanban}
 %
@@ -1629,10 +1696,10 @@
 % \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
 %   \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
 %     {Planned}{Prepare the release notes}
-%   \kanbantask[author=David,
+%   \kanbantask[bg=yellow,author=David,
 %     due=07/18/2026]
 %     {Active}{Review the documentation}
-%   \kanbantask[completed,deadline=12/31/2099]
+%   \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
 %     {Complete}{Select the license}
 % \end{kanban}
 % \end{lstlisting}
@@ -1652,10 +1719,10 @@
 % \begin{kanban}[columns={Planned,Active,Complete},mode=light]
 %   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
 %     {Planned}{Confirm the requirements}
-%   \kanbantask[author=Bob,
+%   \kanbantask[bg=yellow,author=Bob,
 %     due=07/18/2026]
 %     {Active}{Implement the package interface}
-%   \kanbantask[completed,deadline=12/31/2099]
+%   \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
 %     {Complete}{Create the test files}
 % \end{kanban}
 %
@@ -1664,10 +1731,10 @@
 % \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
 %   \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
 %     {Planned}{Prepare the release notes}
-%   \kanbantask[author=David,
+%   \kanbantask[bg=yellow,author=David,
 %     due=07/18/2026]
 %     {Active}{Review the documentation}
-%   \kanbantask[completed,deadline=12/31/2099]
+%   \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
 %     {Complete}{Select the license}
 % \end{kanban}
 %
@@ -2095,7 +2162,10 @@
 % opposite ordering forms a real date. Project-month numbers are stripped of
 % leading zeros and bounded before integer conversion, and project-month
 % boundaries use the start-day number where possible and the last valid day
-% in shorter months. Every other value remains ordinary label text.
+% in shorter months. Every other value remains ordinary label text. An
+% optional card background is validated against the mixing grammar of
+% \textsf{xcolor} and the defined color names when the task is declared, and
+% the renderer mixes it into the surface of the active mode.
 %
 % Card surfaces, metadata chips, and deadline indicators are named
 % \textsf{tcolorbox} styles. Seven empty public styles are applied after the
@@ -2226,6 +2296,7 @@
 \def\kanban@boardmode{light}
 \def\kanban@textcolor{kanbanInk}
 \def\kanban@cardcolor{white}
+\def\kanban@cardtint{15}
 \def\kanban@bordercolor{black!15}
 \def\kanban@authorback{black!6}
 \def\kanban@authortext{black!58}
@@ -2292,6 +2363,9 @@
 \tl_new:N \l__kanban_column_display_tl
 \tl_new:N \l__kanban_column_id_tl
 \tl_new:N \l__kanban_choice_tl
+\tl_new:N \l__kanban_background_tl
+\seq_new:N \l__kanban_background_seq
+\bool_new:N \l__kanban_background_ok_bool
 \tl_new:N \l__kanban_pending_startdate_tl
 \tl_new:N \l__kanban_pending_reference_date_tl
 \bool_new:N \l__kanban_pending_startdate_bool
@@ -2361,6 +2435,11 @@
   {Empty~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
   {Give~every~label~a~non-empty~text,~for~example~
     labels={high=URGENT}.}
+\msg_new:nnnn {kanban-board}{unknown-color}
+  {Unknown~color~'#1'~\msg_line_context:.~The~card~keeps~the~default~
+    background.}
+  {Use~a~color~name~known~to~xcolor,~or~an~expression~such~as~
+    yellow!50~or~red!30!blue~whose~names~are~all~known.}
 \msg_new:nnnn {kanban-board}{unknown-priority}
   {Unknown~priority~'#1'~\msg_line_context:.~The~priority~chip~is~
     omitted.}

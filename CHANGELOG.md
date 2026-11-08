@@ -24,6 +24,9 @@ Initial public release.
   relative to a validated start date, with month-end clamping.
 - Fixed reference dates for reproducible classification. The compilation
   date remains the default.
+- Optional background tints for individual cards through the `bg` task
+  option. A tint is mixed into the light or dark card surface and validated
+  against the colors known to `xcolor` when the task is declared.
 - Fixed equal-height boards and page-breakable `paracol` boards, light and
   dark modes, built-in and custom palettes with optional heading
   foregrounds, semantic labels, and namespaced `tcolorbox` style hooks.

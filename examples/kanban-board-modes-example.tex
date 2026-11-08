@@ -11,28 +11,30 @@
 \section*{Light and dark board modes}
 
 % Light mode is the package default. It can nevertheless be stated explicitly
-% when the contrast with a following dark board is important.
+% when the contrast with a following dark board is important. The bg option
+% tints the surface of one card with a touch of the given color.
 \subsection*{Light mode}
 \begin{kanban}[columns={Planned,Active,Complete},mode=light]
   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
     {Planned}{Confirm the requirements}
-  \kanbantask[author=Bob,due=07/18/2026]
+  \kanbantask[bg=yellow,author=Bob,due=07/18/2026]
     {Active}{Implement the package interface}
-  \kanbantask[completed,deadline=12/31/2099]
+  \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
     {Complete}{Create the test files}
 \end{kanban}
 
 \bigskip
 
 % Dark mode changes only the board surfaces and text. It does not change the
-% page color or the surrounding document text.
+% page color or the surrounding document text. A tint is mixed into the dark
+% card surface, so the same color names work in both modes.
 \subsection*{Dark mode}
 \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
   \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
     {Planned}{Prepare the release notes}
-  \kanbantask[author=David,due=07/18/2026]
+  \kanbantask[bg=yellow,author=David,due=07/18/2026]
     {Active}{Review the documentation}
-  \kanbantask[completed,deadline=12/31/2099]
+  \kanbantask[bg=kanbanTeal,completed,deadline=12/31/2099]
     {Complete}{Select the license}
 \end{kanban}
 
