@@ -66,6 +66,16 @@ jobs:
             grep -q 'kanban/testfiles/strict.lvt' build/ctan-list.txt
             grep -q 'kanban/testfiles/pagination.lvt' build/ctan-list.txt
             grep -q 'kanban/testfiles/reference-date.lvt' build/ctan-list.txt
+            grep -q 'kanban/testfiles/robust-input.lvt' build/ctan-list.txt
+            # Every test and every example of the working tree must be shipped.
+            # The archive keeps the testfiles directory and places the
+            # examples flat next to the sources.
+            for shipped in testfiles/*.lvt testfiles/*.tlg; do
+              grep -q "kanban/${shipped}" build/ctan-list.txt
+            done
+            for shipped in examples/*.tex; do
+              grep -q "kanban/$(basename "${shipped}")" build/ctan-list.txt
+            done
             grep -q 'kanban/DEPENDS.txt' build/ctan-list.txt
             grep -q 'kanban/kanban.pdf' build/ctan-list.txt
             if grep -Eq 'RELEASING.md|CONTRIBUTING.md|tds.zip' build/ctan-list.txt; then
@@ -153,10 +163,34 @@ jobs:
             l3build check
             l3build doc
 
-      - name: Retain check diffs
+            # The shipped examples must also compile on the declared minimum
+            # distribution. One engine is sufficient here, because the engine
+            # comparison is made by the current distribution job.
+            outdir="build/examples/pdflatex"
+            mkdir -p "${outdir}"
+            for source in examples/kanban-example.tex examples/kanban-*-example.tex; do
+              TEXINPUTS="build/unpacked//:" \
+                pdflatex -interaction=nonstopmode -halt-on-error \
+                -output-directory="${outdir}" "${source}"
+              TEXINPUTS="build/unpacked//:" \
+                pdflatex -interaction=nonstopmode -halt-on-error \
+                -output-directory="${outdir}" "${source}"
+            done
+            if grep -Eq '(^! |LaTeX Error|Package .* Error|Undefined control sequence|Emergency stop|Fatal error occurred|Overfull \\[hv]box)' "${outdir}"/*.log; then
+              echo 'An example log produced on TeX Live 2020 contains a fatal diagnostic.' >&2
+              exit 1
+            fi
+            if grep -Eq 'LaTeX Warning: (There were undefined references|Label\(s\) may have changed)' "${outdir}"/*.log; then
+              echo 'An example produced on TeX Live 2020 contains an unresolved cross-reference.' >&2
+              exit 1
+            fi
+
+      - name: Retain check diffs and example logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kanban-tex-live-2020-diffs
           if-no-files-found: warn
-          path: build/test*/*.diff
+          path: |
+            build/test*/*.diff
+            build/examples/**/*.log
