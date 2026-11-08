@@ -1,9 +1,9 @@
 # Contributing to `kanban-board`
 
 Thank you for helping to improve `kanban-board`. Development takes place in the
-[public repository](https://github.com/andreaswillibaldweber/ctan-kanban).
+[public repository](https://github.com/AndreasWillibaldWeber/kanban-board).
 Defects and focused enhancement proposals belong in the
-[public issue tracker](https://github.com/andreaswillibaldweber/ctan-kanban/issues).
+[public issue tracker](https://github.com/AndreasWillibaldWeber/kanban-board/issues).
 
 ## Reporting a defect
 

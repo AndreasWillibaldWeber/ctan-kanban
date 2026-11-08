@@ -71,9 +71,9 @@ pdfTeX, LuaTeX, and XeTeX.
 
 Please include a minimal complete document, the relevant log output, and the
 versions of LaTeX and `kanban-board`. Development takes place in the
-[public repository](https://github.com/andreaswillibaldweber/ctan-kanban).
+[public repository](https://github.com/AndreasWillibaldWeber/kanban-board).
 Defects and enhancement proposals belong in its
-[issue tracker](https://github.com/andreaswillibaldweber/ctan-kanban/issues).
+[issue tracker](https://github.com/AndreasWillibaldWeber/kanban-board/issues).
 The maintainer is reached through the issue tracker.
 
 ## License
