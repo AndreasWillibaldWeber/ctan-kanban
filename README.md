@@ -74,6 +74,7 @@ versions of LaTeX and `kanban`. Development takes place in the
 [public repository](https://github.com/andreaswillibaldweber/ctan-kanban).
 Defects and enhancement proposals belong in its
 [issue tracker](https://github.com/andreaswillibaldweber/ctan-kanban/issues).
+The maintainer is reached through the issue tracker.
 
 ## License
 

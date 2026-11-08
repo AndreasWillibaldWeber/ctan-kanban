@@ -56,6 +56,11 @@
 \newcommand{\kanbanManualBreakDeadlineCard}[4]{%
   \kanbantask[author=#2,#3]{#1}{#4. Document the assumptions, record the
     outcome, and retain the evidence required for the next project review.}}
+% Diagnostic texts are quoted in typewriter type with ragged lines, so a
+% long message wraps without an overfull box.
+\newenvironment{kanbanManualMessage}
+  {\begin{quote}\ttfamily\frenchspacing\raggedright}
+  {\end{quote}}
 \newcommand{\kanbanManualDateFormatBoard}[2]{%
   \begin{minipage}[t]{0.48\linewidth}
     \textit{#2}\par\smallskip
@@ -206,7 +211,37 @@
 \DoNotIndex{\ifblank,\ifbool,\ifboolexpr,\ifdefempty,\ifdefstring}
 \DoNotIndex{\hfill,\hspace,\vspace}
 \DoNotIndex{\textcolor,\bfseries,\scriptsize,\raggedright}
-\DoNotIndex{\kanban@validateboardgeometry}
+% Regular-expression escapes, TeX primitives and parameters, LaTeX kernel
+% commands, and commands of other packages are not package macros and are
+% therefore kept out of the index. The conditional primitives are produced
+% by name, because the typeset documentation skips the driver inside a
+% conditional, and a literal else or fi token in the driver would end that
+% conditional prematurely.
+\DoNotIndex{\A,\AM,\Z,\s,\.,\-,\,,\\}
+\ExplSyntaxOn
+\exp_args:Ne \DoNotIndex
+  { \exp_not:c {ifnum} , \exp_not:c {ifdim} , \exp_not:c {else} ,
+    \exp_not:c {fi} }
+\ExplSyntaxOff
+\DoNotIndex{\begin,\end,\multiply,\csname,\endcsname}
+\DoNotIndex{\expandafter,\noexpand,\unexpanded,\global,\xdef,\numexpr}
+\DoNotIndex{\string,\space,\MessageBreak,\CurrentOption,\@ifundefined}
+\DoNotIndex{\year,\month,\day,\arabic,\stepcounter,\medskip}
+\DoNotIndex{\linewidth,\columnsep,\draw,\tikz,\switchcolumn}
+\DoNotIndex{\IfBooleanTF,\IfFormatAtLeastTF}
+\DoNotIndex{\boolfalse,\booltrue,\csdef,\csedef,\csgdef,\csuse,\csxappto}
+\DoNotIndex{\eappto,\ifnumequal,\ifstrequal,\notblank,\numdef,\numgdef}
+\DoNotIndex{\DeclareDefaultOption,\define@key,\ProcessKeyvalOptions}
+\DoNotIndex{\SetupKeyvalOptions}
+\DoNotIndex{\newtcolorbox,\tcbox,\tcbset,\tcbuselibrary}
+\DoNotIndex{\parindent,\mathsurround,\lineskiplimit,\hsize,\vsize,\maxdepth}
+\DoNotIndex{\splitmaxdepth,\boxmaxdepth,\hfuzz,\vfuzz,\delimitershortfall}
+\DoNotIndex{\nulldelimiterspace,\scriptspace,\predisplaysize,\displaywidth}
+\DoNotIndex{\displayindent,\overfullrule,\hangindent,\hoffset,\voffset}
+\DoNotIndex{\emergencystretch,\lineskip,\baselineskip,\parskip}
+\DoNotIndex{\abovedisplayskip,\abovedisplayshortskip,\belowdisplayskip}
+\DoNotIndex{\belowdisplayshortskip,\leftskip,\rightskip,\topskip}
+\DoNotIndex{\splittopskip,\tabskip,\spaceskip,\xspaceskip,\parfillskip}
 \DoNotIndex{\cs_new:Npn,\cs_new_protected:Npn,\cs_set:Npn,\cs_set:Npx}
 \DoNotIndex{\cs_new_eq:NN,\cs_if_exist:NTF,\cs_undefine:c}
 \DoNotIndex{\tl_new:N,\int_new:N,\bool_new:N,\seq_new:N,\clist_new:N}
@@ -385,10 +420,13 @@
 % current document-wide column list. The package initially defines that list as
 % |Backlog,Doing,Done|. A non-empty comma-separated value replaces the default
 % for this board only. The additional braces around the value protect its
-% commas from the surrounding key list. Each name is trimmed. Its spelling is
-% kept for the visible heading, and its uppercase form serves as the lookup
-% key. Task targets undergo the same conversion, so |ColName|, |colname|,
-% |Colname|, and |COLNAME| all identify the same column. Column names must be
+% commas from the surrounding key list. Each name is trimmed. Its spelling and
+% its formatting are kept for the visible heading. Its lookup key is the
+% purified text of the name in uppercase. Ordinary macros are expanded,
+% formatting commands and braces are removed, and letter case is ignored.
+% Task targets undergo the same conversion, so |ColName|, |colname|, and
+% |COLNAME| all identify the same column. Likewise, |\emph{Soon}| and |Soon|
+% denote the same column, and so do |Q{1}| and |Q1|. Column names must be
 % unique after normalization and must not contain commas.
 %
 % Each board is independent. When a board begins, the package first resolves
@@ -416,7 +454,9 @@
 % \item[|columnsep=|\meta{length}]
 %   Sets the horizontal distance between adjacent columns for this board. The
 %   default is |2mm|. This value overrides the document default for the current
-%   board only and is used by both the fixed and page-breakable layouts.
+%   board only and is used by both the fixed and page-breakable layouts. The
+%   accepted forms of the value are described in the subsection on column
+%   geometry.
 % \item[|palette=|\meta{name}]
 %   Selects a previously defined color palette for this board. The local
 %   selection does not change the palette used by later boards.
@@ -590,13 +630,15 @@
 % \end{kanban}
 % \end{lstlisting}
 % This option is local. It does not change the default used by the next
-% environment. Letter case need not match because declarations and task
-% targets share one uppercase lookup key. The heading shows the spelling used
-% in the column list. Other differences remain significant. For example,
-% |In review| and |Review| are distinct identifiers. If a list repeats a name
-% after normalization, the package reports an error, retains the first
-% occurrence, and ignores the repeated occurrence. This recovery permits the
-% remaining unique columns to be rendered if compilation is continued.
+% environment. Letter case and formatting need not match, because
+% declarations and task targets share one purified uppercase lookup key. The
+% heading shows the spelling and the formatting used in the column list.
+% Other differences remain significant. For example, |In review| and
+% |Review| are distinct identifiers. A list such as |columns={Q{1},Q1}|
+% repeats the key |Q1|. If a list repeats a name after normalization, the
+% package reports an error, retains the first occurrence, and ignores the
+% repeated occurrence. This recovery permits the remaining unique columns to
+% be rendered if compilation is continued.
 %
 % \section{Declaring tasks}
 %
@@ -612,20 +654,28 @@
 % |\kbtask| already exists when \textsf{kanban} is loaded, the package
 % preserves the existing definition, issues a warning, and leaves
 % |\kanbantask| fully available.
-% The column must have been declared by the enclosing board. Surrounding spaces
-% are removed and letters are converted to uppercase before lookup, making the
-% assignment case-insensitive. The task text is ordinary LaTeX material and may
-% contain emphasis, citations, and other commands suitable for a |tcolorbox|.
-% Fragile or unusually complex material should be tested in the intended
-% document class.
+% The column must have been declared by the enclosing board. The target is
+% purified and converted to uppercase before lookup in the same way as a
+% declared column name. The assignment therefore ignores surrounding spaces,
+% letter case, formatting commands, and braces. The task text is ordinary
+% LaTeX material and may contain emphasis, citations, robust commands, and
+% other commands suitable for a |tcolorbox|. It may also contain paragraph
+% breaks, written as |\par| or as a blank line. They are rendered as separate
+% paragraphs in the card. The option list and the column argument do not
+% accept a paragraph break. A blank line inside either of them produces the
+% LaTeX error ``Paragraph ended before |\kanbantask| was complete''. LaTeX
+% then discards the declaration up to that point and reads the remainder as
+% ordinary text. Fragile or unusually complex material should be tested in
+% the intended document class.
 %
 % The column argument may not be empty. A missing assignment or a normalized
 % name that is absent from the board produces a package error. The diagnostic
-% identifies the invalid input, lists the valid normalized columns, and explains
-% how to correct the declaration. The invalid task is not counted or rendered,
-% which leaves the remaining board data structurally consistent if compilation
-% is continued after the error. A task declared outside a |kanban| environment
-% similarly produces a direct error instead of modifying residual board data.
+% identifies the invalid input, lists the valid columns by their purified
+% uppercase keys, and explains how to correct the declaration. The invalid
+% task is not counted or rendered, which leaves the remaining board data
+% structurally consistent if compilation is continued after the error. A task
+% declared outside a |kanban| environment similarly produces a direct error
+% instead of modifying residual board data.
 %
 % For example, both tasks below are assigned to the single displayed column
 % |Research|:
@@ -643,6 +693,18 @@
 % For a board containing |RESEARCH| and |REVIEW|, the corresponding errors state
 % that the first task has no assigned column and that |Archive| is unknown.
 % Both diagnostics also report |RESEARCH,REVIEW| as the valid column set.
+%
+% Formatting in a column name is ignored for lookup in the same way as letter
+% case. The following board declares an emphasized heading and addresses it
+% with plain text. The heading shows the emphasized text, and an error for
+% this board would report |SOON,LATER| as the valid column set:
+% \begin{lstlisting}
+% \begin{kanban}[columns={\emph{Soon},Later}]
+%   \kanbantask{soon}{Prepare the next release}
+%   \kanbantask{\emph{Soon}}{Collect the release notes}
+% \end{kanban}
+% \end{lstlisting}
+% Both tasks are assigned to the first column.
 %
 % The package deliberately does not define the generic |\task| alias. That name
 % is used by several document classes and packages. Leaving it untouched
@@ -671,9 +733,13 @@
 %   presentational: it does not move the task or suppress its deadline.
 % \end{description}
 %
-% Task options are local to one declaration. Unknown option names generate a
-% package warning. Priority values are trimmed and compared without regard to
-% letter case. An unrecognized value produces a warning and no priority pill.
+% Task options are local to one declaration. An unknown option name generates
+% a warning that names the key:
+% \begin{kanbanManualMessage}
+% Unknown task option 'colour' on line 12. The option is ignored.
+% \end{kanbanManualMessage}
+% Priority values are trimmed and compared without regard to letter case. An
+% unrecognized value produces a warning, and the priority chip is omitted.
 %
 % Several options may be combined in one declaration:
 % \begin{lstlisting}
@@ -693,6 +759,15 @@
 %   Compare \emph{pdfLaTeX} and \emph{LuaLaTeX} output
 % }
 % \end{lstlisting}
+% A card may also contain more than one paragraph. A blank line or |\par| in
+% the text argument starts a new paragraph inside the card:
+% \begin{lstlisting}
+% \kanbantask{Doing}{
+%   Compare the output of both engines.
+%
+%   Record the differences in the project log.
+% }
+% \end{lstlisting}
 % Authors should keep card text concise. Long paragraphs are valid, but they
 % make narrow boards difficult to scan.
 %
@@ -710,13 +785,21 @@
 % \subsection{Calendar dates}
 %
 % A deadline is interpreted as a calendar date when its complete expanded
-% value has one of the supported numeric forms. The parser recognizes
-% month-first and day-first dates with a final year, German dot notation, ISO
-% notation, and slash-separated year-first notation. For example:
+% value has one of the supported numeric forms. Ordinary macros are expanded
+% before the check, so a macro that expands to a date is classified. Robust
+% and protected commands are not expanded. A value such as |\emph{soon}| or
+% |{\textbf{2026-07-18}}| is therefore a descriptive label. It is printed
+% with its formatting and without automatic classification. The parser
+% recognizes month-first and day-first dates with a final year, German dot
+% notation, ISO notation, and slash-separated year-first notation. For
+% example:
 % \begin{lstlisting}
+% \newcommand\releasedate{2026-08-15}
 % \kanbantask[due=07/31/2026]{Review}{Approve the release}
-% \kanbantask[due=2026-08-15]{Planned}{Archive the release}
+% \kanbantask[due=\releasedate]{Planned}{Archive the release}
+% \kanbantask[due=\emph{soon}]{Planned}{Announce the release}
 % \end{lstlisting}
+% The first two deadlines are calendar dates. The third is a label.
 % A date before the active reference date is red, a date equal to it is orange,
 % and a future date is neutral. When no reference date has been configured, the
 % compilation date is the active reference. Every notation requires a
@@ -792,10 +875,12 @@
 % \subsection{Project months}
 %
 % A complete value of the form |M|\meta{n}, where \meta{n} is an integer from
-% 1 to 999999, denotes project month \meta{n}. The upper bound keeps malformed
-% input outside TeX's integer arithmetic. Values outside this range remain
-% neutral labels. The initial project start date may
-% be supplied as a package option:
+% 1 to 999999, denotes project month \meta{n}. Leading zeros are permitted,
+% so |M01| and |M0000001| both denote month 1. The bound of six digits
+% applies to the significant digits. It keeps malformed input outside TeX's
+% integer arithmetic. A value outside this range, such as |M0|, |M000|, or
+% |M1000000|, produces a warning and remains a neutral label. The initial
+% project start date may be supplied as a package option:
 % \begin{lstlisting}
 % \usepackage[startdate=07/15/2026]{kanban}
 % \end{lstlisting}
@@ -1045,16 +1130,29 @@
 % \end{kanban}
 %
 % The complete compilable source is |kanban-palette-example.tex|.
-
+%
 % \subsection{Column geometry}
 %
-% The |columnsep| key accepts either a non-negative explicit TeX dimension,
-% such as |2mm| or |0.5em|, or a single registered dimension such as
-% |\linewidth|. It controls the distance between adjacent columns, and its
-% default value is |2mm|. Malformed values are rejected with a package warning
-% before TeX's dimension scanner is entered, so they do not produce secondary
-% ``missing number'' or ``illegal unit'' errors. An initial value may be set as
-% a package option:
+% The |columnsep| key controls the distance between adjacent columns. Its
+% default value is |2mm|. The key accepts three forms of value. The first
+% form is a non-negative explicit dimension such as |2mm| or |0.5em|. The
+% number and the unit may be separated by spaces, as in |2 mm|, and a
+% physical unit may carry the |true| prefix, as in |2truemm| or |2 true mm|.
+% The second form is a single LaTeX length register such as |\linewidth| or
+% a length declared with |\newlength|. The third form is a single TeX
+% dimension or glue parameter such as |\parindent|, |\baselineskip|,
+% |\hsize|, or |\parskip|. A |\let| copy of such a parameter is accepted as
+% well. A macro that expands to one of these forms is also accepted. Every
+% other value is rejected with a warning, and the current value is kept.
+% Rejected values include |\dimexpr| expressions, scaled registers such as
+% |0.5\linewidth|, the |true| prefix on a font-relative unit as in |2trueem|,
+% math glue such as |\thinmuskip|, a bare number, a bare unit, and robust
+% commands such as |\emph{2mm}|. The check takes place before TeX's dimension
+% scanner is entered, so a rejected value does not produce secondary
+% ``missing number'' or ``illegal unit'' errors. The help text of the warning
+% reads ``Use a non-negative explicit dimension such as 2mm, a LaTeX length
+% register, or a TeX length parameter such as |\hsize|.'' An initial value
+% may be set as a package option:
 % \begin{lstlisting}
 % \usepackage[columnsep=3mm]{kanban}
 % \end{lstlisting}
@@ -1152,7 +1250,9 @@
 % Mode selection affects only the board. It deliberately does not call
 % |\pagecolor| and does not alter the surrounding document text. A dark board
 % can therefore be embedded safely in an otherwise light document. Unknown
-% mode names produce a warning and leave the current selection unchanged.
+% mode names produce a warning and leave the current selection unchanged. A
+% robust command in the value, as in |mode=\emph{dark}|, is reported as
+% unknown in the same way.
 %
 % The examples section below compares the two modes with identical column
 % geometry and explicit deadline states. A separate custom-palette example is
@@ -1211,47 +1311,159 @@
 %
 % \section{Diagnostics and limitations}
 %
-% Unknown setup, board, and task options generate package warnings. Unknown
-% palettes and modes preserve the current selection. An unknown priority is
-% omitted. Empty semantic labels preserve the preceding value. A deadline that
-% resembles a calendar date or project month but lies outside the validated
-% range is displayed neutrally and produces a warning. That warning is issued
-% when the task is declared and names the line of the declaration. Descriptive
-% labels remain neutral without a diagnostic. A malformed or negative
-% |columnsep| value is rejected with one package warning and preserves the
-% current value. Malformed input is intercepted before TeX emits a low-level
-% number or unit error. A non-negative separation whose combined gaps leave no
-% column width produces an error and is replaced by |0pt| for the affected
-% board. A task with an empty column argument, a task outside a board, a task
-% assigned to an undeclared normalized name, or a column list containing a
-% duplicate after case normalization generates a package error with corrective
-% help. Duplicate names recover by keeping the first normalized occurrence and
-% discarding later occurrences. Nested |kanban| environments are also rejected
-% because each board owns one active collection context. The nested
-% environment produces one error, and task declarations inside it are then
-% ignored without a cascade of secondary ``outside a board'' errors. Invalid
-% tasks are neither counted nor rendered. This distinction reserves errors for
-% declarations that cannot be interpreted unambiguously while allowing
-% harmless option diagnostics to remain recoverable warnings. The optional
-% short commands |\kbtask|, |\kbset|, and |\kbdefinepalette| are installed
-% only when their names are unused. A pre-existing definition is never
-% overwritten, and the canonical long command remains available in every
-% case.
+% The package distinguishes warnings from errors. A warning reports input
+% that can be ignored safely. The package then keeps the current value or
+% omits the affected element. An error reports a declaration that cannot be
+% interpreted unambiguously. Errors use the LaTeX2e package error mechanism.
+% Every warning is a named message of the \textsf{l3msg} module |kanban|.
 %
+% \paragraph{Warnings.}
+% Every warning follows one pattern. The first sentence names the subject,
+% quotes the offending value, and states the line of the input that caused
+% the warning. The second sentence states how the package recovers. An
+% unknown setup, board, task, label, or board label option names the key
+% and is ignored:
+% \begin{kanbanManualMessage}
+% Unknown setup option 'colour' on line 3. The option is ignored.\\
+% Unknown board label option 'urgent' on line 9. The option is ignored.
+% \end{kanbanManualMessage}
+% An unknown palette, mode, or date format keeps the current selection. The
+% board-local form names the scope, for example ``Unknown board palette'' or
+% ``Unknown board mode'':
+% \begin{kanbanManualMessage}
+% Unknown palette 'brand' on line 4. The current palette is kept.\\
+% Unknown mode 'blue' on line 5. The current value is kept.\\
+% Unknown date format 'dmy' on line 6. The current value is kept.
+% \end{kanbanManualMessage}
+% A robust command in such a value, as in |mode=\emph{dark}|, is reported as
+% unknown in the same way. A palette definition is rejected as a whole when
+% its name is empty, when its color list is empty, or when a starred
+% definition contains a malformed pair. The starred form reports ``has no
+% color/text pairs'' for an empty list:
+% \begin{kanbanManualMessage}
+% Empty palette name on line 7. The definition is ignored.\\
+% Palette 'empty' on line 8 has no colors. The definition is ignored.\\
+% Palette 'broken' on line 9 has a malformed color/text pair. The definition
+% is ignored.
+% \end{kanbanManualMessage}
+% An empty column list, an empty label, an invalid start or reference date,
+% and an invalid column separation keep the current value:
+% \begin{kanbanManualMessage}
+% Empty column list on line 10. The current list is kept.\\
+% Empty label 'high' on line 11. The current value is kept.\\
+% Invalid startdate '31.02.2026' on line 12. The current value is kept.\\
+% Invalid columnsep value '2' on line 13. The current value is kept.
+% \end{kanbanManualMessage}
+% The board-local forms of these messages read ``Empty board label'',
+% ``Invalid board startdate'', ``Invalid board reference-date'', and
+% ``Invalid board columnsep value''. A malformed or negative column
+% separation is intercepted before TeX emits a low-level number or unit
+% error. An unknown priority omits the chip. A deadline that resembles a
+% calendar date or a project month but lies outside the validated range is
+% displayed as a neutral label:
+% \begin{kanbanManualMessage}
+% Unknown priority 'urgent' on line 14. The priority chip is omitted.\\
+% Invalid deadline date '18.07.26' on line 15. The card shows a neutral
+% label.\\
+% Invalid project-month deadline 'M0' on line 16. The card shows a neutral
+% label.
+% \end{kanbanManualMessage}
+% Deadline warnings are issued when the task is declared, so the line is
+% that of the declaration. Descriptive labels, including a deadline that
+% contains a robust command, remain neutral without a diagnostic.
+%
+% A diagnostic raised by a package option says ``in the package options''
+% instead of naming a line, because the package file is being read at that
+% moment:
+% \begin{kanbanManualMessage}
+% Invalid startdate '31.02.2026' in the package options. The current value
+% is kept.
+% \end{kanbanManualMessage}
+% The optional short commands |\kbtask|, |\kbset|, and |\kbdefinepalette|
+% are installed only when their names are unused. A pre-existing definition
+% is never overwritten, and the canonical long command remains available in
+% every case. The warning is issued while the package loads and therefore
+% carries no line context:
+% \begin{kanbanManualMessage}
+% \textbackslash kbset is already defined. Use \textbackslash kanbansetup
+% instead.
+% \end{kanbanManualMessage}
+% The same pattern applies to |\kbtask| and |\kbdefinepalette|.
+%
+% \paragraph{Message identifiers.}
+% Every message belongs to the \textsf{l3msg} module |kanban|. The following
+% table lists the identifier of each message and the subject of its text.
+%
+% \begin{center}
+% \begin{tabular}{@{}ll@{}}
+% \textbf{Identifier} & \textbf{Subject} \\
+% \hline
+% |unknown-key| & Unknown setup, board, task, or label option \\
+% |unknown-value| & Unknown mode or date format \\
+% |unknown-palette| & Unknown palette \\
+% |empty-palette-name| & Empty palette name \\
+% |empty-palette| & Palette without colors or color/text pairs \\
+% |malformed-palette-pair| & Malformed color/text pair \\
+% |empty-column-list| & Empty column list \\
+% |empty-label| & Empty label \\
+% |invalid-date-setting| & Invalid start date or reference date \\
+% |invalid-dimension| & Invalid column separation \\
+% |unknown-priority| & Unknown priority \\
+% |invalid-deadline| & Invalid deadline date \\
+% |invalid-project-month| & Invalid project-month deadline \\
+% |alias-taken| & Short command already defined \\
+% \end{tabular}
+% \end{center}
+%
+% An individual message can be silenced or redirected with
+% |\msg_redirect_name:nnn|. The following preamble lines turn the
+% unknown-key warning off and demote the unknown-value warning to an entry
+% in the log file:
+% \begin{lstlisting}
+% \ExplSyntaxOn
+% \msg_redirect_name:nnn {kanban}{unknown-key}{none}
+% \msg_redirect_name:nnn {kanban}{unknown-value}{info}
+% \ExplSyntaxOff
+% \end{lstlisting}
+% A redirection is local to the current TeX group. Placed in the preamble,
+% it applies to the whole document.
+%
+% \paragraph{Errors.}
+% A task with an empty column argument, a task outside a board, a task
+% assigned to a column that is absent from the board, or a column list
+% containing a duplicate after normalization generates a package error with
+% corrective help. The error for a task lists the valid columns by their
+% purified uppercase keys, so a column declared as |\emph{Soon}| appears as
+% |SOON|. Duplicate names recover by keeping the first occurrence and
+% discarding later occurrences. Invalid tasks are neither counted nor
+% rendered. Nested |kanban| environments are also rejected because each
+% board owns one active collection context. The nested environment produces
+% one error, and task declarations inside it are then ignored without a
+% cascade of secondary ``outside a board'' errors. A non-negative column
+% separation whose combined gaps leave no column width produces an error
+% and is replaced by |0pt| for the affected board. A paragraph break inside
+% the option list or the column argument of a task produces the LaTeX error
+% ``Paragraph ended before |\kanbantask| was complete''. LaTeX then discards
+% the declaration up to that point and reads the remainder as ordinary text.
+%
+% \paragraph{Constraints.}
 % Authors should also observe the following constraints.
 % \begin{itemize}
 % \item The resolved default or explicit list must contain at least one column.
 %   The built-in default satisfies this requirement, and an empty value passed
 %   to the |columns| setup key is rejected.
-% \item Column lookup keys are converted to uppercase and compared without
-%   regard to letter case. Headings show the spelling of the column list.
-%   Names must not contain commas and must remain unique after normalization.
+% \item Column lookup keys are the purified uppercase text of the names.
+%   Ordinary macros are expanded, and formatting commands and braces are
+%   removed before the comparison. Headings show the spelling and the
+%   formatting of the column list. Names must not contain commas and must
+%   remain unique after normalization.
 % \item Mode and priority values are trimmed and compared without regard to
 %   letter case. Date-format values and their documented aliases follow the
-%   same normalization rule. Palette names remain case-sensitive.
-% \item Column separation must be a non-negative explicit dimension or a
-%   single registered dimension, and the sum of all inter-column gaps must be
-%   smaller than the available line width.
+%   same normalization rule. A robust command in any of these values is
+%   reported as unknown. Palette names remain case-sensitive.
+% \item Column separation must be a non-negative explicit dimension, a single
+%   LaTeX length register, or a single TeX length parameter, and the sum of
+%   all inter-column gaps must be smaller than the available line width.
 % \item Calendar dates, project start dates, and reference dates may use US or
 %   English slash notation with a final year, German dot notation, ISO hyphen
 %   notation, or slash-separated year-first notation. The year always has four
@@ -1259,11 +1471,14 @@
 %   Calendar dates are validated for years from 0001 to 9999 and are
 %   normalized for display.
 % \item Only complete calendar dates and values |M1| through |M999999| are
-%   classified automatically. All other deadline values are treated as labels
-%   and remain neutral unless |late| is present. The |M| in a project-month
-%   value is uppercase and case-sensitive.
+%   classified automatically. Leading zeros in the month number are
+%   permitted. All other deadline values, including values that contain a
+%   robust command, are treated as labels and remain neutral unless |late|
+%   is present. The |M| in a project-month value is uppercase and
+%   case-sensitive.
 % \item Task text is passed as a command argument, so verbatim material cannot
-%   be used inside a card.
+%   be used inside a card. Paragraph breaks are permitted in the text argument
+%   but not in the option list or the column argument.
 % \item The fixed raster layout cannot split an individual board across pages.
 %   Use |break| for long boards.
 % \item The |break| layout prints synchronized headings once at the beginning
@@ -1492,10 +1707,10 @@
 % \end{kanban}
 % \end{lstlisting}
 % \end{samepage}
-% The value must be a nonnegative explicit dimension, such as |2mm|, or one
-% registered dimension, such as |\linewidth|. Increasing it strengthens the
-% visual separation between workflow stages, but reduces the width available
-% to every task card.
+% The value must be a non-negative explicit dimension such as |2mm|, a LaTeX
+% length register such as |\linewidth|, or a TeX length parameter such as
+% |\parindent|. Increasing it strengthens the visual separation between
+% workflow stages, but reduces the width available to every task card.
 %
 % \paragraph{Rendered output.}
 % In the comparison below, palette, headings, and task content are held
@@ -1574,11 +1789,12 @@
 % are not synchronized in this layout.
 %
 % \paragraph{Rendered output.}
-% The next board begins on a fresh page and contains enough material to continue
-% onto the following page. Its headings are printed once at the beginning.
-% Subsequent cards remain in their respective column streams.
+% The next board begins below this paragraph and contains enough material to
+% continue onto the following page. Its headings are printed once at the
+% beginning. The cards that do not fit on this page continue in their
+% respective column streams on the next page.
 %
-% \clearpage
+% \Needspace{14\baselineskip}
 % \begin{kanban}[
 %   columns={Backlog,In progress,Review},break,columnsep=2mm
 % ]
