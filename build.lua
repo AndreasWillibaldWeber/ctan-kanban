@@ -22,6 +22,9 @@ textfiles = {
 -- CTAN does not require a TDS archive for a package with a standard layout.
 -- The TDS tree is still assembled below build/distrib/tds for inspection.
 packtdszip = false
+-- The upload carries the conventional CTAN name kanban-board.zip instead of
+-- the l3build default with a -ctan suffix.
+ctanzip = "kanban-board"
 -- Every file that carries the release version or date. One l3build tag
 -- call rewrites all of them, and the CI workflow checks that they agree.
 tagfiles = {

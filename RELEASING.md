@@ -104,8 +104,8 @@ TeX Live releases.
 Verify the generated CTAN archive before upload.
 
 ```text
-unzip -t kanban-board-ctan.zip
-unzip -l kanban-board-ctan.zip
+unzip -t kanban-board.zip
+unzip -l kanban-board.zip
 ```
 
 The archive must contain the documented source, the installer, the build
@@ -123,7 +123,7 @@ the working tree of the maintainer.
 
 ## 5. Publish and record the release
 
-Upload `kanban-board-ctan.zip` through the CTAN submission interface. Use the
+Upload `kanban-board.zip` through the CTAN submission interface. Use the
 package summary and licence information from the manual and identify the
 package as an update after its initial publication. Retain the submission
 confirmation.

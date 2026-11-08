@@ -68,11 +68,11 @@ jobs:
               exit 1
             fi
 
-            unzip -t kanban-board-ctan.zip
+            unzip -t kanban-board.zip
             # List the archive once and grep the file. Under `pipefail`,
             # `unzip -l | grep -q` dies of SIGPIPE (exit 141) whenever grep
             # closes the pipe before unzip finishes writing.
-            unzip -l kanban-board-ctan.zip > build/ctan-list.txt
+            unzip -l kanban-board.zip > build/ctan-list.txt
             grep -q 'kanban-board/testfiles/compatibility.lvt' build/ctan-list.txt
             grep -q 'kanban-board/testfiles/strict.lvt' build/ctan-list.txt
             grep -q 'kanban-board/testfiles/pagination.lvt' build/ctan-list.txt
@@ -140,7 +140,7 @@ jobs:
             archive_check="build/archive-check"
             rm -rf "${archive_check}"
             mkdir -p "${archive_check}"
-            unzip -q kanban-board-ctan.zip -d "${archive_check}"
+            unzip -q kanban-board.zip -d "${archive_check}"
             (cd "${archive_check}/kanban-board" && l3build check -e pdftex)
 
       - name: Retain review artifacts
@@ -154,7 +154,7 @@ jobs:
             build/examples/**/*.pdf
             build/visual-review/**/*.png
             build/test*/*.diff
-            kanban-board-ctan.zip
+            kanban-board.zip
 
   tex-live-2020:
     name: TeX Live 2020 compatibility
