@@ -3,7 +3,7 @@
 % stays on one page and no page is shipped out before the end marker.
 \input regression-test.tex
 \documentclass{article}
-\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban}
+\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban-board}
 \def\kbmacrodate{2026-07-18}
 \def\kbrobustdate{\textsc{soon}}
 \ExplSyntaxOn

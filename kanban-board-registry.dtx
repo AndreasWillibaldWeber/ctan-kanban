@@ -9,8 +9,8 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package. The complete list of files
-% constituting the work appears in the main source file kanban.dtx.
+% This file is part of the `kanban-board' package. The complete list of files
+% constituting the work appears in the main source file kanban-board.dtx.
 % \fi
 %
 %    \begin{macrocode}
@@ -41,11 +41,11 @@
     \tl_set:Nn \l__kanban_palette_name_tl {#1}
     \tl_trim_spaces:N \l__kanban_palette_name_tl
     \tl_if_blank:VTF \l__kanban_palette_name_tl
-      {\msg_warning:nn {kanban}{empty-palette-name}}
+      {\msg_warning:nn {kanban-board}{empty-palette-name}}
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\use:x {\msg_warning:nnnn {kanban}{empty-palette}
+          {\use:x {\msg_warning:nnnn {kanban-board}{empty-palette}
             {\exp_not:V \l__kanban_palette_name_tl}{colors}}}
           {
             \prop_gput:NVV \g__kanban_palettes_prop
@@ -107,17 +107,17 @@
     \clist_clear:N \l__kanban_palette_fg_clist
     \bool_set_false:N \l__kanban_bad_palette_bool
     \tl_if_blank:VTF \l__kanban_palette_name_tl
-      {\msg_warning:nn {kanban}{empty-palette-name}}
+      {\msg_warning:nn {kanban-board}{empty-palette-name}}
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\use:x {\msg_warning:nnnn {kanban}{empty-palette}
+          {\use:x {\msg_warning:nnnn {kanban-board}{empty-palette}
             {\exp_not:V \l__kanban_palette_name_tl}{color/text~pairs}}}
           {
             \clist_map_function:NN \l__kanban_palette_colors_clist
               \__kanban_palette_pair:n
             \bool_if:NTF \l__kanban_bad_palette_bool
-              {\use:x {\msg_warning:nnn {kanban}{malformed-palette-pair}
+              {\use:x {\msg_warning:nnn {kanban-board}{malformed-palette-pair}
                 {\exp_not:V \l__kanban_palette_name_tl}}}
               {
                 \prop_gput:NVV \g__kanban_palettes_prop
@@ -164,7 +164,7 @@
         \tl_gset_eq:NN \g__kanban_palette_name_tl
           \l__kanban_palette_name_tl
       }
-      {\use:x {\msg_warning:nnnn {kanban}{unknown-palette}
+      {\use:x {\msg_warning:nnnn {kanban-board}{unknown-palette}
         {palette}{\exp_not:V \l__kanban_palette_name_tl}}}
   }
 \cs_new_protected:Npn \__kanban_palette_select_board:n #1
@@ -182,7 +182,7 @@
             \l__kanban_palette_fg_tl}
           {\clist_clear:N \l__kanban_board_palette_fg_clist}
       }
-      {\use:x {\msg_warning:nnnn {kanban}{unknown-palette}
+      {\use:x {\msg_warning:nnnn {kanban-board}{unknown-palette}
         {board~palette}{\exp_not:V \l__kanban_palette_name_tl}}}
   }
 \cs_new_protected:Npn \kanban@paletteboardinit
@@ -233,7 +233,8 @@
 % interface. The unstarred form accepts a list of backgrounds and the starred
 % form accepts background/foreground pairs. The long command is the stable
 % public name. The concise alias is installed only when that name is free, so
-% loading \textsf{kanban} never overwrites a command owned by another package.
+% loading \textsf{kanban-board} never overwrites a command owned by another
+% package.
 %    \begin{macrocode}
 \NewDocumentCommand \kanbandefinepalette {smm}
   {
@@ -242,7 +243,7 @@
       {\__kanban_palette_define:nn {#2}{#3}}
   }
 \cs_if_exist:NTF \kbdefinepalette
-  {\msg_warning:nnnn {kanban}{alias-taken}
+  {\msg_warning:nnnn {kanban-board}{alias-taken}
     {kbdefinepalette}{kanbandefinepalette}}
   {\cs_new_eq:NN \kbdefinepalette \kanbandefinepalette}
 %    \end{macrocode}
@@ -298,7 +299,7 @@
         \tl_if_blank:VF \l__kanban_column_tl
           {
             \prop_if_in:NVTF #3 \l__kanban_column_tl
-              {\PackageError{kanban}
+              {\PackageError{kanban-board}
                 {duplicate~kanban~column~
                   '\tl_use:N \l__kanban_column_tl'}
                 {Column~names~are~case-insensitive.\MessageBreak
@@ -326,7 +327,7 @@
       \l__kanban_columns_tmp_clist
       \l__kanban_column_display_tmp_prop
     \clist_if_empty:NTF \l__kanban_columns_tmp_clist
-      {\msg_warning:nn {kanban}{empty-column-list}}
+      {\msg_warning:nn {kanban-board}{empty-column-list}}
       {
         \clist_gset_eq:NN \g__kanban_columns_clist
           \l__kanban_columns_tmp_clist

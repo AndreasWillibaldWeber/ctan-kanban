@@ -1,9 +1,9 @@
-# kanban
+# kanban-board
 
 Current release: **1.0.0** (2026-11-15)
 
-`kanban` typesets Kanban project boards in LaTeX. A board consists of named
-columns and task cards. Each card may carry a priority, an author, a
+`kanban-board` typesets Kanban project boards in LaTeX. A board consists of
+named columns and task cards. Each card may carry a priority, an author, a
 deadline, and a completion marker. Deadlines are classified as overdue, due
 now, or upcoming, either against the compilation date or against a fixed
 reference date for reproducible builds. Project-relative deadlines such as
@@ -25,7 +25,7 @@ reference date for reproducible builds. Project-relative deadlines such as
 
 ```latex
 \documentclass{article}
-\usepackage[reference-date=2026-07-18]{kanban}
+\usepackage[reference-date=2026-07-18]{kanban-board}
 \begin{document}
 \begin{kanban}
   \kanbantask[prio=high,author=Alice]{Backlog}{Design the API}
@@ -46,17 +46,17 @@ TeX Live and MiKTeX install the package automatically once it is part of the
 distribution. For a manual installation, run
 
 ```text
-latex kanban.ins
+latex kanban-board.ins
 ```
 
-and place `kanban.sty` in a directory searched by TeX, for example below
-`TEXMFHOME/tex/latex/kanban`.
+and place `kanban-board.sty` in a directory searched by TeX, for example below
+`TEXMFHOME/tex/latex/kanban-board`.
 
 ## Documentation
 
-The user manual `kanban.pdf` describes the complete interface, the date
+The user manual `kanban-board.pdf` describes the complete interface, the date
 model, the configuration hierarchy, and the diagnostics. It is generated
-from `kanban.dtx` with `l3build doc`. Eight standalone examples accompany
+from `kanban-board.dtx` with `l3build doc`. Eight standalone examples accompany
 the manual. The source archive also contains the regression suite, which
 runs with `l3build check`.
 
@@ -70,7 +70,7 @@ pdfTeX, LuaTeX, and XeTeX.
 ## Reporting problems
 
 Please include a minimal complete document, the relevant log output, and the
-versions of LaTeX and `kanban`. Development takes place in the
+versions of LaTeX and `kanban-board`. Development takes place in the
 [public repository](https://github.com/andreaswillibaldweber/ctan-kanban).
 Defects and enhancement proposals belong in its
 [issue tracker](https://github.com/andreaswillibaldweber/ctan-kanban/issues).

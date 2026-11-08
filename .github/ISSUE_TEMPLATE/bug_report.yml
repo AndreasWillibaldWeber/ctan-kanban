@@ -1,5 +1,5 @@
 name: Defect report
-description: Report a reproducible defect in the kanban package.
+description: Report a reproducible defect in the kanban-board package.
 title: "[Bug]: "
 labels:
   - bug
@@ -11,7 +11,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: kanban version
+      label: kanban-board version
       description: Copy the version and date from the package banner in the log.
       placeholder: 1.0.0 (2026-11-15)
     validations:

@@ -8,7 +8,7 @@
 \let\originalkbset\kbset
 \newcommand\kbdefinepalette{original palette command}
 \let\originalkbdefinepalette\kbdefinepalette
-\usepackage{kanban}
+\usepackage{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

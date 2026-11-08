@@ -1,6 +1,6 @@
 \input regression-test.tex
 \documentclass{article}
-\usepackage[reference-date=2026-07-18]{kanban}
+\usepackage[reference-date=2026-07-18]{kanban-board}
 \newcount\kbcompletedboxes
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.

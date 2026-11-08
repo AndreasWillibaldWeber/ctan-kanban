@@ -2,7 +2,7 @@
 \documentclass{article}
 \setlength\textheight{85mm}
 \usepackage{lmodern}
-\usepackage{kanban}
+\usepackage{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

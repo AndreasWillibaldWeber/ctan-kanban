@@ -1,6 +1,6 @@
 \input regression-test.tex
 \documentclass{article}
-\usepackage{kanban}
+\usepackage{kanban-board}
 \ExplSyntaxOn
 \NewDocumentCommand \kbcheckglobalcolumns {mm}
   {

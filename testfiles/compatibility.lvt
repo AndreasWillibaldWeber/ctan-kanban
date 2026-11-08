@@ -1,7 +1,7 @@
 \RequirePackage[2020-10-01]{latexrelease}
 \input regression-test.tex
 \documentclass{article}
-\usepackage{kanban}
+\usepackage{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

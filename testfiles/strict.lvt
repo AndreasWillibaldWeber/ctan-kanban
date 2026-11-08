@@ -7,7 +7,7 @@
 \ExplSyntaxOff
 \input regression-test.tex
 \documentclass{article}
-\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban}
+\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban-board}
 \kbdefinepalette{strictplain}{kanbanBlue,kanbanTeal}
 \kbdefinepalette*{strictpairs}{kanbanSlate/white,kanbanMed/kanbanInk}
 \kbset{labels={high=URGENT},columnsep=1.5mm,date-format=german}

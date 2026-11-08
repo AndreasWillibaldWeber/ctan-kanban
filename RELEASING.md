@@ -1,6 +1,6 @@
 # Release procedure
 
-This document defines the maintainer procedure for preparing a `kanban`
+This document defines the maintainer procedure for preparing a `kanban-board`
 release. It supplements `CONTRIBUTING.md` and is not part of the public
 package interface. It stays in the development repository and is not
 included in the CTAN archive.
@@ -9,9 +9,9 @@ included in the CTAN archive.
 
 Begin from a clean working tree on the intended release branch. Confirm that
 all user-visible changes are represented in `CHANGELOG.md`, that the public
-API described in the manual agrees with the generated `kanban.sty`, and that
-the LPPL work lists in `kanban.dtx`, `kanban.ins`, and `LICENSE` name the
-same distributed files.
+API described in the manual agrees with the generated `kanban-board.sty`, and
+that the LPPL work lists in `kanban-board.dtx`, `kanban-board.ins`, and
+`LICENSE` name the same distributed files.
 
 As part of that comparison, inventory the public commands, concise aliases,
 package and board keys, accepted values, built-in defaults, reset behavior,
@@ -29,13 +29,13 @@ l3build tag --date YYYY-MM-DD X.Y.Z
 ```
 
 The command rewrites every location that carries the version or the date:
-the package declaration and the change history entry in `kanban.dtx`, the
+the package declaration and the change history entry in `kanban-board.dtx`, the
 release line in `README.md`, the heading of the tagged version in
 `CHANGELOG.md`, and the version placeholder in the issue template. The
 version number is mandatory. Continuous integration fails when these
 locations disagree, so a forgotten run cannot reach an upload. Inspect the
-diff before proceeding. `kanban.sty` is generated from the `.dtx` files and
-must not become an independent source of edits.
+diff before proceeding. `kanban-board.sty` is generated from the `.dtx` files
+and must not become an independent source of edits.
 
 ## 2. Run the reproducible build
 
@@ -64,9 +64,9 @@ control sequence, an unresolved reference, or an overfull box.
 
 ## 3. Review the manual visually
 
-Inspect `build/doc/kanban.pdf`, not a PDF left from an earlier build. Review
-at least the title page, the table of contents, the first fixed board, the
-deadline comparison, the date-format comparison, the custom palette, the
+Inspect `build/doc/kanban-board.pdf`, not a PDF left from an earlier build.
+Review at least the title page, the table of contents, the first fixed board,
+the deadline comparison, the date-format comparison, the custom palette, the
 dark-mode board, the page-breakable example, the landscape page, the
 implementation listing, the change history, and the index.
 
@@ -89,7 +89,7 @@ Rendered page images may be produced with Poppler for systematic comparison.
 
 ```text
 mkdir -p tmp/release-pages
-pdftoppm -png -r 144 build/doc/kanban.pdf tmp/release-pages/kanban
+pdftoppm -png -r 144 build/doc/kanban-board.pdf tmp/release-pages/kanban-board
 ```
 
 The images are review material and must not be added to the release
@@ -104,8 +104,8 @@ TeX Live releases.
 Verify the generated CTAN archive before upload.
 
 ```text
-unzip -t kanban-ctan.zip
-unzip -l kanban-ctan.zip
+unzip -t kanban-board-ctan.zip
+unzip -l kanban-board-ctan.zip
 ```
 
 The archive must contain the documented source, the installer, the build
@@ -123,7 +123,7 @@ the working tree of the maintainer.
 
 ## 5. Publish and record the release
 
-Upload `kanban-ctan.zip` through the CTAN submission interface. Use the
+Upload `kanban-board-ctan.zip` through the CTAN submission interface. Use the
 package summary and licence information from the manual and identify the
 package as an update after its initial publication. Retain the submission
 confirmation.

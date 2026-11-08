@@ -9,341 +9,2383 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package. The complete list of files
-% constituting the work appears in the main source file kanban.dtx.
+% This work consists of the source files kanban-board.dtx,
+% kanban-board-registry.dtx, kanban-board-dates.dtx,
+% kanban-board-config.dtx, kanban-board-render.dtx,
+% kanban-board-lifecycle.dtx, and kanban-board.ins. It also includes
+% build.lua, README.md, CHANGELOG.md, DEPENDS.txt, and LICENSE, the example
+% files kanban-board-example.tex, kanban-board-modes-example.tex,
+% kanban-board-deadlines-example.tex, kanban-board-date-formats-example.tex,
+% kanban-board-palette-example.tex, kanban-board-columnsep-example.tex,
+% kanban-board-break-example.tex, and kanban-board-landscape-example.tex,
+% the files in the testfiles directory, and the derived files
+% kanban-board.sty and kanban-board.pdf.
 % \fi
 %
+% \iffalse
+%<*driver>
+\documentclass[a4paper,11pt]{ltxdoc}
+\makeatletter
+\let\kanban@docverbatim\verbatim
+\let\kanban@enddocverbatim\endverbatim
+\let\kanban@doc@verbatim\@verbatim
+\let\kanban@doc@xverbatim\@xverbatim
+\makeatother
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[
+  left=44mm,
+  right=28mm,
+  top=34mm,
+  bottom=33mm,
+  headheight=15pt,
+  marginparwidth=34mm,
+  marginparsep=4mm
+]{geometry}
+\usepackage{microtype}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{pdflscape}
+\usepackage{kanban-board}
+\tcbuselibrary{breakable}
+\newcommand{\kanbanManualBreakCard}[3]{%
+  \kanbantask[author=#2]{#1}{#3. Document the assumptions, record the
+    outcome, and retain the evidence required for the next project review.}}
+\newcommand{\kanbanManualBreakDeadlineCard}[4]{%
+  \kanbantask[author=#2,#3]{#1}{#4. Document the assumptions, record the
+    outcome, and retain the evidence required for the next project review.}}
+% Diagnostic texts are quoted in typewriter type with ragged lines, so a
+% long message wraps without an overfull box.
+\newenvironment{kanbanManualMessage}
+  {\begin{quote}\ttfamily\frenchspacing\raggedright}
+  {\end{quote}}
+\newcommand{\kanbanManualDateFormatBoard}[2]{%
+  \begin{minipage}[t]{0.48\linewidth}
+    \textit{#2}\par\smallskip
+    \begin{kanban}[columns={Upcoming},date-format=#1]
+      \kanbantask[due=2099-07-18]{Upcoming}{Prepare the scheduled release}
+    \end{kanban}
+  \end{minipage}}
+\definecolor{kanbanManualRule}{HTML}{D7DEE2}
+\definecolor{kanbanManualCodeBack}{HTML}{F3F4F5}
+\definecolor{kanbanManualCodeRule}{HTML}{D8DDE1}
+\lstdefinestyle{kanbanmanual}{
+  language={[LaTeX]TeX},
+  basicstyle=\fontsize{9pt}{11pt}\selectfont\ttfamily\color{kanbanInk},
+  keywordstyle=\color{kanbanBlue!85!black},
+  commentstyle=\itshape\color{kanbanSage!75!black},
+  backgroundcolor=\color{kanbanManualCodeBack},
+  frame=single,
+  rulecolor=\color{kanbanManualCodeRule},
+  framerule=0.35pt,
+  framesep=0pt,
+  framexleftmargin=2.5mm,
+  framexrightmargin=2.5mm,
+  framextopmargin=1.2mm,
+  framexbottommargin=1.2mm,
+  aboveskip=0.8\baselineskip,
+  belowskip=0.8\baselineskip,
+  columns=fullflexible,
+  keepspaces=true,
+  gobble=2,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2
+}
+\lstset{style=kanbanmanual}
+\BeforeBeginEnvironment{lstlisting}{\Needspace{7\baselineskip}}
+\tcolorboxenvironment{macrocode}{
+  enhanced,
+  breakable,
+  sharp corners,
+  colback=kanbanManualCodeBack,
+  frame hidden,
+  boxrule=0pt,
+  boxsep=0pt,
+  left=0pt,
+  right=0pt,
+  top=1mm,
+  bottom=1mm,
+  before skip=0.8\baselineskip,
+  after skip=0.8\baselineskip
+}
+\tcolorboxenvironment{macrocode*}{
+  enhanced,
+  breakable,
+  sharp corners,
+  colback=kanbanManualCodeBack,
+  frame hidden,
+  boxrule=0pt,
+  boxsep=0pt,
+  left=0pt,
+  right=0pt,
+  top=1mm,
+  bottom=1mm,
+  before skip=0.8\baselineskip,
+  after skip=0.8\baselineskip
+}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em plus 0.1em minus 0.1em}
+\raggedbottom
+\setlength{\MacrocodeTopsep}{0.8\baselineskip}
+\setlist{itemsep=0.3em,topsep=0.45em,parsep=0pt}
+\makeatletter
+\let\@verbatim\kanban@doc@verbatim
+\let\@xverbatim\kanban@doc@xverbatim
+\let\verbatim\kanban@docverbatim
+\let\endverbatim\kanban@enddocverbatim
+\apptocmd{\@verbatim}
+  {\advance\leftskip 2.5mm\advance\rightskip 2.5mm}
+  {}{\PackageWarning{kanban-board-doc}{Could not adjust verbatim indentation}}
+% Index expl3 names as whole control sequences. The doc package collects a
+% name while the next character is a letter, so underscore and colon must be
+% letters inside macrocode. The l3doc class uses the same hook.
+\renewcommand*\MakePrivateLetters{%
+  \makeatletter\catcode`\_=11 \catcode`\:=11 }
+% Two-digit subsection numbers need a wider number box in the contents.
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{3em}}
+\renewcommand{\IndexParms}{%
+  \raggedcolumns
+  \parindent=0pt
+  \columnsep=14pt
+  \parskip=0pt plus 1pt
+  \rightskip=0pt plus 2em
+  \parfillskip=0pt
+  \emergencystretch=1em
+  \mathsurround=0pt
+  \fontsize{7.8pt}{9.6pt}\selectfont
+  \def\@idxitem{\par\hangindent 24pt}%
+  \def\subitem{\@idxitem\hspace*{12pt}}%
+  \def\subsubitem{\@idxitem\hspace*{20pt}}%
+  \def\indexspace{\par\vspace{8pt plus 2pt minus 2pt}}}
+\makeatother
+\setcounter{tocdepth}{2}
+\titleformat{\section}
+  {\Large\bfseries\sffamily\color{kanbanSlate}}
+  {\thesection}{0.7em}{}
+\titleformat{\subsection}
+  {\large\bfseries\sffamily\color{kanbanBlue}}
+  {\thesubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{2.2em}{0.7em}
+\titlespacing*{\subsection}{0pt}{1.5em}{0.45em}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\textbf{kanban-board}}
+\fancyhead[R]{\small\sffamily User manual}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+% Formats up to TeX Live 2020 do not preload hypdoc via ltxdoc. Newer doc
+% releases load hypdoc themselves, and this line is then a no-op.
+\usepackage{hypdoc}
+\AtBeginDocument{%
+  \hypersetup{
+    linkcolor=kanbanBlue,
+    urlcolor=kanbanTeal,
+    citecolor=kanbanPlum,
+    pdfauthor={Andreas Willibald Weber},
+    pdftitle={The kanban-board package},
+    pdfsubject={Kanban project boards in LaTeX}
+  }
+  % The doc package copies \MacroFont into \macro@font at the start of the
+  % document, before this hook runs. Both names are therefore set here.
+  \renewcommand{\MacroFont}{%
+    \fontsize{8.8pt}{10.5pt}\selectfont\ttfamily\color{kanbanInk}}%
+  \renewcommand{\AltMacroFont}{\MacroFont\itshape}%
+  \expandafter\let\csname macro@font\endcsname\MacroFont}
+% Code inside the package guard is ordinary code and uses the upright font.
+\setcounter{StandardModuleDepth}{1}
+% Two index columns leave room for complete expl3 names.
+\setcounter{IndexColumns}{2}
+\EnableCrossrefs
+\CodelineIndex
+\RecordChanges
+\DoNotIndex{\NeedsTeXFormat,\ProvidesPackage,\RequirePackage}
+\DoNotIndex{\definecolor,\newbool,\newcounter,\newlength,\setlength}
+\DoNotIndex{\def,\gdef,\edef,\let,\newcommand,\renewcommand}
+\DoNotIndex{\NewDocumentCommand,\NewDocumentEnvironment}
+\DoNotIndex{\DeclareOption,\ProcessOptions,\PackageError,\PackageWarning}
+\DoNotIndex{\par,\noindent,\ignorespaces,\relax}
+\DoNotIndex{\ifblank,\ifbool,\ifboolexpr,\ifdefempty,\ifdefstring}
+\DoNotIndex{\hfill,\hspace,\vspace}
+\DoNotIndex{\textcolor,\bfseries,\scriptsize,\raggedright}
+% Regular-expression escapes, TeX primitives and parameters, LaTeX kernel
+% commands, and commands of other packages are not package macros and are
+% therefore kept out of the index. The conditional primitives are produced
+% by name, because the typeset documentation skips the driver inside a
+% conditional, and a literal else or fi token in the driver would end that
+% conditional prematurely.
+\DoNotIndex{\A,\AM,\Z,\s,\.,\-,\,,\\}
+\ExplSyntaxOn
+\exp_args:Ne \DoNotIndex
+  { \exp_not:c {ifnum} , \exp_not:c {ifdim} , \exp_not:c {else} ,
+    \exp_not:c {fi} }
+\ExplSyntaxOff
+\DoNotIndex{\begin,\end,\multiply,\csname,\endcsname}
+\DoNotIndex{\expandafter,\noexpand,\unexpanded,\global,\xdef,\numexpr}
+\DoNotIndex{\string,\space,\MessageBreak,\CurrentOption,\@ifundefined}
+\DoNotIndex{\year,\month,\day,\arabic,\stepcounter,\medskip}
+\DoNotIndex{\linewidth,\columnsep,\draw,\tikz,\switchcolumn}
+\DoNotIndex{\IfBooleanTF,\IfFormatAtLeastTF}
+\DoNotIndex{\boolfalse,\booltrue,\csdef,\csedef,\csgdef,\csuse,\csxappto}
+\DoNotIndex{\eappto,\ifnumequal,\ifstrequal,\notblank,\numdef,\numgdef}
+\DoNotIndex{\DeclareDefaultOption,\define@key,\ProcessKeyvalOptions}
+\DoNotIndex{\SetupKeyvalOptions}
+\DoNotIndex{\newtcolorbox,\tcbox,\tcbset,\tcbuselibrary}
+\DoNotIndex{\parindent,\mathsurround,\lineskiplimit,\hsize,\vsize,\maxdepth}
+\DoNotIndex{\splitmaxdepth,\boxmaxdepth,\hfuzz,\vfuzz,\delimitershortfall}
+\DoNotIndex{\nulldelimiterspace,\scriptspace,\predisplaysize,\displaywidth}
+\DoNotIndex{\displayindent,\overfullrule,\hangindent,\hoffset,\voffset}
+\DoNotIndex{\emergencystretch,\lineskip,\baselineskip,\parskip}
+\DoNotIndex{\abovedisplayskip,\abovedisplayshortskip,\belowdisplayskip}
+\DoNotIndex{\belowdisplayshortskip,\leftskip,\rightskip,\topskip}
+\DoNotIndex{\splittopskip,\tabskip,\spaceskip,\xspaceskip,\parfillskip}
+\DoNotIndex{\cs_new:Npn,\cs_new_protected:Npn,\cs_set:Npn,\cs_set:Npx}
+\DoNotIndex{\cs_new_eq:NN,\cs_if_exist:NTF,\cs_undefine:c}
+\DoNotIndex{\tl_new:N,\int_new:N,\bool_new:N,\seq_new:N,\clist_new:N}
+\DoNotIndex{\prop_new:N,\msg_new:nnnn,\prg_new_protected_conditional:Npnn}
+\DoNotIndex{\prg_return_true:,\prg_return_false:,\c_space_tl}
+\DoNotIndex{\exp_args:NV,\exp_args:NVV,\exp_args:NnV,\exp_args:NNo}
+\DoNotIndex{\ExplSyntaxOn,\ExplSyntaxOff}
+\begin{document}
+  % Keep rendered deadline examples reproducible across rebuilds without
+  % altering TeX's calendar primitives for the surrounding manual.
+  \kbset{reference-date=2026-07-18}
+  \DocInput{kanban-board.dtx}
+  \DocInput{kanban-board-registry.dtx}
+  \DocInput{kanban-board-dates.dtx}
+  \DocInput{kanban-board-config.dtx}
+  \DocInput{kanban-board-render.dtx}
+  \DocInput{kanban-board-lifecycle.dtx}
+\end{document}
+%</driver>
+% \fi
+%
+% \GetFileInfo{kanban-board.sty}
+% \makeatletter
+% \def\kanban@manualversion v#1\relax{#1}
+% \edef\kanbanManualVersion{%
+%   \expandafter\kanban@manualversion\fileversion\relax}
+% \makeatother
+% \changes{v1.0.0}{2026/11/15}{Initial public release.}
+%
+% \title{The \textsf{kanban-board} package\\
+%   \large Kanban project boards in LaTeX}
+% \author{Andreas Willibald Weber}
+% \date{Version \kanbanManualVersion\ (\filedate)}
+%
+% \hypersetup{pageanchor=false}
+% \newgeometry{left=32mm,right=37mm,top=34mm,bottom=33mm}
+% \begin{titlepage}
+% \centering
+% \vspace*{0.10\textheight}
+% {\color{kanbanBlue}\rule{0.84\textwidth}{1.2pt}\par}
+% \vspace{1.4em}
+% {\Huge\bfseries\sffamily\color{kanbanSlate} kanban-board\par}
+% \vspace{0.5em}
+% {\Large\sffamily\color{kanbanBlue} Kanban project boards in LaTeX\par}
+% \vspace{1.4em}
+% {\color{kanbanBlue}\rule{0.84\textwidth}{1.1pt}\par}
+% \vfill
+% \begin{minipage}{0.84\textwidth}
+% \centering
+% {\large\bfseries\sffamily Abstract\par}
+% \vspace{0.8em}
+% \small\justifying
+% The \textsf{kanban-board} package typesets compact project boards composed of
+% named columns and task cards. A card may carry a priority, an author, a
+% deadline, and a completion marker. Deadlines can be expressed either as
+% calendar dates or as months relative to a project start date. Two rendering
+% layouts are provided: a fixed horizontal board suited to short summaries and
+% a page-breakable layout for longer task lists. Named palettes and light or
+% dark board modes can be selected at package, document, or board level.
+% Deadline chips distinguish overdue, current, and future values. A reference
+% date can be fixed for reproducible output. Otherwise the compilation date is
+% used. Five common numeric date formats are available, with US notation as the
+% initial default.
+% This manual describes the public interface, gives complete usage examples,
+% and explains the date and configuration models.
+% \end{minipage}
+% \vfill
+% {\large Andreas Willibald Weber\par}
+% \vspace{0.4em}
+% {\sffamily Version \kanbanManualVersion\ (\filedate)\par}
+% \vspace{2em}
+% \end{titlepage}
+% \restoregeometry
+% \hypersetup{pageanchor=true}
+% \pagenumbering{roman}
+%
+% \tableofcontents
+% \clearpage
+% \pagenumbering{arabic}
+%
+% \section{Introduction}
+%
+% A Kanban board represents work by assigning cards to named stages such as
+% ``Backlog'', ``In progress'', and ``Done''. The package follows that model
+% directly. A board uses either the built-in columns, the current document
+% default, or a board-local list selected with the |columns| environment
+% option. The author then assigns each task to exactly one of those columns.
+% Columns are rendered in declaration order, and tasks retain their order
+% within each column.
+%
+% The package is intended for reports, project notes, teaching material, and
+% other documents in which a board should be generated from ordinary LaTeX
+% source. It is not an interactive project-management system: tasks are local
+% document data, and the package neither persists nor automatically moves them.
+%
+% \begin{tcolorbox}[
+%   enhanced,
+%   title={At a glance},
+%   colback=kanbanSlate!4,
+%   colframe=kanbanSlate!55,
+%   colbacktitle=kanbanSlate,
+%   coltitle=white,
+%   fonttitle=\bfseries\sffamily,
+%   boxrule=0.5pt,
+%   arc=1mm,
+%   left=4mm,right=4mm,top=3mm,bottom=3mm
+% ]
+% \begin{description}
+% \item[Core environment] |\begin{kanban}[options]|, with board-local columns
+%   selected by the |columns={...}| option when required.
+% \item[Task command] |\kanbantask[options]{column}{text}|, with |\kbtask|
+%   as a concise alias when that short name is available.
+% \item[Shared setup] |\kanbansetup{key=value,...}|, with |\kbset| as a
+%   concise alias when that short name is available.
+% \item[Visual choices] Named palettes, light or dark mode, and fixed or
+%   page-breakable layouts.
+% \item[Date choices] US, English, German, ISO, and slash-separated year-first
+%   display formats, with validated Gregorian classification.
+% \item[Column geometry] Synchronized headings and transparent column bodies
+%   in the fixed layout, with configurable separation.
+% \end{description}
+% \end{tcolorbox}
+%
+% \section{Requirements and installation}
+%
+% The package requires a LaTeX format dated 2020-10-01 or later and loads
+% \textsf{xcolor}, \textsf{etoolbox}, \textsf{tikz}, \textsf{tcolorbox}, and
+% \textsf{paracol}. On formats older than 2021-06-01, whose option processor
+% cannot parse brace groups in package option lists, \textsf{kvoptions} is
+% loaded additionally. These dependencies are included in the principal TeX
+% distributions. Continuous integration runs the regression and documentation
+% builds on both a current TeX Live installation and an actual TeX Live 2020
+% installation. The declared format boundary is also exercised locally through
+% the official \textsf{latexrelease} compatibility mechanism. The regression
+% suite is run with pdfTeX, LuaTeX, and XeTeX.
+%
+% To install from the documented source, run
+% \begin{lstlisting}
+% latex kanban-board.ins
+% \end{lstlisting}
+% and copy |kanban-board.sty| to a directory searched by TeX. For a private
+% installation, that directory is normally a suitable location below
+% |TEXMFHOME|. No manual installation is necessary when the package is
+% installed through a TeX distribution.
+%
+% Load the package in the preamble. No options are required:
+% \begin{lstlisting}
+% \usepackage{kanban-board}
+% \end{lstlisting}
+% Initial document defaults may also be set while loading the package:
+% \begin{lstlisting}
+% \usepackage[
+%   columns={Planned,Active,Complete},
+%   palette=muted,
+%   mode=light,
+%   date-format=us,
+%   startdate=07/01/2026,
+%   reference-date=2026-07-18,
+%   columnsep=2mm
+% ]{kanban-board}
+% \end{lstlisting}
+% These defaults can be changed later with |\kanbansetup| (or its concise
+% alias |\kbset|) or overridden by an individual board. The following sections
+% explain this hierarchy in detail.
+%
+% \section{The board environment}
+%
+% \DescribeEnv{kanban}
+% The environment has the syntax
+% \begin{quote}
+% |\begin{kanban}[|\meta{board options}|]|\\
+% \hspace*{2em}\meta{task declarations}\\
+% |\end{kanban}|
+% \end{quote}
+% If |columns| is omitted, or if |columns={}| is supplied, the board uses the
+% current document-wide column list. The package initially defines that list as
+% |Backlog,Doing,Done|. A non-empty comma-separated value replaces the default
+% for this board only. The additional braces around the value protect its
+% commas from the surrounding key list. Each name is trimmed. Its spelling and
+% its formatting are kept for the visible heading. Its lookup key is the
+% purified text of the name in uppercase. Ordinary macros are expanded,
+% formatting commands and braces are removed, and letter case is ignored.
+% Task targets undergo the same conversion, so |ColName|, |colname|, and
+% |COLNAME| all identify the same column. Likewise, |\emph{Soon}| and |Soon|
+% denote the same column, and so do |Q{1}| and |Q1|. Column names must be
+% unique after normalization and must not contain commas.
+%
+% Each board is independent. When a board begins, the package first resolves
+% the applicable column list. It then creates an empty task list and a zero
+% count for every resolved column before collecting task declarations. The
+% visible board is produced only when the environment ends. This deferred
+% construction is why tasks can be written in any cross-column order while
+% still appearing beneath the correct headings.
+%
+% \subsection{Board options}
+%
+% The optional argument accepts the following keys.
+%
+% \begin{description}
+% \item[|break|]
+%   Selects the page-breakable layout. Each board column becomes a
+%   \textsf{paracol} column with an independent colored header followed by its
+%   cards. This layout is appropriate when task lists may continue onto a later
+%   page. Headers are printed at the start of the board and are not repeated on
+%   continuation pages.
+% \item[\texttt{columns=\{}\meta{column list}\texttt{\}}]
+%   Replaces the current document-wide column list for this board only. The
+%   value must be enclosed in braces because it contains commas. An empty value
+%   retains the current document default.
+% \item[|columnsep=|\meta{length}]
+%   Sets the horizontal distance between adjacent columns for this board. The
+%   default is |2mm|. This value overrides the document default for the current
+%   board only and is used by both the fixed and page-breakable layouts. The
+%   accepted forms of the value are described in the subsection on column
+%   geometry.
+% \item[|palette=|\meta{name}]
+%   Selects a previously defined color palette for this board. The local
+%   selection does not change the palette used by later boards.
+% \item[|date-format=us|, |english|, |german|, |iso|, or |ymd|]
+%   Selects the numeric format used to print validated calendar dates on this
+%   board. The initial default is |us|. This setting also resolves dates whose
+%   slash-separated day and month are both at most 12. A local selection does
+%   not change the format used by later boards.
+% \item[|startdate=|\meta{date}]
+%   Sets the project start date for this board. It accepts any supported
+%   calendar syntax and is used only when interpreting project-month deadlines
+%   such as |M2|. This value overrides the document default for the current
+%   board only.
+% \item[|reference-date=|\meta{date}]
+%   Sets the date against which calendar and project-month deadlines are
+%   classified for this board. Without this key, the package uses the TeX
+%   compilation date. The exact alias |today| is also accepted. An explicit
+%   reference date makes archival and automated builds reproducible.
+% \item[|mode=light| or |mode=dark|]
+%   Selects the visual mode for this board. The default is |light|. A local
+%   mode does not change the mode of subsequent boards.
+% \item[\texttt{labels=\{}\meta{label options}\texttt{\}}]
+%   Replaces one or more semantic chip labels for this board. The accepted
+%   nested keys are |high|, |medium|, |low|, and |done|. Omitted labels retain
+%   their current document-wide values.
+% \end{description}
+%
+% The |break| key is board-local by design. It is not accepted as a package
+% option or by |\kanbansetup|. Without |break|, the package constructs a
+% two-row \textsf{tcolorbox} raster inside one full-width minipage. The first
+% row contains the synchronized headings and the second contains the
+% synchronized column bodies. The complete board is therefore one horizontal
+% object and does not break naturally across pages. This default is preferable
+% for compact boards. Task cards occupy the complete available width of the
+% column body in both layouts.
+%
+% \subsection{A first board}
+%
+% The following complete example applies the environment syntax and default
+% fixed layout described above. Because no column list is supplied, it uses
+% the built-in |Backlog|, |Doing|, and |Done| stages and assigns one task to
+% each stage. The deliberately varied capitalization of the task targets also
+% demonstrates case-insensitive assignment.
+% \begin{lstlisting}
+% \begin{kanban}
+%   \kanbantask[prio=high,author=Alice]
+%     {backlog}{Agree on the public API}
+%   \kanbantask[due=07/31/2026]
+%     {DoInG}{Write the implementation}
+%   \kanbantask[completed]
+%     {DONE}{Create the repository}
+% \end{kanban}
+% \end{lstlisting}
+%
+% The example produces the following board:
+%
+% \begin{kanban}
+%   \kanbantask[prio=high,author=Alice]
+%     {backlog}{Agree on the public API}
+%   \kanbantask[due=07/31/2026]
+%     {DoInG}{Write the implementation}
+%   \kanbantask[completed]
+%     {DONE}{Create the repository}
+% \end{kanban}
+%
+% \section{Configuration hierarchy}
+%
+% The package uses a consistent hierarchy for column lists, palettes, visual
+% modes, date formats, project start dates, reference dates, semantic labels,
+% and column separation. This
+% makes document-wide settings easy to reuse while keeping local exceptions
+% explicit.
+%
+% \begin{enumerate}
+% \item Package options establish the initial defaults.
+% \item |\kanbansetup| changes the defaults for boards that follow it.
+% \item Environment options override the defaults for one board only, including
+%   the board-local |columns| key.
+% \end{enumerate}
+%
+% The most local value has priority. For example:
+% \begin{lstlisting}
+% \usepackage[
+%   columns={Planned,Active,Complete},
+%   palette=muted,
+%   mode=light,
+%   date-format=us,
+%   reference-date=2026-07-18,
+%   columnsep=2mm
+% ]{kanban-board}
+%
+% % Uses every package default, including the configured columns.
+% \begin{kanban}
+%   ...
+% \end{kanban}
+%
+% % Changes defaults for subsequent boards.
+% \kbset{
+%   columns={Queued,Processing,Stored},
+%   palette=monochrome,
+%   mode=dark,
+%   date-format=iso,
+%   reference-date=2026-07-18,
+%   columnsep=1.5mm
+% }
+%
+% % Uses the revised document defaults.
+% \begin{kanban}
+%   ...
+% \end{kanban}
+%
+% % Local columns, default palette, light mode, English dates, 3 mm gap.
+% \begin{kanban}[
+%   columns={Todo,Doing,Done},
+%   palette=default,mode=light,date-format=english,columnsep=3mm
+% ]
+%   ...
+% \end{kanban}
+%
+% % Uses Queued, Processing, and Stored again.
+% \begin{kanban}
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+%
+% \DescribeMacro{\kanbansetup}
+% The setup command accepts a comma-separated key list:
+% \begin{quote}
+% |\kanbansetup{columns={|\meta{column list}|},palette=|\meta{name}|,|\\
+% \hspace*{2em}|mode=|\meta{mode}|,date-format=|\meta{format}|,|\\
+% \hspace*{2em}|startdate=|\meta{date}|,reference-date=|\meta{date}|,|\\
+% \hspace*{2em}|columnsep=|\meta{length}|,labels={|\meta{label options}|}}|
+% \end{quote}
+% When the name is available, the shorter |\kbset| command is an exact alias.
+% The longer name is the canonical form because it is less likely to conflict
+% with another package. If |\kbset| already exists when \textsf{kanban-board} is
+% loaded, the package preserves the existing definition, issues a warning, and
+% leaves |\kanbansetup| fully available.
+% A key may be omitted when its current value should remain unchanged. Setup
+% calls affect later boards. They do not redraw boards that have already been
+% typeset. The |columns| value must be enclosed in braces because it is itself
+% a comma-separated list. An empty |columns| value is rejected with a warning,
+% and the previous document default remains active.
+%
+% \subsection{Default column lists}
+%
+% With no configuration, every board that omits its |columns| option uses the
+% three columns |Backlog|, |Doing|, and |Done|. This provides a useful
+% conventional board without requiring repeated declarations:
+% \begin{lstlisting}
+% \begin{kanban}
+%   \kanbantask{backlog}{Record the request}
+%   \kanbantask{Doing}{Prepare the response}
+%   \kanbantask{dOnE}{Archive the decision}
+% \end{kanban}
+% \end{lstlisting}
+%
+% A document can establish different defaults when the package is loaded:
+% \begin{lstlisting}
+% \usepackage[columns={Planned,Active,Complete}]{kanban-board}
+% \end{lstlisting}
+% or change them from a particular point onward:
+% \begin{lstlisting}
+% \kbset{columns={Queued,Processing,Stored}}
+% \end{lstlisting}
+% In both cases, later environments may omit the |columns| key. Supplying a
+% board-local key remains the appropriate way to describe an exceptional board:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Requested,Approved,Rejected}]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% This option is local. It does not change the default used by the next
+% environment. Letter case and formatting need not match, because
+% declarations and task targets share one purified uppercase lookup key. The
+% heading shows the spelling and the formatting used in the column list.
+% Other differences remain significant. For example, |In review| and
+% |Review| are distinct identifiers. A list such as |columns={Q{1},Q1}|
+% repeats the key |Q1|. If a list repeats a name after normalization, the
+% package reports an error, retains the first occurrence, and ignores the
+% repeated occurrence. This recovery permits the remaining unique columns to
+% be rendered if compilation is continued.
+%
+% \section{Declaring tasks}
+%
+% \DescribeMacro{\kanbantask}
+% \SpecialUsageIndex{\kbtask}
+% A task declaration has the syntax
+% \begin{quote}
+% |\kanbantask[|\meta{task options}|]{|\meta{column}|}{|\meta{text}|}|
+% \end{quote}
+% When the name is available, |\kbtask| is an exact alias with the same
+% signature and behavior. The longer |\kanbantask| name is the canonical
+% interface because it is less likely to conflict with another package. If
+% |\kbtask| already exists when \textsf{kanban-board} is loaded, the package
+% preserves the existing definition, issues a warning, and leaves
+% |\kanbantask| fully available.
+% The column must have been declared by the enclosing board. The target is
+% purified and converted to uppercase before lookup in the same way as a
+% declared column name. The assignment therefore ignores surrounding spaces,
+% letter case, formatting commands, and braces. The task text is ordinary
+% LaTeX material and may contain emphasis, citations, robust commands, and
+% other commands suitable for a |tcolorbox|. It may also contain paragraph
+% breaks, written as |\par| or as a blank line. They are rendered as separate
+% paragraphs in the card. The option list and the column argument do not
+% accept a paragraph break. A blank line inside either of them produces the
+% LaTeX error ``Paragraph ended before |\kanbantask| was complete''. LaTeX
+% then discards the declaration up to that point and reads the remainder as
+% ordinary text. Fragile or unusually complex material should be tested in
+% the intended document class.
+%
+% The column argument may not be empty. A missing assignment or a normalized
+% name that is absent from the board produces a package error. The diagnostic
+% identifies the invalid input, lists the valid columns by their purified
+% uppercase keys, and explains how to correct the declaration. The invalid
+% task is not counted or rendered, which leaves the remaining board data
+% structurally consistent if compilation is continued after the error. A task
+% declared outside a |kanban| environment similarly produces a direct error
+% instead of modifying residual board data.
+%
+% For example, both tasks below are assigned to the single displayed column
+% |Research|:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Research,Review}]
+%   \kanbantask{research}{Collect the evidence}
+%   \kanbantask{ReSeArCh}{Document the method}
+% \end{kanban}
+% \end{lstlisting}
+% By contrast, the following fragments are invalid:
+% \begin{lstlisting}
+% \kanbantask{}{A task without a target}
+% \kanbantask{Archive}{A task for an undeclared stage}
+% \end{lstlisting}
+% For a board containing |RESEARCH| and |REVIEW|, the corresponding errors state
+% that the first task has no assigned column and that |Archive| is unknown.
+% Both diagnostics also report |RESEARCH,REVIEW| as the valid column set.
+%
+% Formatting in a column name is ignored for lookup in the same way as letter
+% case. The following board declares an emphasized heading and addresses it
+% with plain text. The heading shows the emphasized text, and an error for
+% this board would report |SOON,LATER| as the valid column set:
+% \begin{lstlisting}
+% \begin{kanban}[columns={\emph{Soon},Later}]
+%   \kanbantask{soon}{Prepare the next release}
+%   \kanbantask{\emph{Soon}}{Collect the release notes}
+% \end{kanban}
+% \end{lstlisting}
+% Both tasks are assigned to the first column.
+%
+% The package deliberately does not define the generic |\task| alias. That name
+% is used by several document classes and packages. Leaving it untouched
+% prevents load-order-dependent conflicts. The namespaced |\kbtask| form
+% provides a concise alternative without claiming the generic name.
+%
+% \subsection{Task options}
+%
+% \begin{description}
+% \item[|prio=high|]
+%   Adds a red high-priority pill, labelled \textsc{high} by default.
+% \item[|prio=medium| or |prio=med|]
+%   Adds an orange medium-priority pill, labelled \textsc{med} by default.
+% \item[|prio=low|]
+%   Adds a green low-priority pill, labelled \textsc{low} by default.
+% \item[|author=|\meta{text}]
+%   Places a neutral author chip at the right of the metadata row.
+% \item[|deadline=|\meta{value}]
+%   Adds a deadline chip beneath the metadata row. The alias |due| has exactly
+%   the same meaning.
+% \item[|late|]
+%   Forces an existing deadline chip to use the overdue style. The option has
+%   no visible effect unless |deadline| or |due| is also present.
+% \item[|completed|]
+%   Adds a green marker, labelled \textsc{done} by default. Completion is
+%   presentational: it does not move the task or suppress its deadline.
+% \end{description}
+%
+% Task options are local to one declaration. An unknown option name generates
+% a warning that names the key:
+% \begin{kanbanManualMessage}
+% Unknown task option 'colour' on line 12. The option is ignored.
+% \end{kanbanManualMessage}
+% Priority values are trimmed and compared without regard to letter case. An
+% unrecognized value produces a warning, and the priority chip is omitted.
+%
+% Several options may be combined in one declaration:
+% \begin{lstlisting}
+% \kanbantask[
+%   prio=high,
+%   author=Alice,
+%   due=07/31/2026
+% ]{Review}{Approve the release candidate}
+% \end{lstlisting}
+% The package does not infer workflow state from metadata. In particular,
+% |completed| adds a marker but does not move the task to a column named
+% ``Done''. The column argument remains the only source of task placement.
+%
+% Task text may contain ordinary inline markup:
+% \begin{lstlisting}
+% \kanbantask{Doing}{
+%   Compare \emph{pdfLaTeX} and \emph{LuaLaTeX} output
+% }
+% \end{lstlisting}
+% A card may also contain more than one paragraph. A blank line or |\par| in
+% the text argument starts a new paragraph inside the card:
+% \begin{lstlisting}
+% \kanbantask{Doing}{
+%   Compare the output of both engines.
+%
+%   Record the differences in the project log.
+% }
+% \end{lstlisting}
+% Authors should keep card text concise. Long paragraphs are valid, but they
+% make narrow boards difficult to scan.
+%
+% \section{Deadline semantics}
+%
+% Deadline classification is performed when a card is rendered. By default,
+% the comparison day is obtained from the TeX primitives |\year|, |\month|,
+% and |\day|. Consequently, recompiling the same source on a later date may
+% change a deadline chip from neutral to current or overdue. The
+% |reference-date| key replaces that moving comparison day with a validated,
+% fixed date when reproducible output is required. The syntax of a deadline is
+% checked when the task is declared, so a warning about an invalid value names
+% the line of that declaration.
+%
+% \subsection{Calendar dates}
+%
+% A deadline is interpreted as a calendar date when its complete expanded
+% value has one of the supported numeric forms. Ordinary macros are expanded
+% before the check, so a macro that expands to a date is classified. Robust
+% and protected commands are not expanded. A value such as |\emph{soon}| or
+% |{\textbf{2026-07-18}}| is therefore a descriptive label. It is printed
+% with its formatting and without automatic classification. The parser
+% recognizes month-first and day-first dates with a final year, German dot
+% notation, ISO notation, and slash-separated year-first notation. For
+% example:
+% \begin{lstlisting}
+% \newcommand\releasedate{2026-08-15}
+% \kanbantask[due=07/31/2026]{Review}{Approve the release}
+% \kanbantask[due=\releasedate]{Planned}{Archive the release}
+% \kanbantask[due=\emph{soon}]{Planned}{Announce the release}
+% \end{lstlisting}
+% The first two deadlines are calendar dates. The third is a label.
+% A date before the active reference date is red, a date equal to it is orange,
+% and a future date is neutral. When no reference date has been configured, the
+% compilation date is the active reference. Every notation requires a
+% four-digit year from 0001 to 9999. Month and day may be written with one or
+% two digits. Dates are checked against the Gregorian month lengths, including
+% the leap-year rule. A value that has date syntax but does not denote a valid
+% date produces a warning and is retained as a neutral label. The same applies
+% to a value that has the shape of a date but a year of fewer than four digits.
+% The input |18.07.26| is therefore reported rather than read as a date in the
+% year 26. Other descriptive values, including labels beginning with |M| or
+% containing punctuation, are displayed without automatic classification. The
+% |late| option may be used when such a label must appear overdue.
+%
+% \subsection{Date formats}
+%
+% The |date-format| key selects how every validated calendar date is printed.
+% The package provides five common numeric conventions:
+%
+% \begin{center}
+% \begin{tabular}{@{}lll@{}}
+% \textbf{Key value} & \textbf{Convention} & \textbf{18 July 2026} \\
+% \hline
+% |us|      & month/day/year       & |07/18/2026| \\
+% |english| & day/month/year       & |18/07/2026| \\
+% |german|  & day.month.year       & |18.07.2026| \\
+% |iso|     & year-month-day       & |2026-07-18| \\
+% |ymd|     & year/month/day       & |2026/07/18| \\
+% \end{tabular}
+% \end{center}
+%
+% |us| is the initial default. Output components are zero-padded. Month and
+% day may be entered with one or two digits, so |2026-7-8| and |2026-07-08|
+% denote the same date and are both printed as |07/08/2026| under the default.
+% Selecting a format follows the same three-level hierarchy as the other board
+% settings:
+% \begin{lstlisting}
+% \usepackage[date-format=english]{kanban-board} % initial document default
+% \kbset{date-format=german}               % subsequent boards
+%
+% \begin{kanban}[date-format=iso]           % this board only
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% The compact spelling |dateformat| is accepted as an exact key alias, although
+% |date-format| is the canonical spelling used throughout this manual. Format
+% values are trimmed and compared without regard to letter case. The canonical
+% values in the table should be preferred in new documents. For compatibility,
+% |american| maps to |us|. The values |uk| and |british| map to |english|.
+% The values |de| and |deutsch| map to |german|, and |year-first| maps to
+% |ymd|.
+%
+% Calendar parsing is intentionally more permissive than display formatting:
+% an unambiguous date in any supported notation is accepted and normalized to
+% the selected output convention. A year-last slash date can be ambiguous. For
+% example, |07/08/2026| denotes either 8 July or 7 August. The |english| and
+% |german| selections interpret such a value as day/month/year. The |us|,
+% |iso|, and |ymd| selections use month/day/year for this otherwise ambiguous
+% input. If only one ordering denotes a valid Gregorian date, that ordering is
+% accepted regardless of the current selection. ISO input is consequently the
+% safest form for task data exchanged between documents, because its component
+% order is unambiguous. Project-month values such as |M2| and descriptive
+% labels are never reformatted.
+%
+% The |startdate| and |reference-date| settings are normalized to an internal
+% ISO representation as soon as their containing key list has been processed.
+% Their values are therefore immutable snapshots: a later macro redefinition
+% or board-local display-format change cannot reinterpret an inherited date.
+% Within one package, setup, or board option list, |date-format| is resolved
+% before either stored date is normalized, irrespective of the textual order
+% of those keys. Task deadlines remain board data and are interpreted under the
+% board's selected format when their cards are rendered.
+%
+% \subsection{Project months}
+%
+% A complete value of the form |M|\meta{n}, where \meta{n} is an integer from
+% 1 to 999999, denotes project month \meta{n}. Leading zeros are permitted,
+% so |M01| and |M0000001| both denote month 1. The bound of six digits
+% applies to the significant digits. It keeps malformed input outside TeX's
+% integer arithmetic. A value outside this range, such as |M0|, |M000|, or
+% |M1000000|, produces a warning and remains a neutral label. The initial
+% project start date may be supplied as a package option:
+% \begin{lstlisting}
+% \usepackage[startdate=07/15/2026]{kanban-board}
+% \end{lstlisting}
+% It may be changed for subsequent boards through the common setup interface:
+% \begin{lstlisting}
+% \kbset{startdate=2026-07-15}
+% \end{lstlisting}
+% Finally, a board can override the default locally:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Planned,Active,Done},startdate=07/15/2026]
+% \end{kanban}
+% \end{lstlisting}
+% The precedence order is therefore board option, current |\kbset| default,
+% and package option. A board-local value does not alter subsequent boards.
+% An empty setup value clears the persistent start date for later boards.
+% An empty board value disables an inherited start date for that board only:
+% \begin{lstlisting}
+% \kbset{startdate={}}
+% \begin{kanban}[startdate={}]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% Accepted start dates are stored canonically rather than as their original
+% input tokens. For example, a US |07/08/2026| start date remains 8 July even
+% if a later board selects |date-format=english| for its visible deadlines.
+% This separation prevents a display preference from changing project-month
+% boundaries.
+%
+% Project months begin on the day number of the start date. Thus, for a project
+% beginning on 15 July, |M1| runs from 15 July until 14 August and |M2| begins
+% on 15 August. If that day does not exist in a later calendar month, the
+% boundary is clamped to the final valid day of that month. A project beginning
+% on 31 January therefore enters |M2| on 28 February, or on 29 February in a
+% leap year. Its following boundary is 31 March. This rule prevents a short
+% month from extending the preceding project month unintentionally.
+%
+% A project month earlier than the current one is overdue. The current project
+% month is orange, and a later month is neutral. If no start date is available,
+% the value is displayed without automatic classification. An invalid start
+% date produces a package warning and does not replace the previously valid
+% value.
+%
+% \subsection{Reproducible reference dates}
+%
+% The optional |reference-date| setting fixes the comparison day used by both
+% calendar deadlines and project months. It follows the same package, setup,
+% and board-local hierarchy as |startdate|:
+% \begin{lstlisting}
+% \usepackage[reference-date=2026-07-18]{kanban-board}
+% \kbset{reference-date=2026-08-01}
+%
+% \begin{kanban}[reference-date=2026-08-15]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% The key alias |today| has exactly the same meaning. An empty setup value
+% restores the compilation date for later boards, while an empty board value
+% restores it for that board only. Like a project start date, an accepted
+% reference date is validated, expanded, and stored canonically. Invalid input
+% produces a warning and preserves the preceding value. This facility is
+% useful for archived reports, regression tests, and automated publication
+% systems in which a rebuild should not alter status colors.
+%
+% \subsection{Worked deadline example}
+%
+% The following board uses both public key names and displays all three visual
+% states with calendar dates. The manual fixes its reference date as 18 July
+% 2026, so the first date lies in the past, the second equals the reference
+% date, and the third lies in the future.
+% \begin{lstlisting}
+% \begin{kanban}[columns={Overdue,Due now,Upcoming}]
+%   \kanbantask[deadline=01/01/2000]
+%     {Overdue}{Resolve the review comments}
+%   \kanbantask[due=07/18/2026]
+%     {Due now}{Complete the current milestone}
+%   \kanbantask[deadline=2099-12-31]
+%     {Upcoming}{Prepare the next milestone}
+% \end{kanban}
+% \end{lstlisting}
+% The red chip denotes a past date, the orange chip denotes the active reference
+% date, and the neutral chip denotes a future date. The first and third values
+% also demonstrate US and ISO calendar input. Both are printed in the selected
+% format, which is US notation here because the board uses the default. The keys
+% |deadline| and |due| are exact aliases. Their choice does not determine the
+% color. The fixed reference date keeps the rendered result stable whenever the
+% manual is compiled.
+%
+% \begin{kanban}[columns={Overdue,Due now,Upcoming}]
+%   \kanbantask[deadline=01/01/2000]
+%     {Overdue}{Resolve the review comments}
+%   \kanbantask[due=07/18/2026]
+%     {Due now}{Complete the current milestone}
+%   \kanbantask[deadline=2099-12-31]
+%     {Upcoming}{Prepare the next milestone}
+% \end{kanban}
+%
+% A complete version of this demonstration, in both light and dark mode, is
+% provided as |kanban-board-deadlines-example.tex|.
+%
+% \section{Color and layout model}
+%
+% By default, columns draw from an eight-color palette in declaration order:
+% slate, blue, teal, sage, amber, clay, rose, and plum. A selected custom
+% palette may contain a different number of colors. When the number of columns
+% exceeds the number of entries, the palette repeats. Priority and status
+% colors are independent of the column color.
+%
+% In the default layout, the nominal width of each column is calculated from
+% the available line width and the number of columns. Large boards can
+% therefore become too narrow for useful text. In practice, three or four
+% columns fit comfortably in portrait documents. Wider boards often benefit
+% from landscape orientation, a larger paper size, or the |break| layout.
+%
+% \subsection{Selecting a palette}
+%
+% Version 1.0.0 provides named palettes. The initial palette may be selected as
+% a package option:
+% \begin{lstlisting}
+% \usepackage[palette=muted]{kanban-board}
+% \end{lstlisting}
+% The built-in names are |default|, |muted|, and |monochrome|. The |default|
+% palette contains the original eight-color sequence.
+%
+% |\kbset{palette=|\meta{name}|}| changes the default for subsequent boards:
+% \begin{lstlisting}
+% \kbset{palette=monochrome}
+% \end{lstlisting}
+% A board may override that default without changing later boards:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Todo,Doing,Done},palette=default]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+%
+% \DescribeMacro{\kanbandefinepalette}
+% \SpecialUsageIndex{\kbdefinepalette}
+% A new palette is registered with
+% \begin{quote}
+% |\kanbandefinepalette{|\meta{name}|}{|\meta{color list}|}|
+% \end{quote}
+% where the second argument is a non-empty, comma-separated list of colors or
+% \textsf{xcolor} expressions. For example:
+% \begin{lstlisting}
+% \definecolor{universityBlue}{HTML}{164A7B}
+% \definecolor{universityGold}{HTML}{A67C00}
+% \kbdefinepalette{university}{
+%   universityBlue,
+%   teal!70!black,
+%   universityGold
+% }
+% \kbset{palette=university}
+% \end{lstlisting}
+% The unstarred form uses white heading text for every entry. If a palette
+% contains both dark and light backgrounds, the starred form records an
+% explicit foreground color with each background:
+% \begin{quote}
+% |\kanbandefinepalette*{|\meta{name}|}{|%
+% \meta{background}|/|\meta{foreground}|,...}|
+% \end{quote}
+% For example:
+% \begin{lstlisting}
+% \kbdefinepalette*{accessible}{
+%   facultyNavy/white,
+%   facultyGold/kanbanInk,
+%   facultyBerry/white
+% }
+% \end{lstlisting}
+% The slash separates the two \textsf{xcolor} expressions. Every entry in a
+% starred definition must contain exactly one slash and two non-empty values.
+% Otherwise the complete definition is rejected with a warning. This explicit
+% pairing permits suitable heading contrast for arbitrary custom colors. It
+% does not attempt to calculate or certify a contrast ratio, because
+% \textsf{xcolor} expressions may depend on the surrounding document's color
+% model and named-color definitions.
+% When its name is available, the concise command |\kbdefinepalette| is an
+% exact alias. If another package has already defined that name,
+% \textsf{kanban-board} preserves it, reports a warning, and requires the
+% canonical |\kanbandefinepalette| command. Surrounding spaces in a palette
+% name are ignored, but palette names are case-sensitive. Palette
+% registration is document-wide: the definition command creates or replaces
+% a named registry
+% entry, while package, setup, and board |palette| keys only select an existing
+% entry.
+% Defining an existing name replaces its stored color list. If that name is the
+% current document default, later boards immediately use the replacement. The
+% name does not need to be selected again. A board takes a local snapshot of
+% the palette and its foreground list when it begins, so redefining the name
+% while that board is being collected cannot alter the board already in
+% progress. An unknown or empty palette produces a warning and leaves the
+% current selection unchanged.
+%
+% A palette may contain any positive number of colors. When a board has more
+% columns than the palette has entries, selection wraps cyclically. A
+% three-color palette is therefore applied as colors 1, 2, 3, 1, 2, 3, and so
+% forth. The built-in colors are dark enough to give white heading text a
+% contrast ratio of at least 4.5:1. Authors of custom palettes remain
+% responsible for preserving adequate contrast. The starred interface makes
+% the foreground choice explicit for every palette entry. The following
+% example defines a three-color institutional palette with dark text on its
+% lighter gold background. Since the board has four columns, its
+% fourth heading reuses the first palette entry.
+% \begin{lstlisting}
+% \definecolor{facultyNavy}{HTML}{244A6C}
+% \definecolor{facultyGold}{HTML}{C69A32}
+% \definecolor{facultyBerry}{HTML}{843D60}
+% \kbdefinepalette*{faculty}{
+%   facultyNavy/white,
+%   facultyGold/kanbanInk,
+%   facultyBerry/white
+% }
+%
+% \begin{kanban}[
+%   columns={Proposed,Selected,In progress,Published},
+%   palette=faculty
+% ]
+%   \kanbantask[deadline=12/31/2099]
+%     {Proposed}{Collect research questions}
+%   \kanbantask[prio=high,deadline=01/01/2000]
+%     {Selected}{Approve the study design}
+%   \kanbantask[author=Alice,
+%     due=07/18/2026]
+%     {In progress}{Complete the analysis}
+%   \kanbantask[completed]{Published}{Deposit the article}
+% \end{kanban}
+% \end{lstlisting}
+% It produces the following board:
+%
+% \definecolor{kbManualNavy}{HTML}{244A6C}
+% \definecolor{kbManualGold}{HTML}{C69A32}
+% \definecolor{kbManualBerry}{HTML}{843D60}
+% \kbdefinepalette*{manualfaculty}{
+%   kbManualNavy/white,
+%   kbManualGold/kanbanInk,
+%   kbManualBerry/white
+% }
+% \begin{kanban}[
+%   columns={Proposed,Selected,In progress,Published},
+%   palette=manualfaculty
+% ]
+%   \kanbantask[deadline=12/31/2099]
+%     {Proposed}{Collect research questions}
+%   \kanbantask[prio=high,deadline=01/01/2000]
+%     {Selected}{Approve the study design}
+%   \kanbantask[author=Alice,
+%     due=07/18/2026]
+%     {In progress}{Complete the analysis}
+%   \kanbantask[completed]{Published}{Deposit the article}
+% \end{kanban}
+%
+% The complete compilable source is |kanban-board-palette-example.tex|.
+%
+% \subsection{Column geometry}
+%
+% The |columnsep| key controls the distance between adjacent columns. Its
+% default value is |2mm|. The key accepts three forms of value. The first
+% form is a non-negative explicit dimension such as |2mm| or |0.5em|. The
+% number and the unit may be separated by spaces, as in |2 mm|, and a
+% physical unit may carry the |true| prefix, as in |2truemm| or |2 true mm|.
+% The second form is a single LaTeX length register such as |\linewidth| or
+% a length declared with |\newlength|. The third form is a single TeX
+% dimension or glue parameter such as |\parindent|, |\baselineskip|,
+% |\hsize|, or |\parskip|. A |\let| copy of such a parameter is accepted as
+% well. A macro that expands to one of these forms is also accepted. Every
+% other value is rejected with a warning, and the current value is kept.
+% Rejected values include |\dimexpr| expressions, scaled registers such as
+% |0.5\linewidth|, the |true| prefix on a font-relative unit as in |2trueem|,
+% math glue such as |\thinmuskip|, a bare number, a bare unit, and robust
+% commands such as |\emph{2mm}|. The check takes place before TeX's dimension
+% scanner is entered, so a rejected value does not produce secondary
+% ``missing number'' or ``illegal unit'' errors. The help text of the warning
+% reads ``Use a non-negative explicit dimension such as 2mm, a LaTeX length
+% register, or a TeX length parameter such as |\hsize|.'' An initial value
+% may be set as a package option:
+% \begin{lstlisting}
+% \usepackage[columnsep=3mm]{kanban-board}
+% \end{lstlisting}
+% It may be changed for subsequent boards with the shared setup command:
+% \begin{lstlisting}
+% \kbset{columnsep=1.5mm}
+% \end{lstlisting}
+% A single board may override the current default without affecting later
+% boards:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Todo,Doing,Done},columnsep=4mm]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% The same value is applied to the fixed layout and to the column separation
+% used by the |break| layout. In the fixed layout the package subtracts the
+% total separation from the available line width before dividing the remaining
+% width among the columns. Each task card then occupies the complete available
+% width of its column body.
+%
+% The value must also be feasible for the resolved number of columns. For
+% \meta{n} columns, the product of \meta{n} minus one and |columnsep| must be
+% smaller than |\linewidth|. If the total gap is equal to or wider than the
+% available line width, the package reports an error and uses |0pt| for that
+% board. This recovery value preserves positive column width while leaving the
+% document-wide default unchanged.
+%
+% The fixed layout is constructed as a two-row raster. All heading cells use
+% the height of the tallest heading, including headings that wrap onto more
+% than one line. All column bodies use the height of the body containing the
+% most material, so empty or short columns extend to the same bottom edge. The
+% column body itself is transparent in both visual modes. Only its bottom rule
+% remains visible, while the left and right rules are omitted. Task cards keep
+% their light or dark background, border, and colored accent.
+%
+% Equal-height measurements are stored in the document's auxiliary file.
+% Authors should therefore compile the document twice after changing a column
+% heading or task list. In the page-breakable layout, heading heights are also
+% synchronized at the beginning of the board, but column bodies remain
+% independent so that they can continue naturally across pages. The initial
+% headings are not repeated on continuation pages.
+%
+% The following example uses concise headings and includes an empty column. The
+% shorter labels are preferable in narrow boards because they keep the workflow
+% stages visually compact. Longer headings remain supported and are equalized
+% automatically when wrapping is unavoidable.
+% \begin{lstlisting}
+% \begin{kanban}[columns={Queued,Review,Complete}]
+%   \kanbantask[prio=high]{Review}
+%     {Prepare the response}
+%   \kanbantask{Review}
+%     {Check the revised figures}
+%   \kanbantask[completed]{Complete}{Approve the revision}
+% \end{kanban}
+% \end{lstlisting}
+% \Needspace{10\baselineskip}
+% It produces a board whose headings and bottom edges remain aligned:
+%
+% \begin{kanban}[columns={Queued,Review,Complete}]
+%   \kanbantask[prio=high]{Review}
+%     {Prepare the response}
+%   \kanbantask{Review}
+%     {Check the revised figures}
+%   \kanbantask[completed]{Complete}{Approve the revision}
+% \end{kanban}
+%
+% \subsection{Light and dark modes}
+%
+% The default |light| mode uses dark text on white cards, neutral gray metadata
+% chips, and white headings on the selected palette colors. The |dark| mode
+% uses light text on dark cards. Author chips and neutral |deadline| or |due|
+% chips deliberately retain their light-mode colors in both modes, giving
+% metadata a stable visual identity. Automatic status colors remain semantic:
+% overdue values are red and values due now are amber in either mode. In both
+% modes the area behind the cards is transparent, so the surrounding page
+% remains visible in the vertical space between cards and at the foot of a
+% synchronized column. Palette colors continue to identify columns in both
+% modes.
+%
+% The initial mode may be selected as a package option:
+% \begin{lstlisting}
+% \usepackage[mode=dark]{kanban-board}
+% \end{lstlisting}
+% It can be changed for subsequent boards through the common setup interface:
+% \begin{lstlisting}
+% \kbset{mode=dark}
+% \end{lstlisting}
+% A board may then override that default locally:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Todo,Doing,Done},mode=light]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+%
+% Mode selection affects only the board. It deliberately does not call
+% |\pagecolor| and does not alter the surrounding document text. A dark board
+% can therefore be embedded safely in an otherwise light document. Unknown
+% mode names produce a warning and leave the current selection unchanged. A
+% robust command in the value, as in |mode=\emph{dark}|, is reported as
+% unknown in the same way.
+%
+% The examples section below compares the two modes with identical column
+% geometry and explicit deadline states. A separate custom-palette example is
+% provided as |kanban-board-palette-example.tex|.
+%
+% \subsection{Labels and public style hooks}
+%
+% The visible semantic labels can be adapted without redefining internal
+% commands. The |labels| key accepts the nested keys |high|, |medium|, |low|,
+% and |done|. It follows the same package, setup, and board-local precedence as
+% the other configuration keys:
+% \begin{lstlisting}
+% \usepackage[
+%   labels={high=URGENT,medium=NORMAL,low=ROUTINE,done=FINISHED}
+% ]{kanban-board}
+%
+% \kbset{labels={done=APPROVED}}
+%
+% \begin{kanban}[labels={high=IMMEDIATE}]
+%   ...
+% \end{kanban}
+% \end{lstlisting}
+% A board takes a snapshot of all four labels when it begins. An omitted label
+% keeps its current value. An empty value is rejected with a warning. Label
+% text is ordinary short LaTeX material, although concise uppercase terms are
+% normally easiest to read inside the small chips.
+%
+% Seven namespaced \textsf{tcolorbox} styles provide a controlled extension
+% point for typographic and spacing changes:
+% \begin{quote}
+% |kanban/header|, |kanban/card|, |kanban/column-body|,\\
+% |kanban/priority-chip|, |kanban/author-chip|,\\
+% |kanban/deadline-chip|, and |kanban/completed-chip|.
+% \end{quote}
+% The styles are initially empty and are applied after the structural package
+% defaults. For example:
+% \begin{lstlisting}
+% \tcbset{
+%   kanban/header/.append style={fontupper=\bfseries\sffamily},
+%   kanban/card/.append style={arc=1mm,outer arc=1mm},
+%   kanban/author-chip/.append style={left=1.5mm,right=1.5mm}
+% }
+% \end{lstlisting}
+% These hooks are document-wide \textsf{tcolorbox} settings. The header, card,
+% and chip styles apply to both rendering strategies. |kanban/column-body|
+% applies only to the fixed renderer because the page-breakable renderer leaves
+% each \textsf{paracol} stream without an enclosing body box. Authors should
+% preserve |width=\linewidth| for cards and should test changes to padding in
+% narrow columns. The named colors |kanbanHigh|, |kanbanMed|, and |kanbanLow|
+% remain available to advanced users, but changing either foreground or
+% background colors also transfers responsibility for readable contrast to the
+% document author. In the defaults, the orange medium and due-now chips use
+% dark ink. The red and green semantic chips use white. Together with the
+% revised built-in palettes, these pairs meet a 4.5:1 reference contrast ratio
+% for ordinary text.
+%
+% \section{Diagnostics and limitations}
+%
+% The package distinguishes warnings from errors. A warning reports input
+% that can be ignored safely. The package then keeps the current value or
+% omits the affected element. An error reports a declaration that cannot be
+% interpreted unambiguously. Errors use the LaTeX2e package error mechanism.
+% Every warning is a named message of the \textsf{l3msg} module |kanban-board|.
+%
+% \paragraph{Warnings.}
+% Every warning follows one pattern. The first sentence names the subject,
+% quotes the offending value, and states the line of the input that caused
+% the warning. The second sentence states how the package recovers. An
+% unknown setup, board, task, label, or board label option names the key
+% and is ignored:
+% \begin{kanbanManualMessage}
+% Unknown setup option 'colour' on line 3. The option is ignored.\\
+% Unknown board label option 'urgent' on line 9. The option is ignored.
+% \end{kanbanManualMessage}
+% An unknown palette, mode, or date format keeps the current selection. The
+% board-local form names the scope, for example ``Unknown board palette'' or
+% ``Unknown board mode'':
+% \begin{kanbanManualMessage}
+% Unknown palette 'brand' on line 4. The current palette is kept.\\
+% Unknown mode 'blue' on line 5. The current value is kept.\\
+% Unknown date format 'dmy' on line 6. The current value is kept.
+% \end{kanbanManualMessage}
+% A robust command in such a value, as in |mode=\emph{dark}|, is reported as
+% unknown in the same way. A palette definition is rejected as a whole when
+% its name is empty, when its color list is empty, or when a starred
+% definition contains a malformed pair. The starred form reports ``has no
+% color/text pairs'' for an empty list:
+% \begin{kanbanManualMessage}
+% Empty palette name on line 7. The definition is ignored.\\
+% Palette 'empty' on line 8 has no colors. The definition is ignored.\\
+% Palette 'broken' on line 9 has a malformed color/text pair. The definition
+% is ignored.
+% \end{kanbanManualMessage}
+% An empty column list, an empty label, an invalid start or reference date,
+% and an invalid column separation keep the current value:
+% \begin{kanbanManualMessage}
+% Empty column list on line 10. The current list is kept.\\
+% Empty label 'high' on line 11. The current value is kept.\\
+% Invalid startdate '31.02.2026' on line 12. The current value is kept.\\
+% Invalid columnsep value '2' on line 13. The current value is kept.
+% \end{kanbanManualMessage}
+% The board-local forms of these messages read ``Empty board label'',
+% ``Invalid board startdate'', ``Invalid board reference-date'', and
+% ``Invalid board columnsep value''. A malformed or negative column
+% separation is intercepted before TeX emits a low-level number or unit
+% error. An unknown priority omits the chip. A deadline that resembles a
+% calendar date or a project month but lies outside the validated range is
+% displayed as a neutral label:
+% \begin{kanbanManualMessage}
+% Unknown priority 'urgent' on line 14. The priority chip is omitted.\\
+% Invalid deadline date '18.07.26' on line 15. The card shows a neutral
+% label.\\
+% Invalid project-month deadline 'M0' on line 16. The card shows a neutral
+% label.
+% \end{kanbanManualMessage}
+% Deadline warnings are issued when the task is declared, so the line is
+% that of the declaration. Descriptive labels, including a deadline that
+% contains a robust command, remain neutral without a diagnostic.
+%
+% A diagnostic raised by a package option says ``in the package options''
+% instead of naming a line, because the package file is being read at that
+% moment:
+% \begin{kanbanManualMessage}
+% Invalid startdate '31.02.2026' in the package options. The current value
+% is kept.
+% \end{kanbanManualMessage}
+% The optional short commands |\kbtask|, |\kbset|, and |\kbdefinepalette|
+% are installed only when their names are unused. A pre-existing definition
+% is never overwritten, and the canonical long command remains available in
+% every case. The warning is issued while the package loads and therefore
+% carries no line context:
+% \begin{kanbanManualMessage}
+% \textbackslash kbset is already defined. Use \textbackslash kanbansetup
+% instead.
+% \end{kanbanManualMessage}
+% The same pattern applies to |\kbtask| and |\kbdefinepalette|.
+%
+% \paragraph{Message identifiers.}
+% Every message belongs to the \textsf{l3msg} module |kanban-board|. The
+% following table lists the identifier of each message and the subject of
+% its text.
+%
+% \begin{center}
+% \begin{tabular}{@{}ll@{}}
+% \textbf{Identifier} & \textbf{Subject} \\
+% \hline
+% |unknown-key| & Unknown setup, board, task, or label option \\
+% |unknown-value| & Unknown mode or date format \\
+% |unknown-palette| & Unknown palette \\
+% |empty-palette-name| & Empty palette name \\
+% |empty-palette| & Palette without colors or color/text pairs \\
+% |malformed-palette-pair| & Malformed color/text pair \\
+% |empty-column-list| & Empty column list \\
+% |empty-label| & Empty label \\
+% |invalid-date-setting| & Invalid start date or reference date \\
+% |invalid-dimension| & Invalid column separation \\
+% |unknown-priority| & Unknown priority \\
+% |invalid-deadline| & Invalid deadline date \\
+% |invalid-project-month| & Invalid project-month deadline \\
+% |alias-taken| & Short command already defined \\
+% \end{tabular}
+% \end{center}
+%
+% An individual message can be silenced or redirected with
+% |\msg_redirect_name:nnn|. The following preamble lines turn the
+% unknown-key warning off and demote the unknown-value warning to an entry
+% in the log file:
+% \begin{lstlisting}
+% \ExplSyntaxOn
+% \msg_redirect_name:nnn {kanban-board}{unknown-key}{none}
+% \msg_redirect_name:nnn {kanban-board}{unknown-value}{info}
+% \ExplSyntaxOff
+% \end{lstlisting}
+% A redirection is local to the current TeX group. Placed in the preamble,
+% it applies to the whole document.
+%
+% \paragraph{Errors.}
+% A task with an empty column argument, a task outside a board, a task
+% assigned to a column that is absent from the board, or a column list
+% containing a duplicate after normalization generates a package error with
+% corrective help. The error for a task lists the valid columns by their
+% purified uppercase keys, so a column declared as |\emph{Soon}| appears as
+% |SOON|. Duplicate names recover by keeping the first occurrence and
+% discarding later occurrences. Invalid tasks are neither counted nor
+% rendered. Nested |kanban| environments are also rejected because each
+% board owns one active collection context. The nested environment produces
+% one error, and task declarations inside it are then ignored without a
+% cascade of secondary ``outside a board'' errors. A non-negative column
+% separation whose combined gaps leave no column width produces an error
+% and is replaced by |0pt| for the affected board. A paragraph break inside
+% the option list or the column argument of a task produces the LaTeX error
+% ``Paragraph ended before |\kanbantask| was complete''. LaTeX then discards
+% the declaration up to that point and reads the remainder as ordinary text.
+%
+% \paragraph{Constraints.}
+% Authors should also observe the following constraints.
+% \begin{itemize}
+% \item The resolved default or explicit list must contain at least one column.
+%   The built-in default satisfies this requirement, and an empty value passed
+%   to the |columns| setup key is rejected.
+% \item Column lookup keys are the purified uppercase text of the names.
+%   Ordinary macros are expanded, and formatting commands and braces are
+%   removed before the comparison. Headings show the spelling and the
+%   formatting of the column list. Names must not contain commas and must
+%   remain unique after normalization.
+% \item Mode and priority values are trimmed and compared without regard to
+%   letter case. Date-format values and their documented aliases follow the
+%   same normalization rule. A robust command in any of these values is
+%   reported as unknown. Palette names remain case-sensitive.
+% \item Column separation must be a non-negative explicit dimension, a single
+%   LaTeX length register, or a single TeX length parameter, and the sum of
+%   all inter-column gaps must be smaller than the available line width.
+% \item Calendar dates, project start dates, and reference dates may use US or
+%   English slash notation with a final year, German dot notation, ISO hyphen
+%   notation, or slash-separated year-first notation. The year always has four
+%   digits. Ambiguous year-last slash dates follow the selected date format.
+%   Calendar dates are validated for years from 0001 to 9999 and are
+%   normalized for display.
+% \item Only complete calendar dates and values |M1| through |M999999| are
+%   classified automatically. Leading zeros in the month number are
+%   permitted. All other deadline values, including values that contain a
+%   robust command, are treated as labels and remain neutral unless |late|
+%   is present. The |M| in a project-month value is uppercase and
+%   case-sensitive.
+% \item Task text is passed as a command argument, so verbatim material cannot
+%   be used inside a card. Paragraph breaks are permitted in the text argument
+%   but not in the option list or the column argument.
+% \item The fixed raster layout cannot split an individual board across pages.
+%   Use |break| for long boards.
+% \item The |break| layout prints synchronized headings once at the beginning
+%   of the board. It does not repeat them on continuation pages because the
+%   supported \textsf{paracol} interface provides independent column streams,
+%   not a repeating per-column heading row.
+% \item The |break| layout should not be used inside a
+%   \textsf{pdflscape} |landscape| environment. Use the fixed layout for a
+%   landscape board and ensure that the complete board fits on that page.
+% \item Task counts include every successfully assigned task, irrespective of
+%   its completion status.
+% \end{itemize}
+%
+% \section{Further usage examples}
+%
+% The distribution contains eight independently compilable example documents.
+% The general overview is |kanban-board-example.tex|. The remaining files
+% isolate deadline states, date formats, custom palettes, visual modes,
+% column separation, page breaking, and landscape composition.
+% This section reproduces the essential source for each case and, where visual
+% behaviour is central, places the generated output directly below it. The
+% resulting comparison makes the effect of each option observable without
+% requiring the reader to compile a separate file.
+%
+% \subsection{Reusable document setup}
+%
+% A document containing several related boards should establish common values
+% at the highest appropriate configuration level. Package options provide the
+% initial policy, while environment options record deliberate exceptions. The
+% following example keeps the column list, palette, mode, project start date,
+% reference date, and column separation consistent across the document, but
+% gives the second board a local column list and a different mode:
+% \begin{lstlisting}
+% \documentclass{article}
+% \usepackage[
+%   columns={Planned,Active,Complete},
+%   palette=muted,
+%   mode=light,
+%   startdate=07/01/2026,
+%   reference-date=2026-07-18,
+%   columnsep=2mm
+% ]{kanban-board}
+%
+% \begin{document}
+%
+% \section{Research tasks}
+% \begin{kanban}
+%   \kanbantask[prio=high,author=Alice,due=M1]
+%     {Planned}{Validate the data set}
+%   \kanbantask[author=Bob,due=M2]
+%     {Active}{Draft the results section}
+%   \kanbantask[completed]
+%     {Complete}{Approve the analysis plan}
+% \end{kanban}
+%
+% \section{Archival tasks}
+% \begin{kanban}[columns={Queued,Processing,Stored},mode=dark]
+%   \kanbantask{Queued}{Deposit the source data}
+%   \kanbantask[author=Carol]{Processing}{Create metadata records}
+% \end{kanban}
+%
+% \end{document}
+% \end{lstlisting}
+% The first board inherits every package default, including the configured
+% column list. The second board inherits the |muted| palette, project start
+% date, and column separation, while replacing its columns and visual mode for
+% that board only. This pattern makes document-wide conventions explicit and
+% keeps local deviations easy to identify during review.
+%
+% \Needspace{18\baselineskip}
+% \subsection{Selecting a date format}
+%
+% A shared date convention should normally be established at package or setup
+% level. A board-local selection is useful when a report reproduces material
+% prepared for a different audience. The following source uses ISO input for
+% every task because that form is unambiguous, then requests each available
+% output convention independently:
+% \begin{lstlisting}
+% \begin{kanban}[columns={Upcoming},date-format=us]
+%   \kanbantask[due=2099-07-18]
+%     {Upcoming}{Prepare the scheduled release}
+% \end{kanban}
+%
+% \begin{kanban}[columns={Upcoming},date-format=english]
+%   \kanbantask[due=2099-07-18]
+%     {Upcoming}{Prepare the scheduled release}
+% \end{kanban}
+%
+% % The same structure also accepts german, iso, and ymd.
+% \end{lstlisting}
+% Only the printed date changes. Validation and overdue classification use the
+% same Gregorian components in all five cases.
+%
+% \paragraph{Rendered output.}
+% The boards below render the same future date. The labels state the component
+% order explicitly so that the result does not depend on national terminology.
+%
+% \noindent
+% \kanbanManualDateFormatBoard{us}{US: MM/DD/YYYY}
+% \hfill
+% \kanbanManualDateFormatBoard{english}{English: DD/MM/YYYY}
+%
+% \medskip
+%
+% \noindent
+% \kanbanManualDateFormatBoard{german}{German: DD.MM.YYYY}
+% \hfill
+% \kanbanManualDateFormatBoard{iso}{ISO: YYYY-MM-DD}
+%
+% \medskip
+%
+% \noindent
+% \kanbanManualDateFormatBoard{ymd}{Year first: YYYY/MM/DD}
+%
+% The complete compilable source is |kanban-board-date-formats-example.tex|.
+% It also shows how the five compact boards can be arranged in minipages
+% without changing their local configuration scope.
+%
+% \Needspace{18\baselineskip}
+% \subsection{Light and dark boards in one document}
+%
+% Visual mode is a property of the cards rather than of the page. Selecting
+% |dark| therefore changes card backgrounds, text, and borders
+% without changing the surrounding document or the transparent column body.
+% The source below keeps the column structure constant so that the change in
+% visual treatment can be assessed directly. Author chips and neutral deadline
+% chips keep the same light treatment in both boards. Red and amber deadline
+% states retain their semantic colors.
+%
+% \begin{samepage}
+% \begin{lstlisting}
+% \begin{kanban}[columns={Planned,Active,Complete},mode=light]
+%   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+%     {Planned}{Confirm the requirements}
+%   \kanbantask[author=Bob,
+%     due=07/18/2026]
+%     {Active}{Implement the package interface}
+%   \kanbantask[completed,deadline=12/31/2099]
+%     {Complete}{Create the test files}
+% \end{kanban}
+%
+% \bigskip
+%
+% \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
+%   \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
+%     {Planned}{Prepare the release notes}
+%   \kanbantask[author=David,
+%     due=07/18/2026]
+%     {Active}{Review the documentation}
+%   \kanbantask[completed,deadline=12/31/2099]
+%     {Complete}{Select the license}
+% \end{kanban}
+% \end{lstlisting}
+% \end{samepage}
+% A document-wide mode may instead be selected as a package option or with
+% |\kbset|. The environment option remains the appropriate form when the change
+% applies to one board only.
+%
+% \Needspace{14\baselineskip}
+% \paragraph{Rendered output.}
+% The following pair is generated from the preceding source. In particular,
+% the dark board retains the selected column palette while using transparent
+% column bodies, dark cards, light foreground text, and light neutral author
+% and future-deadline chips matching those in the light board. Red and amber
+% deadline chips continue to communicate status independently of visual mode.
+%
+% \begin{kanban}[columns={Planned,Active,Complete},mode=light]
+%   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+%     {Planned}{Confirm the requirements}
+%   \kanbantask[author=Bob,
+%     due=07/18/2026]
+%     {Active}{Implement the package interface}
+%   \kanbantask[completed,deadline=12/31/2099]
+%     {Complete}{Create the test files}
+% \end{kanban}
+%
+% \medskip
+%
+% \begin{kanban}[columns={Planned,Active,Complete},mode=dark]
+%   \kanbantask[prio=medium,author=Carol,deadline=01/01/2000]
+%     {Planned}{Prepare the release notes}
+%   \kanbantask[author=David,
+%     due=07/18/2026]
+%     {Active}{Review the documentation}
+%   \kanbantask[completed,deadline=12/31/2099]
+%     {Complete}{Select the license}
+% \end{kanban}
+%
+% The complete compilable source is provided as
+% |kanban-board-modes-example.tex|.
+%
+% \subsection{Changing the gap between columns}
+%
+% Column separation follows the same three-level configuration hierarchy as
+% the palette and mode. A package option establishes the initial value,
+% |\kbset| changes the value for subsequent boards, and an environment option
+% applies to one board. The following fragment demonstrates the scope of each
+% form:
+%
+% \begin{samepage}
+% \begin{lstlisting}
+% \usepackage[columnsep=3mm]{kanban-board}
+%
+% % Uses the 3 mm package default.
+% \begin{kanban}[columns={Todo,Doing,Done}]
+%   \kanbantask[deadline=01/01/2000]{Todo}{Define the interface}
+%   \kanbantask[due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[deadline=12/31/2099,completed]{Done}{Run the tests}
+% \end{kanban}
+%
+% % Changes the default for subsequent boards.
+% \kbset{columnsep=1mm}
+% \begin{kanban}[columns={Todo,Doing,Done}]
+%   \kanbantask[deadline=01/01/2000]{Todo}{Define the interface}
+%   \kanbantask[due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[deadline=12/31/2099,completed]{Done}{Run the tests}
+% \end{kanban}
+%
+% % Uses 4 mm here. The document default remains 1 mm.
+% \begin{kanban}[columns={Todo,Doing,Done},columnsep=4mm]
+%   \kanbantask[deadline=01/01/2000]{Todo}{Define the interface}
+%   \kanbantask[due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[deadline=12/31/2099,completed]{Done}{Run the tests}
+% \end{kanban}
+% \end{lstlisting}
+% \end{samepage}
+% The value must be a non-negative explicit dimension such as |2mm|, a LaTeX
+% length register such as |\linewidth|, or a TeX length parameter such as
+% |\parindent|. Increasing it strengthens the visual separation between
+% workflow stages, but reduces the width available to every task card.
+%
+% \paragraph{Rendered output.}
+% In the comparison below, palette, headings, and task content are held
+% constant. Only |columnsep| changes. Board-local values are used here so that
+% the manual's configuration remains unchanged after the demonstration.
+%
+% \noindent\textit{Column separation: 3 mm.}
+% \begin{kanban}[columns={Todo,Doing,Done},columnsep=3mm]
+%   \kanbantask[prio=high,deadline=01/01/2000]
+%     {Todo}{Define the interface}
+%   \kanbantask[author=Alice,
+%     due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+% \end{kanban}
+%
+% \medskip
+% \noindent\textit{Column separation: 1 mm.}
+% \begin{kanban}[columns={Todo,Doing,Done},columnsep=1mm]
+%   \kanbantask[prio=high,deadline=01/01/2000]
+%     {Todo}{Define the interface}
+%   \kanbantask[author=Alice,
+%     due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+% \end{kanban}
+%
+% \medskip
+% \Needspace{8\baselineskip}
+% \noindent\textit{Column separation: 4 mm.}
+% \begin{kanban}[columns={Todo,Doing,Done},columnsep=4mm]
+%   \kanbantask[prio=high,deadline=01/01/2000]
+%     {Todo}{Define the interface}
+%   \kanbantask[author=Alice,
+%     due=07/18/2026]
+%     {Doing}{Write the implementation}
+%   \kanbantask[completed,deadline=12/31/2099]{Done}{Run the tests}
+% \end{kanban}
+%
+% The complete source is |kanban-board-columnsep-example.tex|.
+%
+% \Needspace{10\baselineskip}
+% \subsection{A page-breakable board}
+%
+% Long task lists should use the |break| option. In this layout each Kanban
+% column is managed as a \textsf{paracol} column and may continue onto a later
+% page. The fixed layout, by contrast, treats the complete board as one
+% unbreakable object. The compact fragment below shows the public interface.
+% The rendered demonstration that follows deliberately contains more cards so
+% that a real page transition occurs. The synchronized headings appear once at
+% the beginning of the board. Continuation pages contain only the remaining
+% cards. This behavior follows the public \textsf{paracol} column-stream model
+% and avoids dependencies on its private output routine.
+%
+% \begin{samepage}
+% \begin{lstlisting}
+% \kbset{palette=default,mode=light,columnsep=2mm}
+% \begin{kanban}[
+%   columns={Backlog,In progress,Review,Done},break
+% ]
+%   \kanbantask[prio=high,author=Alice,deadline=01/01/2000]
+%     {Backlog}{Finalize the interface}
+%   \kanbantask[prio=medium,author=Bob,
+%     due=07/18/2026]
+%     {In progress}{Write regression tests}
+%   \kanbantask[author=Carol,deadline=12/31/2099]
+%     {Review}{Proofread the manual}
+%   \kanbantask[completed,due=12/31/2099]
+%     {Done}{Select the package license}
+% \end{kanban}
+% \end{lstlisting}
+% \end{samepage}
+% Task declarations need not follow the order of the columns. The package
+% collects each task under its named column and preserves source order within
+% that column. Since column bodies paginate independently, their bottom edges
+% are not synchronized in this layout.
+%
+% \paragraph{Rendered output.}
+% The next board begins below this paragraph and contains enough material to
+% continue onto the following page. Its headings are printed once at the
+% beginning. The cards that do not fit on this page continue in their
+% respective column streams on the next page.
+%
+% \Needspace{14\baselineskip}
+% \begin{kanban}[
+%   columns={Backlog,In progress,Review},break,columnsep=2mm
+% ]
+%   \kanbanManualBreakDeadlineCard{Backlog}{Alice}
+%     {deadline=01/01/2000}{Confirm the public interface}
+%   \kanbanManualBreakCard{Backlog}{Bob}{Collect compatibility requirements}
+%   \kanbanManualBreakCard{Backlog}{Carol}{Review package dependencies}
+%   \kanbanManualBreakCard{Backlog}{David}{Define the project date policy}
+%   \kanbanManualBreakCard{Backlog}{Alice}{Select the release palette}
+%   \kanbanManualBreakCard{Backlog}{Bob}{Identify supported engines}
+%   \kanbanManualBreakCard{Backlog}{Carol}{Plan the documentation structure}
+%   \kanbanManualBreakCard{Backlog}{David}{Prepare the release checklist}
+%   \kanbanManualBreakCard{Backlog}{Alice}{Confirm the archive structure}
+%   \kanbanManualBreakCard{Backlog}{Bob}{Review installation instructions}
+%   \kanbanManualBreakCard{Backlog}{Carol}{Assess documented limitations}
+%   \kanbanManualBreakCard{Backlog}{David}{Schedule the release review}
+%
+%   \kanbanManualBreakDeadlineCard{In progress}{Alice}
+%     {due=07/18/2026}
+%     {Implement configuration keys}
+%   \kanbanManualBreakCard{In progress}{Bob}{Apply the visual modes}
+%   \kanbanManualBreakCard{In progress}{Carol}{Synchronize header heights}
+%   \kanbanManualBreakCard{In progress}{David}{Equalize fixed column bodies}
+%   \kanbanManualBreakCard{In progress}{Alice}{Remove outer side rules}
+%   \kanbanManualBreakCard{In progress}{Bob}{Extend the user manual}
+%   \kanbanManualBreakCard{In progress}{Carol}{Compile example documents}
+%   \kanbanManualBreakCard{In progress}{David}{Add regression assertions}
+%   \kanbanManualBreakCard{In progress}{Alice}{Run the pdfTeX checks}
+%   \kanbanManualBreakCard{In progress}{Bob}{Run the LuaTeX checks}
+%   \kanbanManualBreakCard{In progress}{Carol}{Generate the release archive}
+%   \kanbanManualBreakCard{In progress}{David}{Inspect the rendered output}
+%
+%   \kanbanManualBreakDeadlineCard{Review}{Alice}
+%     {deadline=12/31/2099}{Inspect the generated style file}
+%   \kanbanManualBreakCard{Review}{Bob}{Compare regression logs}
+%   \kanbanManualBreakCard{Review}{Carol}{Proofread the public interface}
+%   \kanbanManualBreakCard{Review}{David}{Examine color contrast}
+%   \kanbanManualBreakCard{Review}{Alice}{Validate the documented source}
+%   \kanbanManualBreakCard{Review}{Bob}{Review the CTAN metadata}
+%   \kanbanManualBreakCard{Review}{Carol}{Check the license statements}
+%   \kanbanManualBreakCard{Review}{David}{Inspect the manual PDF}
+%   \kanbanManualBreakCard{Review}{Alice}{Test the installation procedure}
+%   \kanbanManualBreakCard{Review}{Bob}{Verify all example files}
+%   \kanbanManualBreakCard{Review}{Carol}{Confirm the change history}
+%   \kanbanManualBreakCard{Review}{David}{Approve the release candidate}
+% \end{kanban}
+%
+% The continuation demonstrates why body heights remain independent when
+% |break| is active. The complete standalone example is
+% |kanban-board-break-example.tex|.
+%
+% \subsection{A fixed board on a landscape page}
+%
+% A landscape page increases |\linewidth| and is therefore useful when a
+% workflow has five or more stages that would be too narrow in portrait
+% orientation. The \textsf{pdflscape} package establishes the rotated page and
+% records the appropriate PDF rotation metadata. The board itself requires no
+% rotation commands. Page margins should be chosen before the board is opened,
+% and |columnsep| can then be reduced modestly if the available width is still
+% insufficient.
+%
+% The board must use the fixed layout. The |break| option is deliberately
+% absent because its \textsf{paracol}-based pagination is intended for ordinary
+% portrait text pages and is not compatible with this use. A fixed board is
+% kept as one indivisible object, including its header and body rows. It will
+% therefore move to the next page when the remaining vertical space is too
+% small. If the complete board is taller than one landscape page, the content
+% should be reduced or presented as a separate page-breakable portrait board.
+%
+% Concise stage names are especially important when six columns share the page.
+% The example uses |Build| and |Docs| as familiar abbreviations for
+% implementation and documentation. Less familiar abbreviations should be
+% defined in the surrounding text so that the board remains understandable
+% without relying on source-code comments.
+%
+% \begin{samepage}
+% \begin{lstlisting}
+% \documentclass[a4paper]{article}
+% \usepackage[margin=18mm]{geometry}
+% \usepackage{pdflscape}
+% \usepackage[columnsep=2mm]{kanban-board}
+%
+% \begin{document}
+% \begin{landscape}
+% \section*{Release workflow}
+%
+% % Deliberately omit the break option in a landscape environment.
+% \begin{kanban}[
+%   columns={Ideas,Selected,Build,Review,Docs,Released},
+%   mode=light
+% ]
+%   \kanbantask[deadline=01/01/2000]
+%     {Ideas}{Collect feature requests}
+%   \kanbantask{Ideas}{Record user feedback}
+%   \kanbantask[prio=high,
+%     due=07/18/2026]
+%     {Selected}{Approve the release scope}
+%   \kanbantask[author=Alice,deadline=12/31/2099]
+%     {Build}{Complete the changes}
+%   \kanbantask[author=Bob]{Review}{Run the acceptance review}
+%   \kanbantask[author=Carol]{Docs}{Update the user manual}
+%   \kanbantask[completed]{Released}{Publish the archive}
+% \end{kanban}
+% \end{landscape}
+% \end{document}
+% \end{lstlisting}
+% \end{samepage}
+% The supporting package is needed only by a document that requests rotated
+% pages. It is not a dependency of \textsf{kanban-board}. The excerpt shows the
+% structural pattern. The standalone example adds three tasks to every stage so
+% that the use of the available landscape area can be assessed realistically.
+%
+% \paragraph{Rendered output.}
+% The next page is generated directly in a |landscape| environment. The board
+% uses six fixed columns, short one-line headings, three cards per column, and
+% no |break| option. Equal body heights make the workflow read as one coherent
+% table even though individual task cards have different amounts of metadata.
+%
+% \begin{landscape}
+% \section*{Landscape release workflow}
+% \begin{kanban}[
+%   columns={Ideas,Selected,Build,Review,Docs,Released},
+%   mode=light,
+%   columnsep=2mm
+% ]
+%   \kanbantask[author=Alice,deadline=01/01/2000]
+%     {Ideas}{Collect feature requests}
+%   \kanbantask[author=Bob]
+%     {Ideas}{Record user feedback}
+%   \kanbantask[author=Carol]
+%     {Ideas}{Identify compatibility risks}
+%
+%   \kanbantask[prio=high,author=Bob,
+%     due=07/18/2026]
+%     {Selected}{Approve the release scope}
+%   \kanbantask[author=Carol]
+%     {Selected}{Confirm supported engines}
+%   \kanbantask[author=David]
+%     {Selected}{Assign milestone owners}
+%
+%   \kanbantask[author=Carol,deadline=12/31/2099]
+%     {Build}{Complete the package changes}
+%   \kanbantask[author=David]
+%     {Build}{Update date validation}
+%   \kanbantask[author=Alice]
+%     {Build}{Generate the style file}
+%
+%   \kanbantask[author=David]
+%     {Review}{Run the technical review}
+%   \kanbantask[author=Alice]
+%     {Review}{Compare engine output}
+%   \kanbantask[author=Bob]
+%     {Review}{Check regression logs}
+%
+%   \kanbantask[author=Alice]
+%     {Docs}{Update the user manual}
+%   \kanbantask[author=Bob]
+%     {Docs}{Compile usage examples}
+%   \kanbantask[author=Carol]
+%     {Docs}{Verify CTAN metadata}
+%
+%   \kanbantask[completed]
+%     {Released}{Publish the source archive}
+%   \kanbantask[author=Alice,completed]
+%     {Released}{Tag version 1.0.0}
+%   \kanbantask[author=Bob,completed]
+%     {Released}{Announce the release}
+% \end{kanban}
+% \end{landscape}
+%
+% The output confirms that the fixed layout uses the landscape line width while
+% retaining synchronized headings and column bodies. The task count in each
+% heading is derived from the declarations, and the palette continues cyclically
+% if a later board contains more stages than palette entries. A complete version
+% is provided as |kanban-board-landscape-example.tex|.
+%
+% \section{License and maintenance}
+%
+% The package is distributed under the LaTeX Project Public License, version
+% 1.3c or, at the user's option, any later version. Its LPPL status is
+% ``maintained'', and the Current Maintainer is Andreas Willibald Weber.
+% Defect reports should include a minimal complete document, the relevant log
+% messages, and the versions of LaTeX and \textsf{kanban-board} used to
+% reproduce the problem. The package information page is
+% \url{https://ctan.org/pkg/kanban-board}. Development takes place at
+% \url{https://github.com/andreaswillibaldweber/ctan-kanban}. Defects and
+% focused enhancement proposals should be submitted through the public issue
+% tracker at
+% \url{https://github.com/andreaswillibaldweber/ctan-kanban/issues}. The
+% development repository also contains the contribution guidelines and the
+% release procedure of the maintainer.
+%
+% \StopEventually{\clearpage\PrintChanges\PrintIndex}
+%
+% \section{Implementation}
+%
+% The implementation is organized as six documented parts that
+% |kanban-board.ins| assembles into one style file. This part holds the
+% package declaration, the dependencies, and the shared state. The remaining
+% parts hold the palette and column registries, the deadline engine, the
+% persistent
+% configuration, the card renderers, and the board lifecycle. The commentary
+% explains the responsibility of each definition and the design decisions
+% behind it. It does not restate the semantics of the LaTeX3 programming
+% layer, which is documented in |interface3.pdf|.
+%
+% \subsection{Public command contracts}
+%
+% The implementation distinguishes persistent defaults, one-board state, and
+% task data. The |kanban| environment establishes a collection scope, copies
+% the persistent defaults, applies its local options, and selects one of the
+% two renderers. It is the only public operation that creates board state.
+% |\kanbantask| may mutate that state only while a board is active. Otherwise
+% it reports an error and discards the declaration. A nested board is
+% rejected at its entry point, and its task declarations enter a temporary
+% discard state so that the structural error is not obscured by secondary
+% diagnostics.
+%
+% |\kanbansetup| changes persistent defaults for boards that begin later.
+% When a short name is unused, the alias is defined by control-sequence
+% equivalence rather than by a forwarding wrapper. This applies to |\kbset|,
+% |\kbdefinepalette|, and |\kbtask|. Existing short definitions are preserved
+% and diagnosed. Palette definition changes the registry. Palette selection
+% changes the current palette name, its background list, and any paired
+% foreground list. Redefining the selected name refreshes the persistent
+% lists for later boards, whereas a board already in progress keeps its local
+% snapshot. No generic |\task| command is defined, because that name has a
+% material risk of collision with classes and unrelated packages.
+%
+% \subsection{Configuration and data collection}
+%
+% A board begins by copying the current document defaults for columns,
+% palette, visual mode, date format, project start date, reference date,
+% semantic labels, and column separation into board-local state. Its
+% optional key list is then applied to that state. Every column name is
+% trimmed. Its lookup key is the uppercase form of its plain text, with
+% formatting commands and braces removed, and its original spelling is the
+% heading text. A board-local property list maps each key to a
+% consecutive numeric identifier. Task lists and counters use that identifier
+% together with a monotonically increasing board identifier, so user-provided
+% names never form part of an internal control-sequence name. Duplicate keys
+% are diagnosed before rendering. Configuration is parsed by the key families
+% |kanban/task|, |kanban/board|, and |kanban/setup|, with subordinate label
+% families. Start and reference dates are deferred until the complete
+% surrounding key list has resolved its date format. They are then validated
+% and stored in canonical ISO form. Package options are accumulated and
+% passed through the same setup transaction rather than through a second
+% parser. Their diagnostics name the package options as the context,
+% because the line number at that moment lies inside the package file.
+%
+% Task declarations do not typeset cards immediately. Each declaration
+% normalizes and validates the target column, increments its counter, and
+% appends a protected call to the card renderer to the list of that column.
+% Empty and unknown targets produce explicit errors and are not appended.
+% Task text and metadata remain unexpanded while they are stored. Collection
+% is global for the lifetime of the active board, so a declaration inside an
+% ordinary TeX group is retained. The deadline of an accepted task is checked
+% at this point, which gives every deadline warning the line number of the
+% task. After the columns are resolved, the package evaluates the complete
+% gap width. Dimension syntax is checked before assignment, and a value that
+% would leave no positive width for cards is diagnosed once and replaced
+% locally by |0pt|.
+%
+% \subsection{Rendering strategies}
+%
+% The fixed renderer creates two raster rows, one containing every heading
+% and one containing every column body. Row-wise equalization gives all
+% headings the height of the tallest heading and all bodies the height of
+% the fullest body. The complete raster is enclosed in a minipage, which
+% makes the header and body rows indivisible and prevents an orphaned header
+% row at the foot of a page. The column body hides its frame and interior
+% rather than painting a transparent background, so the PDF contains no
+% transparency group and remains suitable for PDF/A workflows.
+%
+% When |break| is selected, the package constructs parallel \textsf{paracol}
+% columns. Header heights are synchronized through a board-specific
+% equal-height group, while the card lists remain outside any fixed-height
+% box, so each column may continue on a later page. Headers are emitted once
+% before the streams diverge and are not repeated on continuation pages. The
+% two renderers share the same card command and visual styles but use
+% different body-height and pagination rules.
+%
+% \subsection{Metadata and validation}
+%
+% Calendar and project-month classification is performed when a card is
+% rendered, against the reference date of the board or the compilation date.
+% All five supported calendar notations are reduced to the same year, month,
+% and day components, which are checked against month lengths and the
+% leap-year rule and then normalized for display. Every notation requires a
+% four-digit year. Input with the shape of a date but a shorter year is
+% reported rather than misread. Ambiguous year-last slash values follow the
+% date-format snapshot of the board, with a validity-based swap when only the
+% opposite ordering forms a real date. Project-month numbers are stripped of
+% leading zeros and bounded before integer conversion, and project-month
+% boundaries use the start-day number where possible and the last valid day
+% in shorter months. Every other value remains ordinary label text.
+%
+% Card surfaces, metadata chips, and deadline indicators are named
+% \textsf{tcolorbox} styles. Seven empty public styles are applied after the
+% structural defaults, which permits controlled presentation changes without
+% exposing internal environment names. Built-in header and semantic color
+% pairs were selected against a 4.5:1 contrast threshold. Internal LaTeX2e
+% control sequences use three prefixes. The |kanban@| prefix marks package
+% state and helpers, the |kb@| prefix marks short-lived values of card
+% rendering and choice normalization, and the |kbtask@| prefix marks the
+% metadata of the task being declared. LaTeX3 variables and functions use
+% the |__kanban| module name. The package allocates its own
+% LaTeX3 variables for every role and does not rely on the scratch variables
+% of the kernel. The regression suite exercises configuration scope,
+% diagnostics, canonical date snapshots, fixed reference dates, metadata
+% flags, malformed dimensions, compatibility with the declared LaTeX format,
+% all three supported engines, all five date formats, custom heading
+% foregrounds, full-width cards, synchronized break-layout headings,
+% cross-page continuation, impossible-gap recovery, robust commands and
+% paragraphs in user text, brace groups in column names, TeX length
+% parameters as gaps, and a strict run with expl3 declaration and
+% deprecation checking enabled.
+%
+% \subsection{Bootstrap state}
+%
+% The bootstrap code identifies the package, loads the packages on which
+% rendering depends, and allocates the persistent and board-local state used
+% by the configuration, collection, validation, and rendering stages.
+%
+% \paragraph{Package declaration and runtime dependencies.}
+% The docstrip guard |%<*package>| begins the part of the documented source
+% that is copied into |kanban-board.sty|. Each source part opens and closes
+% its own guarded region, and |kanban-board.ins| assembles the parts in
+% dependency order.
+% The package declares the minimum LaTeX format and loads each facility that
+% its public behavior requires rather than relying on another package to load
+% that facility incidentally. \textsf{xcolor} provides named colors and color
+% expressions. \textsf{etoolbox} supplies Booleans, string tests, and
+% expandable list construction. \textsf{tikz} draws the clock symbol used by
+% deadlines. \textsf{tcolorbox} constructs headers, cards, chips, and the
+% fixed-board raster, with the |skins| and |raster| libraries.
+% \textsf{paracol} provides the independent page-breakable column streams of
+% the |break| renderer.
 %    \begin{macrocode}
 %<*package>
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\ProvidesPackage{kanban-board}[2026/11/15 v1.0.0 Kanban project boards]
+\RequirePackage{xcolor}
+\RequirePackage{etoolbox}
+\RequirePackage{tikz}
+\RequirePackage{tcolorbox}
+\RequirePackage{paracol}
+\tcbuselibrary{skins,raster}
 %    \end{macrocode}
 %
-% \subsection{Task collection}
+% \paragraph{Built-in color constants.}
+% The semantic colors and the colors of the built-in palettes are defined
+% once under stable symbolic names. The three semantic colors represent
+% overdue or high-priority work, work due at the reference date, and
+% completed or low-priority work. The other names are palette entries. Text
+% colors are not hard-coded into the palette registry here, because a
+% starred palette definition may provide an explicit foreground for each
+% background.
+%    \begin{macrocode}
+\definecolor{kanbanInk}{HTML}{263238}
+\definecolor{kanbanHigh}{HTML}{B23A48}
+\definecolor{kanbanMed}{HTML}{E8A06A}
+\definecolor{kanbanLow}{HTML}{477455}
+\definecolor{kanbanSlate}{HTML}{4C5A6B}
+\definecolor{kanbanBlue}{HTML}{3B7CA6}
+\definecolor{kanbanTeal}{HTML}{267363}
+\definecolor{kanbanSage}{HTML}{4F7D43}
+\definecolor{kanbanAmber}{HTML}{876515}
+\definecolor{kanbanClay}{HTML}{9B5030}
+\definecolor{kanbanRose}{HTML}{AF5C74}
+\definecolor{kanbanPlum}{HTML}{7C5C95}
+\definecolor{kanbanMutedBlue}{HTML}{52758C}
+\definecolor{kanbanMutedGreen}{HTML}{597C6E}
+\definecolor{kanbanMutedPurple}{HTML}{746680}
+\definecolor{kanbanMutedBrown}{HTML}{8A6F5A}
+%    \end{macrocode}
 %
-% The task key family stores metadata without expanding the card text. The
-% key name of an unknown option is passed by expansion, because
-% \textsf{l3msg} shows message arguments without expanding them. A
-% valid declaration appends one protected renderer call to the selected
-% board-local list. Invalid or missing targets are diagnosed and never affect
-% the counter. Collection and rendering are separate phases. This permits the
-% environment to determine the tallest heading, the highest column, and the
-% final column counts before any task card is typeset.
+% \paragraph{Boolean flags, board identity, and dimensions.}
+% Rendering needs a small set of state flags. They record whether a board
+% uses the page-breakable renderer, whether task declarations currently
+% belong to an active board, whether the environment should render when it
+% closes, and whether tasks inside a rejected nested board must be discarded.
+% Two further flags carry the result of deadline classification. A unique
+% board number keeps the temporary data of different boards apart, and
+% dedicated length registers hold the persistent gap, its board-local
+% snapshot, a validation candidate, and the combined width of all gaps.
+% Separate registers let validation inspect a candidate without modifying a
+% previously accepted value.
+% \Needspace{16\baselineskip}
+%    \begin{macrocode}
+\newbool{kanban@break}
+\newbool{kanban@active}
+\newbool{kanban@render}
+\newbool{kanban@discardtasks}
+\newbool{kb@overdue}
+\newbool{kb@duenow}
+\newcounter{kanban@board}
+\def\kanban@boardgroup{0}
+\newlength\kanban@columnsep
+\newlength\kanban@boardcolumnsep
+\newlength\kanban@candidatecolumnsep
+\newlength\kanban@totalgaps
+\setlength\kanban@columnsep{2mm}
+%    \end{macrocode}
 %
-% \paragraph{Task-option keys.}
-% The task family translates user-facing metadata into temporary task
-% macros. Priority uses the validated semantic setter. Author and deadline
-% keep their token lists. The |due| key aliases |deadline|, and |late| and
-% |completed| are valueless flags, so a misleading form such as
-% |completed=false| is rejected. An unknown task option is ignored with a
-% scoped warning.
+% \paragraph{Persistent defaults and board-local scalar snapshots.}
+% Configuration values such as the start date, reference date, date format,
+% visual mode, card colors, and semantic labels are simple token values. Most
+% occur in pairs. One member is the persistent default for later boards, and
+% the other is the snapshot used by the board currently being rendered. This
+% separation implements the documented package, setup, and board precedence.
+% Empty date macros mean that no fixed date has been supplied, in which case
+% the compilation date is the reference. The color macros contain a named
+% color or an \textsf{xcolor} expression and are expanded only when a box is
+% rendered.
+%    \begin{macrocode}
+\def\kanban@startdate{}
+\def\kanban@thestart{}
+\def\kanban@referencedate{}
+\def\kanban@thereference{}
+\def\kanban@dateformat{us}
+\def\kanban@boarddateformat{us}
+\def\kanban@mode{light}
+\def\kanban@boardmode{light}
+\def\kanban@textcolor{kanbanInk}
+\def\kanban@cardcolor{white}
+\def\kanban@bordercolor{black!15}
+\def\kanban@authorback{black!6}
+\def\kanban@authortext{black!58}
+\def\kanban@deadlineback{black!7}
+\def\kanban@deadlinetext{black!62}
+\def\kanban@headingtext{white}
+\def\kanban@hightext{white}
+\def\kanban@mediumtext{kanbanInk}
+\def\kanban@lowtext{white}
+\def\kanban@highlabel{HIGH}
+\def\kanban@mediumlabel{MED}
+\def\kanban@lowlabel{LOW}
+\def\kanban@donelabel{DONE}
+\def\kanban@boardhighlabel{HIGH}
+\def\kanban@boardmediumlabel{MED}
+\def\kanban@boardlowlabel{LOW}
+\def\kanban@boarddonelabel{DONE}
+%    \end{macrocode}
+%
+% \paragraph{LaTeX3 state containers.}
+% Palettes and columns require structured data rather than isolated scalar
+% macros, and every role receives its own typed variable. The two global
+% property lists form the palette registry, one for heading backgrounds and
+% one for optional heading foregrounds. Global comma lists hold the selected
+% persistent palette and the default column keys, and a global property list
+% maps each column key to its heading text. Their local counterparts are the
+% snapshot for an active board. The remaining local containers support
+% palette-pair validation, column normalization, numeric column lookup,
+% normalized choices, and the deferred processing of start and reference
+% dates. The scratch variables of the kernel are not used, because other
+% packages may overwrite them between calls.
+% \Needspace{30\baselineskip}
 %    \begin{macrocode}
 \ExplSyntaxOn
-\keys_define:nn {kanban/task}
-  {
-    prio .code:n = {\kanban@setpriority{#1}},
-    author .code:n = {\def\kbtask@author{#1}},
-    deadline .code:n = {\def\kbtask@deadline{#1}},
-    due .meta:n = {deadline={#1}},
-    late .code:n = {\def\kbtask@late{1}},
-    late .value_forbidden:n = true,
-    completed .code:n = {\def\kbtask@completed{1}},
-    completed .value_forbidden:n = true,
-    unknown .code:n =
-      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
-        {task}{\l_keys_key_str}}}
-  }
-\cs_new_protected:Npn \kanban@processtaskoptions #1
-  {\keys_set:nn {kanban/task}{#1}}
-\ExplSyntaxOff
+\prop_new:N \g__kanban_palettes_prop
+\prop_new:N \g__kanban_palette_texts_prop
+\clist_new:N \g__kanban_palette_clist
+\clist_new:N \g__kanban_palette_fg_clist
+\tl_new:N \g__kanban_palette_name_tl
+\clist_new:N \l__kanban_board_palette_clist
+\clist_new:N \l__kanban_board_palette_fg_clist
+\clist_new:N \l__kanban_palette_colors_clist
+\clist_new:N \l__kanban_palette_bg_clist
+\clist_new:N \l__kanban_palette_fg_clist
+\tl_new:N \l__kanban_palette_bg_tl
+\tl_new:N \l__kanban_palette_fg_tl
+\tl_new:N \l__kanban_pair_bg_tl
+\tl_new:N \l__kanban_pair_fg_tl
+\tl_new:N \l__kanban_palette_item_tl
+\int_new:N \l__kanban_palette_count_int
+\int_new:N \l__kanban_palette_index_int
+\seq_new:N \l__kanban_palette_pair_seq
+\bool_new:N \l__kanban_bad_palette_bool
+\clist_new:N \g__kanban_columns_clist
+\prop_new:N \g__kanban_column_display_prop
+\clist_new:N \l__kanban_board_columns_clist
+\prop_new:N \l__kanban_board_column_display_prop
+\clist_new:N \l__kanban_columns_tmp_clist
+\prop_new:N \l__kanban_column_display_tmp_prop
+\prop_new:N \l__kanban_column_ids_prop
+\int_new:N \l__kanban_column_index_int
+\tl_new:N \l__kanban_palette_name_tl
+\tl_new:N \l__kanban_column_tl
+\tl_new:N \l__kanban_column_display_tl
+\tl_new:N \l__kanban_column_id_tl
+\tl_new:N \l__kanban_choice_tl
+\tl_new:N \l__kanban_pending_startdate_tl
+\tl_new:N \l__kanban_pending_reference_date_tl
+\bool_new:N \l__kanban_pending_startdate_bool
+\bool_new:N \l__kanban_pending_reference_date_bool
 %    \end{macrocode}
 %
-% \paragraph{Validation and deferred task collection.}
-% The collector first gives every metadata field an empty value and
-% processes the option list. It then requires an active board, a non-empty
-% normalized target, and a target present in the identifier map of the
-% board. Each failed condition emits a specific error and ignores the task.
-% A task inside a rejected nested board is discarded silently because the
-% nesting error has already explained the cause. A task outside any board is
-% diagnosed on its own.
-%
-% For a valid target, the counter is incremented globally and a
-% self-contained seven-argument call to |\kanban@rendercard| is appended
-% globally to the task list of the column. The renderer command is kept
-% unexpanded for the rendering phase, the column color is resolved at once
-% because it is already fixed, and the task body and all metadata are
-% protected from expansion. The deadline is then checked once, so that any
-% warning names the line of the declaration.
+% \paragraph{Named diagnostics.}
+% Every warning of the package is a named message, so the main text and the
+% help text stay consistent whether invalid input originates in a package
+% option, in |\kbset|, in a board option, in a palette definition, or in a
+% task declaration. Each message states the line context after the subject
+% of its first sentence, because \textsf{l3msg} warnings do not add it on
+% their own. Messages that share a shape take the scope or the kind of the
+% setting as a parameter. The alias message is issued while the package
+% loads and therefore carries no line context. A message text that
+% continues on a second source line ends the first line with a tilde. The
+% tilde is a space character in expl3 syntax, and TeX discards a space
+% character at the start of a line. For the same reason a tilde directly
+% after |\msg_line_context:| is absorbed as the end of that control word, so
+% a word space at that position is written as |\c_space_tl|. The
+% LaTeX2e-facing wrapper lets the parts written in LaTeX2e syntax issue a
+% named message with two parameters. A call site that needs an expanded
+% argument, such as the name of an unknown key, expands the complete call
+% with |\use:x| and then invokes the base message function. The x-type
+% message variants are separate definitions on older kernels, so a call
+% through them would bypass a test harness that intercepts the base
+% function.
+% \Needspace{14\baselineskip}
 %    \begin{macrocode}
-\newcommand\kanban@dotask[3][]{%
-  \def\kbtask@prio{}\def\kbtask@author{}\def\kbtask@deadline{}%
-  \def\kbtask@late{}\def\kbtask@completed{}%
-  \kanban@processtaskoptions{#1}%
-  \ifbool{kanban@active}
-    {\kanban@normtaskcol{#2}%
-     \ifdefempty\kbtask@column
-       {\PackageError{kanban}
-         {task has no assigned column.
-           \MessageBreak Valid columns: \kanban@availablecolumns}
-         {The first mandatory argument of
-           \string\kanbantask\space must name a column from the
-           enclosing board.\MessageBreak The task was ignored.}}
-       {\ifdefempty\kbtask@columnid
-       {\PackageError{kanban}
-         {unknown kanban column '#2'.
-           \MessageBreak Valid columns: \kanban@availablecolumns}
-         {Column names are matched without regard to letter case.
-           \MessageBreak
-           The task was ignored because its normalized target is not in
-           this board.}}
-       {\expandafter\numgdef
-           \csname kanban@count@\kanban@boardgroup
-             @\kbtask@columnid\endcsname
-           {\csname kanban@count@\kanban@boardgroup
-             @\kbtask@columnid\endcsname+1}%
-         \csxappto{kanban@list@\kanban@boardgroup
-           @\kbtask@columnid}{%
-           \noexpand\kanban@rendercard
-           {\csuse{kanban@color@\kbtask@columnid}}{\unexpanded{#3}}%
-           {\unexpanded\expandafter{\kbtask@prio}}%
-           {\unexpanded\expandafter{\kbtask@author}}%
-           {\unexpanded\expandafter{\kbtask@deadline}}%
-           {\unexpanded\expandafter{\kbtask@late}}%
-           {\unexpanded\expandafter{\kbtask@completed}}}%
-         \expandafter\kanban@diagnosedeadline\expandafter{%
-           \kbtask@deadline}%
-       }}}
-    {\ifbool{kanban@discardtasks}{}
-      {\PackageError{kanban}
-        {task declared outside a kanban environment}
-        {Move the task declaration between \string\begin{kanban} and
-          \string\end{kanban}. The task was ignored.}}}}
+\msg_new:nnnn {kanban-board}{invalid-date-setting}
+  {Invalid~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Use~a~valid~Gregorian~date~with~a~four-digit~year~in~one~of~the~
+    documented~numeric~forms,~for~example~2026-07-18.}
+\msg_new:nnnn {kanban-board}{invalid-dimension}
+  {Invalid~#1~value~'#2'~\msg_line_context:.~The~current~value~
+    is~kept.}
+  {Use~a~non-negative~explicit~dimension~such~as~2mm,~a~LaTeX~length~
+    register,~or~a~TeX~length~parameter~such~as~\iow_char:N\\hsize.}
+\msg_new:nnnn {kanban-board}{unknown-key}
+  {Unknown~#1~option~'#2'~\msg_line_context:.~The~option~is~ignored.}
+  {Check~the~spelling~and~the~documented~scope~of~the~key.}
+\msg_new:nnnn {kanban-board}{unknown-value}
+  {Unknown~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Check~the~spelling~of~the~value~against~the~documented~choices.}
+\msg_new:nnnn {kanban-board}{unknown-palette}
+  {Unknown~#1~'#2'~\msg_line_context:.~The~current~palette~is~kept.}
+  {Define~the~palette~with~\iow_char:N\\kanbandefinepalette~before~
+    selecting~it.~The~built-in~names~are~default,~muted,~and~
+    monochrome.}
+\msg_new:nnnn {kanban-board}{empty-palette-name}
+  {Empty~palette~name~\msg_line_context:.~The~definition~is~ignored.}
+  {Give~the~palette~a~non-empty~name.}
+\msg_new:nnnn {kanban-board}{empty-palette}
+  {Palette~'#1'~\msg_line_context:\c_space_tl has~no~#2.~
+    The~definition~is~ignored.}
+  {List~at~least~one~entry,~for~example~kanbanBlue~or~
+    kanbanBlue/white.}
+\msg_new:nnnn {kanban-board}{malformed-palette-pair}
+  {Palette~'#1'~\msg_line_context:\c_space_tl has~a~malformed~
+    color/text~pair.~The~definition~is~ignored.}
+  {Write~every~entry~as~background/foreground~with~two~non-empty~
+    color~names,~for~example~kanbanSlate/white.}
+\msg_new:nnnn {kanban-board}{empty-column-list}
+  {Empty~column~list~\msg_line_context:.~The~current~list~is~kept.}
+  {Give~at~least~one~column~name,~for~example~columns={Backlog,Done}.}
+\msg_new:nnnn {kanban-board}{empty-label}
+  {Empty~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Give~every~label~a~non-empty~text,~for~example~
+    labels={high=URGENT}.}
+\msg_new:nnnn {kanban-board}{unknown-priority}
+  {Unknown~priority~'#1'~\msg_line_context:.~The~priority~chip~is~
+    omitted.}
+  {Use~high,~medium,~med,~or~low.}
+\msg_new:nnnn {kanban-board}{invalid-deadline}
+  {Invalid~deadline~date~'#1'~\msg_line_context:.~The~card~shows~a~
+    neutral~label.}
+  {Write~calendar~deadlines~with~a~four-digit~year~in~one~of~the~
+    documented~numeric~forms,~for~example~2026-07-18.}
+\msg_new:nnnn {kanban-board}{invalid-project-month}
+  {Invalid~project-month~deadline~'#1'~\msg_line_context:.~The~card~
+    shows~a~neutral~label.}
+  {Write~project~months~as~M~followed~by~an~integer~from~1~to~999999.}
+\msg_new:nnnn {kanban-board}{alias-taken}
+  {\iow_char:N\\#1~is~already~defined.~Use~\iow_char:N\\#2~instead.}
+  {Another~package~or~the~document~owns~the~short~name.~The~existing~
+    definition~is~kept.}
+\cs_new_protected:Npn \kanban@warning #1#2#3
+  {\msg_warning:nnnn {kanban-board}{#1}{#2}{#3}}
 %    \end{macrocode}
 %
-% \begin{macro}{\kanbantask}
-% \begin{macro}{\kbtask}
-% The canonical public command supplies the compact task declaration syntax
-% and delegates all key processing, validation, and collection to the
-% internal implementation. The text argument is long, so a card may contain
-% several paragraphs. The option list and the column name remain short,
-% because a paragraph break inside them indicates a missing brace, and a
-% short argument turns that mistake into an immediate error instead of
-% swallowing the rest of the document. The concise command is installed by
-% equivalence only when its name is free. An existing definition is
-% preserved with a warning.
+% At this point the package has allocated, but not yet populated, the
+% palette registries and the column maps. The following parts define the
+% functions that validate and populate those containers.
+%
 %    \begin{macrocode}
-\NewDocumentCommand\kanbantask{O{}m+m}{%
-  \kanban@dotask[#1]{#2}{#3}}
-\@ifundefined{kbtask}
-  {\let\kbtask\kanbantask}
-  {\kanban@warning{alias-taken}{kbtask}{kanbantask}}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \subsection{Board lifecycle}
-%
-% Board keys update only the active board snapshot. Column setup allocates
-% the isolated lists, prepares both rendering sequences, and validates the
-% complete gap width before typesetting begins. The entry routine rejects
-% nesting before any outer state can be replaced. The environment supplies a
-% TeX group, so assignments divided into persistent and local forms acquire
-% the documented lifetime without a separate restoration procedure.
-%
-% \paragraph{Board column selection and board-option keys.}
-% A blank board column value means ``use the persistent default''. A
-% non-blank value is normalized as a board-local override. The board key
-% family provides local counterparts to the persistent setup keys and adds
-% the valueless |break| switch. Start and reference dates use the same
-% deferred strategy as persistent setup, so key order cannot alter
-% ambiguous-date parsing.
-%    \begin{macrocode}
-\newcommand\kanban@setboardcolumns[1]{%
-  \ifblank{#1}
-    {\kanban@columnsboardinit}
-    {\kanban@selectboardcolumns{#1}}}
-\ExplSyntaxOn
-\keys_define:nn {kanban/board}
-  {
-    break .code:n = {\booltrue{kanban@break}},
-    break .value_forbidden:n = true,
-    columns .code:n = {\kanban@setboardcolumns{#1}},
-    date-format .code:n = {\kanban@selectboarddateformat{#1}},
-    dateformat .meta:n = {date-format={#1}},
-    startdate .code:n =
-      {
-        \tl_set:Nn \l__kanban_pending_startdate_tl {#1}
-        \bool_set_true:N \l__kanban_pending_startdate_bool
-      },
-    reference-date .code:n =
-      {
-        \tl_set:Nn \l__kanban_pending_reference_date_tl {#1}
-        \bool_set_true:N \l__kanban_pending_reference_date_bool
-      },
-    today .meta:n = {reference-date={#1}},
-    palette .code:n = {\kanban@selectboardpalette{#1}},
-    mode .code:n = {\kanban@selectboardmode{#1}},
-    columnsep .code:n = {\kanban@setboardcolumnsep{#1}},
-    labels .code:n = {\keys_set:nn {kanban/board-labels}{#1}},
-    unknown .code:n =
-      {\use:x {\msg_warning:nnnn {kanban}{unknown-key}
-        {board}{\l_keys_key_str}}}
-  }
-%    \end{macrocode}
-%
-% \paragraph{A deferred board-option transaction.}
-% Board-option processing mirrors persistent setup but commits staged dates
-% to the local snapshot setters. All immediate options, including a possible
-% |date-format| override, are resolved before the dates are parsed. The
-% transaction runs after the persistent values have been copied into the
-% board, so omitted keys inherit their defaults.
-%    \begin{macrocode}
-\cs_new_protected:Npn \kanban@processboardoptions #1
-  {
-    \bool_set_false:N \l__kanban_pending_startdate_bool
-    \bool_set_false:N \l__kanban_pending_reference_date_bool
-    \keys_set:nn {kanban/board}{#1}
-    \bool_if:NT \l__kanban_pending_startdate_bool
-      {\exp_args:NV \kanban@setboardstartdate
-        \l__kanban_pending_startdate_tl}
-    \bool_if:NT \l__kanban_pending_reference_date_bool
-      {\exp_args:NV \kanban@setboardreferencedate
-        \l__kanban_pending_reference_date_tl}
-  }
-\ExplSyntaxOff
-%    \end{macrocode}
-%
-% \paragraph{Per-column state and renderer-sequence construction.}
-% Each normalized column is represented internally by a numeric identifier.
-% Setup stores the display name, initializes the board-qualified deferred
-% task list and counter, assigns the cyclic palette background and
-% foreground, and appends one adapter call to each renderer sequence. Card
-% lists and counts carry the board number because those definitions are
-% global during collection. Later columns in the break sequence are preceded
-% by |\switchcolumn| so that |paracol| receives one stream per board column.
-%    \begin{macrocode}
-\newcommand\kanban@setupcolumn[2]{%
-  \csdef{kanban@name@#2}{#1}%
-  \csgdef{kanban@list@\kanban@boardgroup @#2}{}%
-  \csgdef{kanban@count@\kanban@boardgroup @#2}{0}%
-  \kanban@palettecolor{#2}\csedef{kanban@color@#2}{\kb@thiscolor}%
-  \csedef{kanban@headingtext@#2}{\kb@thisheadingtext}%
-  \numdef\kanban@ncols{\kanban@ncols+1}%
-  \eappto\kanban@headseq{\noexpand\kanban@onehead{#2}}%
-  \eappto\kanban@colseq{\noexpand\kanban@onecol{#2}}%
-  \ifnumequal{#2}{1}
-    {\eappto\kanban@colseq@b{\noexpand\kanban@onecol@b{#2}}}
-    {\eappto\kanban@colseq@b{\noexpand\switchcolumn
-       \noexpand\kanban@onecol@b{#2}}}}
-%    \end{macrocode}
-%
-% \paragraph{Whole-board geometry validation.}
-% A syntactically valid non-negative gap may still be impossible for a board
-% with many columns. Before rendering, the validator computes the total width
-% of the $N-1$ inter-column gaps and requires that total to be strictly
-% smaller than |\linewidth|. An impossible value produces an actionable error
-% and falls back to zero for this board, which lets the document continue.
-%    \begin{macrocode}
-\newcommand\kanban@validateboardgeometry{%
-  \ifnum\kanban@ncols>1\relax
-    \kanban@totalgaps=\kanban@boardcolumnsep
-    \multiply\kanban@totalgaps by \numexpr\kanban@ncols-1\relax
-    \ifdim\kanban@totalgaps<\linewidth\relax\else
-      \PackageError{kanban}
-        {column separation leaves no width for columns}
-        {For N columns, (N-1) times columnsep must be smaller than
-          \string\linewidth.\MessageBreak
-          The current board will use columnsep=0pt.}%
-      \kanban@boardcolumnsep=0pt
-    \fi
-  \fi}
-%    \end{macrocode}
-%
-% \paragraph{Environment entry and state snapshot.}
-% Opening a board either rejects unsupported nesting or creates a complete
-% isolated snapshot before tasks are read. A rejected inner environment
-% clears its render and active flags locally, sets the discard flag, and
-% issues one error, so its body can be read safely without being attached
-% to the outer board. The successful path resets the lifecycle flags,
-% advances the unique board identifier, copies every persistent scalar and
-% list default, processes local overrides, materializes the visual mode,
-% clears the renderer sequences, registers all columns, validates the
-% aggregate geometry, and suppresses source whitespace before the first
-% task.
-%    \begin{macrocode}
-\newcommand\kanban@begin[1]{%
-   \ifbool{kanban@active}
-     {\boolfalse{kanban@render}%
-      \boolfalse{kanban@active}%
-      \booltrue{kanban@discardtasks}%
-      \PackageError{kanban}
-        {nested kanban environments are not supported}
-        {Close the current board before opening another one.
-          \MessageBreak The nested board was ignored.}}
-     {\booltrue{kanban@render}%
-   \boolfalse{kanban@break}%
-   \boolfalse{kanban@discardtasks}%
-   \booltrue{kanban@active}%
-   \stepcounter{kanban@board}%
-   \edef\kanban@boardgroup{\arabic{kanban@board}}%
-   \edef\kanban@thestart{\kanban@startdate}%
-   \edef\kanban@boarddateformat{\kanban@dateformat}%
-   \edef\kanban@thereference{\kanban@referencedate}%
-   \edef\kanban@boardmode{\kanban@mode}%
-   \let\kanban@boardhighlabel\kanban@highlabel
-   \let\kanban@boardmediumlabel\kanban@mediumlabel
-   \let\kanban@boardlowlabel\kanban@lowlabel
-   \let\kanban@boarddonelabel\kanban@donelabel
-   \kanban@boardcolumnsep=\kanban@columnsep
-   \kanban@paletteboardinit
-   \kanban@columnsboardinit
-   \kanban@processboardoptions{#1}%
-   \kanban@applymode
-   \def\kanban@ncols{0}\def\kanban@headseq{}%
-   \def\kanban@colseq{}\def\kanban@colseq@b{}%
-   \kanban@setupboardcolumns
-   \kanban@validateboardgeometry
-   \ignorespaces}}
-%    \end{macrocode}
-%
-% \begin{macro}{\kanban}
-% \begin{macro}{\endkanban}
-% The public environment has one optional board-key list and no mandatory
-% column argument. Columns come from the persistent default unless a
-% board-local |columns| key overrides them. Closing the environment selects
-% the page-breakable |paracol| renderer or the indivisible fixed raster. A
-% rejected nested environment has its render flag cleared and therefore
-% produces no board. Successfully rendered boards release their dynamically
-% named state afterward, and the environment group restores all remaining
-% local snapshots.
-%
-% In break mode, the board gap is assigned to the standard |\columnsep| used
-% by |paracol|, and the prepared sequence supplies headers, cards, and
-% |\switchcolumn| calls. In fixed mode, a full-line |minipage| makes the
-% board indivisible. The raster has one column per Kanban stage and two rows,
-% all headers followed by all bodies, with equal heights within each row.
-%    \begin{macrocode}
-\NewDocumentEnvironment{kanban}{O{}}
-  {\kanban@begin{#1}}
-  {\ifbool{kanban@render}{\par\medskip
-   \ifbool{kanban@break}
-     {\setlength\columnsep{\kanban@boardcolumnsep}%
-      \begin{paracol}{\kanban@ncols}\kanban@colseq@b\end{paracol}}
-     {\noindent\begin{minipage}{\linewidth}%
-      \begin{tcbraster}[
-        raster columns=\kanban@ncols,
-        raster rows=2,
-        raster width=\linewidth,
-        raster column skip=\kanban@boardcolumnsep,
-        raster row skip=0pt,
-        raster before skip=0pt,
-        raster after skip=0pt,
-        raster equal height=rows,
-        raster valign=top]
-        \kanban@headseq\kanban@colseq
-      \end{tcbraster}%
-      \end{minipage}}%
-   \par\vspace{2mm}\kanban@cleanupboard}{}}
 %</package>
 %    \end{macrocode}
-% \end{macro}
-% \end{macro}
-% \Finale

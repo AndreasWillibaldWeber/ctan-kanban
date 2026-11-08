@@ -9,8 +9,8 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package. The complete list of files
-% constituting the work appears in the main source file kanban.dtx.
+% This file is part of the `kanban-board' package. The complete list of files
+% constituting the work appears in the main source file kanban-board.dtx.
 % \fi
 %
 %    \begin{macrocode}
@@ -134,7 +134,7 @@
       \ifdefstring{\kb@choice}{med}{\def\kbtask@prio{med}}{%
         \ifdefstring{\kb@choice}{low}{\def\kbtask@prio{low}}{%
           \ifdefempty\kb@choice{}
-            {\msg_warning:nnn {kanban}{unknown-priority}{#1}}}}}}}
+            {\msg_warning:nnn {kanban-board}{unknown-priority}{#1}}}}}}}
 \ExplSyntaxOff
 %    \end{macrocode}
 %

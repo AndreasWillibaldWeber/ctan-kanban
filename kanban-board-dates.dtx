@@ -9,8 +9,8 @@
 % This work has the LPPL maintenance status `maintained'. The Current
 % Maintainer of this work is Andreas Willibald Weber.
 %
-% This file is part of the `kanban' package. The complete list of files
-% constituting the work appears in the main source file kanban.dtx.
+% This file is part of the `kanban-board' package. The complete list of files
+% constituting the work appears in the main source file kanban-board.dtx.
 % \fi
 %
 %    \begin{macrocode}
@@ -528,7 +528,7 @@
     \bool_if:NF \l__kanban_valid_date_bool
       {
         \bool_if:NTF \l__kanban_date_syntax_bool
-          {\msg_warning:nnn {kanban}{invalid-deadline}{#1}}
+          {\msg_warning:nnn {kanban-board}{invalid-deadline}{#1}}
           {
             \__kanban_parse_project_month:n {#1}
             \bool_if:nT
@@ -536,7 +536,7 @@
                 \l__kanban_project_month_syntax_bool
                 && ! \l__kanban_valid_project_month_bool
               }
-              {\msg_warning:nnn {kanban}{invalid-project-month}{#1}}
+              {\msg_warning:nnn {kanban-board}{invalid-project-month}{#1}}
           }
       }
   }
@@ -562,7 +562,7 @@
         \__kanban_parse_date:nn {#1} {\kanban@dateformat}
         \bool_if:NTF \l__kanban_valid_date_bool
           {\xdef\kanban@startdate{\__kanban_canonical_date:}}
-          {\msg_warning:nnnn {kanban}{invalid-date-setting}
+          {\msg_warning:nnnn {kanban-board}{invalid-date-setting}
             {startdate}{#1}}
       }
   }
@@ -574,7 +574,7 @@
         \__kanban_parse_date:nn {#1} {\kanban@boarddateformat}
         \bool_if:NTF \l__kanban_valid_date_bool
           {\edef\kanban@thestart{\__kanban_canonical_date:}}
-          {\msg_warning:nnnn {kanban}{invalid-date-setting}
+          {\msg_warning:nnnn {kanban-board}{invalid-date-setting}
             {board~startdate}{#1}}
       }
   }
@@ -586,7 +586,7 @@
         \__kanban_parse_date:nn {#1} {\kanban@dateformat}
         \bool_if:NTF \l__kanban_valid_date_bool
           {\xdef\kanban@referencedate{\__kanban_canonical_date:}}
-          {\msg_warning:nnnn {kanban}{invalid-date-setting}
+          {\msg_warning:nnnn {kanban-board}{invalid-date-setting}
             {reference-date}{#1}}
       }
   }
@@ -598,7 +598,7 @@
         \__kanban_parse_date:nn {#1} {\kanban@boarddateformat}
         \bool_if:NTF \l__kanban_valid_date_bool
           {\edef\kanban@thereference{\__kanban_canonical_date:}}
-          {\msg_warning:nnnn {kanban}{invalid-date-setting}
+          {\msg_warning:nnnn {kanban-board}{invalid-date-setting}
             {board~reference-date}{#1}}
       }
   }
@@ -704,7 +704,7 @@
 \cs_new_protected:Npn \kanban@validatedimensionTF #1#2#3
   {\__kanban_dimension_valid:nTF {#1}{#2}{#3}}
 \cs_new_protected:Npn \kanban@dimensionwarning #1#2
-  {\msg_warning:nnnn {kanban}{invalid-dimension}{#1}{#2}}
+  {\msg_warning:nnnn {kanban-board}{invalid-dimension}{#1}{#2}}
 \ExplSyntaxOff
 %    \end{macrocode}
 %

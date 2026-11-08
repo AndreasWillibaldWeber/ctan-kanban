@@ -7,12 +7,14 @@ https://www.latex-project.org/lppl.txt
 The work has LPPL maintenance status "maintained". The Current Maintainer is
 Andreas Willibald Weber.
 
-The work consists of the source files kanban.dtx, kanban-registry.dtx,
-kanban-dates.dtx, kanban-config.dtx, kanban-render.dtx, kanban-board.dtx,
-and kanban.ins. It also includes build.lua, README.md, CHANGELOG.md,
-DEPENDS.txt, and LICENSE, the example files kanban-example.tex,
-kanban-modes-example.tex, kanban-deadlines-example.tex,
-kanban-date-formats-example.tex, kanban-palette-example.tex,
-kanban-columnsep-example.tex, kanban-break-example.tex, and
-kanban-landscape-example.tex, the files in the testfiles directory, and the
-derived files kanban.sty and kanban.pdf.
+The work consists of the source files kanban-board.dtx,
+kanban-board-registry.dtx, kanban-board-dates.dtx,
+kanban-board-config.dtx, kanban-board-render.dtx,
+kanban-board-lifecycle.dtx, and kanban-board.ins. It also includes
+build.lua, README.md, CHANGELOG.md, DEPENDS.txt, and LICENSE, the example
+files kanban-board-example.tex, kanban-board-modes-example.tex,
+kanban-board-deadlines-example.tex, kanban-board-date-formats-example.tex,
+kanban-board-palette-example.tex, kanban-board-columnsep-example.tex,
+kanban-board-break-example.tex, and kanban-board-landscape-example.tex,
+the files in the testfiles directory, and the derived files
+kanban-board.sty and kanban-board.pdf.

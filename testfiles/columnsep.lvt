@@ -1,6 +1,6 @@
 \input regression-test.tex
 \documentclass{article}
-\usepackage[columnsep=2.5mm]{kanban}
+\usepackage[columnsep=2.5mm]{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

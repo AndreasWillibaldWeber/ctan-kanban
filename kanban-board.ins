@@ -1,0 +1,34 @@
+\input docstrip.tex
+\keepsilent
+\askforoverwritefalse
+\preamble
+Copyright (C) 2026 Andreas Willibald Weber
+
+This work may be distributed and/or modified under the conditions of
+the LaTeX Project Public License, either version 1.3c of this license
+or (at your option) any later version. The latest version of the
+license is available at https://www.latex-project.org/lppl.txt.
+
+This work has the LPPL maintenance status `maintained'. The Current
+Maintainer of this work is Andreas Willibald Weber.
+
+This work consists of the source files kanban-board.dtx,
+kanban-board-registry.dtx, kanban-board-dates.dtx,
+kanban-board-config.dtx, kanban-board-render.dtx,
+kanban-board-lifecycle.dtx, and kanban-board.ins. It also includes
+build.lua, README.md, CHANGELOG.md, DEPENDS.txt, and LICENSE, the example
+files kanban-board-example.tex, kanban-board-modes-example.tex,
+kanban-board-deadlines-example.tex, kanban-board-date-formats-example.tex,
+kanban-board-palette-example.tex, kanban-board-columnsep-example.tex,
+kanban-board-break-example.tex, and kanban-board-landscape-example.tex,
+the files in the testfiles directory, and the derived files
+kanban-board.sty and kanban-board.pdf.
+\endpreamble
+\generate{\file{kanban-board.sty}{%
+  \from{kanban-board.dtx}{package}%
+  \from{kanban-board-registry.dtx}{package}%
+  \from{kanban-board-dates.dtx}{package}%
+  \from{kanban-board-config.dtx}{package}%
+  \from{kanban-board-render.dtx}{package}%
+  \from{kanban-board-lifecycle.dtx}{package}}}
+\endbatchfile

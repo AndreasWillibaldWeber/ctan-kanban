@@ -4,7 +4,7 @@
   date-format=us,
   startdate=07/08/2026,
   reference-date=07/08/2026
-]{kanban}
+]{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

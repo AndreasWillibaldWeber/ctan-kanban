@@ -2,7 +2,7 @@
 \documentclass{article}
 \usepackage[
   labels={high=URGENT,medium=NORMAL}
-]{kanban}
+]{kanban-board}
 \kbset{labels={low=ROUTINE,done=FINISHED}}
 \kbdefinepalette*{contrast}{kanbanSlate/white,kanbanMed/kanbanInk}
 \begin{document}

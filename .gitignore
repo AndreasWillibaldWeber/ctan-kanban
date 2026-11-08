@@ -5,10 +5,10 @@
 /tmp/
 
 # Generated package and release artifacts
-/kanban.sty
-/kanban.pdf
-/kanban-ctan.zip
-/kanban.tds.zip
+/kanban-board.sty
+/kanban-board.pdf
+/kanban-board-ctan.zip
+/kanban-board.tds.zip
 /examples/*.pdf
 
 # TeX auxiliary files

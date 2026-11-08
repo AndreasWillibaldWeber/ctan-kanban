@@ -2,7 +2,7 @@
 \documentclass{article}
 \usepackage[palette=muted,startdate=01.07.2026,
   mode=dark,date-format=english,columnsep=3mm,
-  columns={Queue,Work,Done}]{kanban}
+  columns={Queue,Work,Done}]{kanban-board}
 \makeatletter
 \edef\kb@packagedateformat{\kanban@dateformat}
 \makeatother
@@ -87,8 +87,9 @@
   \kbset{mode=\emph{dark}}
 \endgroup
 \begingroup
-  % Package options are applied while kanban.sty is read. Their diagnostics
-  % must name the package options instead of a line inside the package.
+  % Package options are applied while kanban-board.sty is read. Their
+  % diagnostics must name the package options instead of a line inside the
+  % package.
   \makeatletter
   \ExplSyntaxOn
   \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4

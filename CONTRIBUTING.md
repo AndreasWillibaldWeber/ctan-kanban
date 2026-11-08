@@ -1,6 +1,6 @@
-# Contributing to `kanban`
+# Contributing to `kanban-board`
 
-Thank you for helping to improve `kanban`. Development takes place in the
+Thank you for helping to improve `kanban-board`. Development takes place in the
 [public repository](https://github.com/andreaswillibaldweber/ctan-kanban).
 Defects and focused enhancement proposals belong in the
 [public issue tracker](https://github.com/andreaswillibaldweber/ctan-kanban/issues).
@@ -12,7 +12,7 @@ guessing. Please provide the following items.
 
 1. A minimal complete LaTeX document.
 2. The complete `.log` file produced by the failing run.
-3. The `kanban` version, the TeX engine, and the TeX distribution release.
+3. The `kanban-board` version, the TeX engine, and the TeX distribution release.
 4. The observed result and the result that was expected.
 5. A PDF or screenshot when the defect concerns visual layout.
 
@@ -22,14 +22,15 @@ problems have different minimal examples or causes.
 
 ## Source of record
 
-The documented source is split into `kanban.dtx`, which holds the driver,
-the user manual, and the bootstrap code, and the subsystem parts
-`kanban-registry.dtx`, `kanban-dates.dtx`, `kanban-config.dtx`,
-`kanban-render.dtx`, and `kanban-board.dtx`. The installer `kanban.ins`
-assembles them in that order into the generated package. Do not edit the
-generated `kanban.sty` directly. The example documents are maintained as
-separate `.tex` files in `examples/` because they are also compiled as
-end-to-end demonstrations. `kanban.pdf`, `kanban.sty`, and the ZIP archives
+The documented source is split into `kanban-board.dtx`, which holds the
+driver, the user manual, and the bootstrap code, and the subsystem parts
+`kanban-board-registry.dtx`, `kanban-board-dates.dtx`,
+`kanban-board-config.dtx`, `kanban-board-render.dtx`, and
+`kanban-board-lifecycle.dtx`. The installer `kanban-board.ins` assembles them
+in that order into the generated package. Do not edit the generated
+`kanban-board.sty` directly. The example documents are maintained as separate
+`.tex` files in `examples/` because they are also compiled as end-to-end
+demonstrations. `kanban-board.pdf`, `kanban-board.sty`, and the ZIP archive
 are release artifacts regenerated from these sources.
 
 ## Local verification
@@ -77,7 +78,7 @@ invalid input. Source commentary explains the responsibility of a definition
 and the reasons for its design. It does not restate the semantics of the
 LaTeX3 programming layer.
 
-Canonical public control sequences use the `kanban` prefix. A proposed
+Canonical public control sequences use the `kanban-board` prefix. A proposed
 concise `kb` alias must remain optional and must not overwrite a command
 owned by a class or another package. Package code allocates its own LaTeX3
 variables and does not use the scratch variables of the kernel.
@@ -87,7 +88,7 @@ command signature, a default, a diagnostic category, or a visual semantic
 requires a clear rationale and a changelog entry. Prefer a deprecation period
 to an immediate incompatible change.
 
-Check documentation changes against the generated `kanban.sty`, not only
+Check documentation changes against the generated `kanban-board.sty`, not only
 against earlier prose. In particular, review command aliases, accepted key
 values, configuration scope, canonical date storage, reference-date
 reproducibility, reset behavior, diagnostic recovery, renderer limitations,

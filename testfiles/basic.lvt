@@ -1,6 +1,6 @@
 \input regression-test.tex
 \documentclass{article}
-\usepackage[palette=monochrome,startdate=01.07.2026,mode=Dark]{kanban}
+\usepackage[palette=monochrome,startdate=01.07.2026,mode=Dark]{kanban-board}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START

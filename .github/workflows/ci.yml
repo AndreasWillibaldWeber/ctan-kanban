@@ -33,11 +33,11 @@ jobs:
             # The release version and date must agree in every metadata
             # location. l3build tag rewrites all of them, and this check
             # catches a forgotten run or a pattern that no longer matches.
-            version="$(sed -n 's/.*\\ProvidesPackage{kanban}\[[0-9/]* v\([0-9.]*\) .*/\1/p' kanban.dtx)"
-            slashdate="$(sed -n 's/.*\\ProvidesPackage{kanban}\[\([0-9/]*\) v.*/\1/p' kanban.dtx)"
+            version="$(sed -n 's/.*\\ProvidesPackage{kanban-board}\[[0-9/]* v\([0-9.]*\) .*/\1/p' kanban-board.dtx)"
+            slashdate="$(sed -n 's/.*\\ProvidesPackage{kanban-board}\[\([0-9/]*\) v.*/\1/p' kanban-board.dtx)"
             isodate="${slashdate//\//-}"
             test -n "${version}" && test -n "${slashdate}"
-            grep -Fq "\\changes{v${version}}{${slashdate}}" kanban.dtx
+            grep -Fq "\\changes{v${version}}{${slashdate}}" kanban-board.dtx
             grep -Fq "Current release: **${version}** (${isodate})" README.md
             grep -Fq "## ${version} (${isodate})" CHANGELOG.md
             grep -Fq "placeholder: ${version} (${isodate})" .github/ISSUE_TEMPLATE/bug_report.yml
@@ -49,46 +49,46 @@ jobs:
             l3build doc
             l3build ctan
 
-            if grep -Eq '(^! |LaTeX Error|Package .* Error|Undefined control sequence|Emergency stop|Fatal error occurred)' build/doc/kanban.log; then
+            if grep -Eq '(^! |LaTeX Error|Package .* Error|Undefined control sequence|Emergency stop|Fatal error occurred)' build/doc/kanban-board.log; then
               echo 'The manual log contains a fatal diagnostic.' >&2
               exit 1
             fi
-            if grep -Eq 'LaTeX Warning: (There were undefined references|Label\(s\) may have changed)' build/doc/kanban.log; then
+            if grep -Eq 'LaTeX Warning: (There were undefined references|Label\(s\) may have changed)' build/doc/kanban-board.log; then
               echo 'The manual contains an unresolved cross-reference.' >&2
               exit 1
             fi
-            if grep -Eq 'Overfull \\[hv]box' build/doc/kanban.log; then
+            if grep -Eq 'Overfull \\[hv]box' build/doc/kanban-board.log; then
               echo 'The manual contains an overfull box.' >&2
               exit 1
             fi
             # The index must list expl3 functions as complete names. A bare
             # one-letter entry such as \l would indicate name fragments.
-            if grep -Eq '^\\indexentry\{(l|g|c|cs|tl|int|bool|clist|prop|seq|msg|exp|_)=' build/doc/kanban.idx; then
+            if grep -Eq '^\\indexentry\{(l|g|c|cs|tl|int|bool|clist|prop|seq|msg|exp|_)=' build/doc/kanban-board.idx; then
               echo 'The manual index contains expl3 name fragments.' >&2
               exit 1
             fi
 
-            unzip -t kanban-ctan.zip
+            unzip -t kanban-board-ctan.zip
             # List the archive once and grep the file. Under `pipefail`,
             # `unzip -l | grep -q` dies of SIGPIPE (exit 141) whenever grep
             # closes the pipe before unzip finishes writing.
-            unzip -l kanban-ctan.zip > build/ctan-list.txt
-            grep -q 'kanban/testfiles/compatibility.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/strict.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/pagination.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/reference-date.lvt' build/ctan-list.txt
-            grep -q 'kanban/testfiles/robust-input.lvt' build/ctan-list.txt
+            unzip -l kanban-board-ctan.zip > build/ctan-list.txt
+            grep -q 'kanban-board/testfiles/compatibility.lvt' build/ctan-list.txt
+            grep -q 'kanban-board/testfiles/strict.lvt' build/ctan-list.txt
+            grep -q 'kanban-board/testfiles/pagination.lvt' build/ctan-list.txt
+            grep -q 'kanban-board/testfiles/reference-date.lvt' build/ctan-list.txt
+            grep -q 'kanban-board/testfiles/robust-input.lvt' build/ctan-list.txt
             # Every test and every example of the working tree must be shipped.
             # The archive keeps the testfiles directory and places the
             # examples flat next to the sources.
             for shipped in testfiles/*.lvt testfiles/*.tlg; do
-              grep -q "kanban/${shipped}" build/ctan-list.txt
+              grep -q "kanban-board/${shipped}" build/ctan-list.txt
             done
             for shipped in examples/*.tex; do
-              grep -q "kanban/$(basename "${shipped}")" build/ctan-list.txt
+              grep -q "kanban-board/$(basename "${shipped}")" build/ctan-list.txt
             done
-            grep -q 'kanban/DEPENDS.txt' build/ctan-list.txt
-            grep -q 'kanban/kanban.pdf' build/ctan-list.txt
+            grep -q 'kanban-board/DEPENDS.txt' build/ctan-list.txt
+            grep -q 'kanban-board/kanban-board.pdf' build/ctan-list.txt
             if grep -Eq 'RELEASING.md|CONTRIBUTING.md|tds.zip' build/ctan-list.txt; then
               echo 'The CTAN archive contains repository-only files.' >&2
               exit 1
@@ -97,7 +97,7 @@ jobs:
             for engine in pdflatex lualatex xelatex; do
               outdir="build/examples/${engine}"
               mkdir -p "${outdir}"
-              for source in examples/kanban-example.tex examples/kanban-*-example.tex; do
+              for source in examples/kanban-board-example.tex examples/kanban-board-*-example.tex; do
                 TEXINPUTS="build/unpacked//:" \
                   "${engine}" -interaction=nonstopmode -halt-on-error \
                   -output-directory="${outdir}" "${source}"
@@ -120,13 +120,13 @@ jobs:
             # and PDF backends differ across supported TeX Live releases.
             if command -v pdftoppm >/dev/null 2>&1 && \
                command -v pdfinfo >/dev/null 2>&1; then
-              manual_pages="$(pdfinfo build/doc/kanban.pdf | \
+              manual_pages="$(pdfinfo build/doc/kanban-board.pdf | \
                 awk '/^Pages:/ {print $2}')"
               test "${manual_pages}" -ge 30
               mkdir -p build/visual-review/manual \
                 build/visual-review/examples
-              pdftoppm -png -r 96 build/doc/kanban.pdf \
-                build/visual-review/manual/kanban
+              pdftoppm -png -r 96 build/doc/kanban-board.pdf \
+                build/visual-review/manual/kanban-board
               for pdf in build/examples/pdflatex/*.pdf; do
                 stem="$(basename "${pdf}" .pdf)"
                 pdftoppm -f 1 -l 1 -singlefile -png -r 96 "${pdf}" \
@@ -140,21 +140,21 @@ jobs:
             archive_check="build/archive-check"
             rm -rf "${archive_check}"
             mkdir -p "${archive_check}"
-            unzip -q kanban-ctan.zip -d "${archive_check}"
-            (cd "${archive_check}/kanban" && l3build check -e pdftex)
+            unzip -q kanban-board-ctan.zip -d "${archive_check}"
+            (cd "${archive_check}/kanban-board" && l3build check -e pdftex)
 
       - name: Retain review artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kanban-current-build
+          name: kanban-board-current-build
           if-no-files-found: error
           path: |
-            build/doc/kanban.pdf
+            build/doc/kanban-board.pdf
             build/examples/**/*.pdf
             build/visual-review/**/*.png
             build/test*/*.diff
-            kanban-ctan.zip
+            kanban-board-ctan.zip
 
   tex-live-2020:
     name: TeX Live 2020 compatibility
@@ -179,7 +179,7 @@ jobs:
             # comparison is made by the current distribution job.
             outdir="build/examples/pdflatex"
             mkdir -p "${outdir}"
-            for source in examples/kanban-example.tex examples/kanban-*-example.tex; do
+            for source in examples/kanban-board-example.tex examples/kanban-board-*-example.tex; do
               TEXINPUTS="build/unpacked//:" \
                 pdflatex -interaction=nonstopmode -halt-on-error \
                 -output-directory="${outdir}" "${source}"
@@ -200,7 +200,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kanban-tex-live-2020-diffs
+          name: kanban-board-tex-live-2020-diffs
           if-no-files-found: warn
           path: |
             build/test*/*.diff

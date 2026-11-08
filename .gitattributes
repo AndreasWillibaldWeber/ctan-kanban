@@ -3,5 +3,5 @@
 *.pdf binary
 *.zip binary
 
-# The style file is generated from kanban.dtx for release archives.
-kanban.sty linguist-generated=true
+# The style file is generated from kanban-board.dtx for release archives.
+kanban-board.sty linguist-generated=true

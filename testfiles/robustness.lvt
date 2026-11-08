@@ -1,6 +1,6 @@
 \input regression-test.tex
 \documentclass{article}
-\usepackage[startdate=18.07.2026]{kanban}
+\usepackage[startdate=18.07.2026]{kanban-board}
 \newcount\kbitem
 % Invalid replacements must warn and preserve the valid package value.
 \kbset{startdate=31.02.2026}
