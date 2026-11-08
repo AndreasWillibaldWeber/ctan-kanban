@@ -19,7 +19,9 @@
 %
 % \subsection{Task collection}
 %
-% The task key family stores metadata without expanding the card text. A
+% The task key family stores metadata without expanding the card text. The
+% key name of an unknown option is passed by expansion, because
+% \textsf{l3msg} shows message arguments without expanding them. A
 % valid declaration appends one protected renderer call to the selected
 % board-local list. Invalid or missing targets are diagnosed and never affect
 % the counter. Collection and rendering are separate phases. This permits the
@@ -46,7 +48,7 @@
     completed .code:n = {\def\kbtask@completed{1}},
     completed .value_forbidden:n = true,
     unknown .code:n =
-      {\msg_warning:nnnn {kanban}{unknown-key}
+      {\msg_warning:nnxx {kanban}{unknown-key}
         {task}{\l_keys_key_str}}
   }
 \cs_new_protected:Npn \kanban@processtaskoptions #1
@@ -120,17 +122,19 @@
 % \begin{macro}{\kbtask}
 % The canonical public command supplies the compact task declaration syntax
 % and delegates all key processing, validation, and collection to the
-% internal implementation. The concise command is installed by equivalence
-% only when its name is free. An existing definition is preserved with a
-% warning.
+% internal implementation. The text argument is long, so a card may contain
+% several paragraphs. The option list and the column name remain short,
+% because a paragraph break inside them indicates a missing brace, and a
+% short argument turns that mistake into an immediate error instead of
+% swallowing the rest of the document. The concise command is installed by
+% equivalence only when its name is free. An existing definition is
+% preserved with a warning.
 %    \begin{macrocode}
-\NewDocumentCommand\kanbantask{O{}mm}{%
+\NewDocumentCommand\kanbantask{O{}m+m}{%
   \kanban@dotask[#1]{#2}{#3}}
 \@ifundefined{kbtask}
   {\let\kbtask\kanbantask}
-  {\PackageWarning{kanban}
-    {\string\kbtask\space is already defined.
-      \MessageBreak Use \string\kanbantask\space instead}}
+  {\kanban@warning{alias-taken}{kbtask}{kanbantask}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -180,7 +184,7 @@
     columnsep .code:n = {\kanban@setboardcolumnsep{#1}},
     labels .code:n = {\keys_set:nn {kanban/board-labels}{#1}},
     unknown .code:n =
-      {\msg_warning:nnnn {kanban}{unknown-key}
+      {\msg_warning:nnxx {kanban}{unknown-key}
         {board}{\l_keys_key_str}}
   }
 %    \end{macrocode}

@@ -4,6 +4,8 @@
 \newcount\kbitem
 % Invalid replacements must warn and preserve the valid package value.
 \kbset{startdate=31.02.2026}
+\def\kbmacrodate{18.07.2026}
+\def\kbrobustdate{\textsc{soon}}
 \begin{document}
 \sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
 \START
@@ -48,6 +50,32 @@
   {KANBAN HUGE PROJECT MONTH NEUTRAL}
 \kbexpectcurrent{M1}{KANBAN PROJECT MONTH CURRENT}
 \kbexpectneutral{M2}{KANBAN PROJECT MONTH FUTURE}
+\kbexpectcurrent{M01}{KANBAN LEADING ZERO PROJECT MONTH CURRENT}
+\kbexpectneutral{M000}{KANBAN ALL ZERO PROJECT MONTH NEUTRAL}
+\kbexpectoverdue{01.01.0001}{KANBAN YEAR ONE OVERDUE}
+\kbexpectneutral{31.12.9999}{KANBAN YEAR 9999 FUTURE}
+\kbexpectneutral{01.01.0000}{KANBAN YEAR ZERO NEUTRAL}
+\kbexpectcurrent{\kbmacrodate}{KANBAN MACRO DATE CLASSIFIED}
+\kbexpectneutral{\emph{soon}}{KANBAN ROBUST DEADLINE NEUTRAL}
+\kbexpectneutral{\textbf{2026-07-18}}{KANBAN WRAPPED DATE NEUTRAL}
+\kbexpectneutral{\kbrobustdate}{KANBAN MACRO TO ROBUST COMMAND NEUTRAL}
+\ExplSyntaxOn
+\cs_new_protected:Npn \kb_expect_valid:nn #1#2
+  {
+    \__kanban_parse_date:nn {#1} {us}
+    \bool_if:NTF \l__kanban_valid_date_bool
+      {\TYPE{#2~OK}} {\TYPE{#2~FAILED}}
+  }
+\cs_new_protected:Npn \kb_expect_invalid:nn #1#2
+  {
+    \__kanban_parse_date:nn {#1} {us}
+    \bool_if:NTF \l__kanban_valid_date_bool
+      {\TYPE{#2~FAILED}} {\TYPE{#2~OK}}
+  }
+\kb_expect_valid:nn {01.01.0001} {KANBAN~YEAR~ONE~VALID}
+\kb_expect_valid:nn {31.12.9999} {KANBAN~YEAR~9999~VALID}
+\kb_expect_invalid:nn {01.01.0000} {KANBAN~YEAR~ZERO~INVALID}
+\ExplSyntaxOff
 \makeatother
 \endgroup
 \begingroup

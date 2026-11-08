@@ -39,6 +39,8 @@
   {KANBAN TWO-DIGIT YEAR UNCHANGED}
 \kbexpectdisplay{us}{M2}{M2}
   {KANBAN PROJECT MONTH UNCHANGED}
+\kbexpectdisplay{us}{M01}{M01}
+  {KANBAN LEADING ZERO PROJECT MONTH UNCHANGED}
 \kbexpectdisplay{us}{Editorial review}{Editorial review}
   {KANBAN DESCRIPTIVE LABEL UNCHANGED}
 \kbexpectdatealias{american}{us}{KANBAN AMERICAN DATE ALIAS}
@@ -82,11 +84,22 @@
   {\TYPE{KANBAN BOARD DATE FORMAT SCOPE OK}}
   {\TYPE{KANBAN BOARD DATE FORMAT SCOPE FAILED}}
 \begingroup
-  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
+  % Capture the named message semantically. The console rendering of
+  % l3msg varies across TeX Live releases.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'#4'}}
+  \ExplSyntaxOff
   \kbset{date-format=martian}
   \ifdefstring{\kanban@dateformat}{german}
     {\TYPE{KANBAN INVALID DATE FORMAT PRESERVES VALUE OK}}
     {\TYPE{KANBAN INVALID DATE FORMAT PRESERVES VALUE FAILED}}
+  \begin{kanban}[columns={Todo},date-format=martian]
+    \ifdefstring{\kanban@boarddateformat}{german}
+      {\TYPE{KANBAN INVALID BOARD DATE FORMAT PRESERVES VALUE OK}}
+      {\TYPE{KANBAN INVALID BOARD DATE FORMAT PRESERVES VALUE FAILED}}
+    \kanbantask{Todo}{Exercise board date format validation}
+  \end{kanban}
 \endgroup
 \makeatother
 \END

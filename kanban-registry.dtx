@@ -28,14 +28,6 @@
 % converts the textual column interface into the compact board-local
 % representation that the renderers consume.
 %
-% \paragraph{A common palette diagnostic.}
-% Every palette validation path reports through one helper so that all
-% palette warnings identify the package in the same way.
-%    \begin{macrocode}
-\cs_new_protected:Npn \__kanban_palette_warning:n #1
-  {\PackageWarning{kanban}{#1}}
-%    \end{macrocode}
-%
 % \paragraph{Plain palette definitions.}
 % An unstarred definition accepts a name and a non-empty comma list of
 % heading backgrounds. A successful definition replaces any palette of the
@@ -49,13 +41,12 @@
     \tl_set:Nn \l__kanban_palette_name_tl {#1}
     \tl_trim_spaces:N \l__kanban_palette_name_tl
     \tl_if_blank:VTF \l__kanban_palette_name_tl
-      {\__kanban_palette_warning:n {palette~name~must~not~be~empty}}
+      {\msg_warning:nn {kanban}{empty-palette-name}}
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\__kanban_palette_warning:n
-            {palette~'\tl_use:N \l__kanban_palette_name_tl'
-              \c_space_tl must~contain~at~least~one~color}}
+          {\msg_warning:nnxx {kanban}{empty-palette}
+            {\exp_not:V \l__kanban_palette_name_tl}{colors}}
           {
             \prop_gput:NVV \g__kanban_palettes_prop
               \l__kanban_palette_name_tl \l__kanban_palette_colors_clist
@@ -116,21 +107,18 @@
     \clist_clear:N \l__kanban_palette_fg_clist
     \bool_set_false:N \l__kanban_bad_palette_bool
     \tl_if_blank:VTF \l__kanban_palette_name_tl
-      {\__kanban_palette_warning:n {palette~name~must~not~be~empty}}
+      {\msg_warning:nn {kanban}{empty-palette-name}}
       {
         \clist_set:Nn \l__kanban_palette_colors_clist {#2}
         \clist_if_empty:NTF \l__kanban_palette_colors_clist
-          {\__kanban_palette_warning:n
-            {palette~'\tl_use:N \l__kanban_palette_name_tl'
-              \c_space_tl must~contain~at~least~one~color/text~pair}}
+          {\msg_warning:nnxx {kanban}{empty-palette}
+            {\exp_not:V \l__kanban_palette_name_tl}{color/text~pairs}}
           {
             \clist_map_function:NN \l__kanban_palette_colors_clist
               \__kanban_palette_pair:n
             \bool_if:NTF \l__kanban_bad_palette_bool
-              {\__kanban_palette_warning:n
-                {palette~'\tl_use:N \l__kanban_palette_name_tl'
-                  \c_space_tl must~use~non-empty~color/text~pairs.~
-                  \MessageBreak The~definition~is~ignored}}
+              {\msg_warning:nnx {kanban}{malformed-palette-pair}
+                {\exp_not:V \l__kanban_palette_name_tl}}
               {
                 \prop_gput:NVV \g__kanban_palettes_prop
                   \l__kanban_palette_name_tl
@@ -176,9 +164,8 @@
         \tl_gset_eq:NN \g__kanban_palette_name_tl
           \l__kanban_palette_name_tl
       }
-      {\__kanban_palette_warning:n
-        {unknown~palette~'\tl_use:N \l__kanban_palette_name_tl'.~
-          \MessageBreak The~current~palette~is~kept}}
+      {\msg_warning:nnxx {kanban}{unknown-palette}
+        {palette}{\exp_not:V \l__kanban_palette_name_tl}}
   }
 \cs_new_protected:Npn \__kanban_palette_select_board:n #1
   {
@@ -195,9 +182,8 @@
             \l__kanban_palette_fg_tl}
           {\clist_clear:N \l__kanban_board_palette_fg_clist}
       }
-      {\__kanban_palette_warning:n
-        {unknown~palette~'\tl_use:N \l__kanban_palette_name_tl'.~
-          \MessageBreak The~current~palette~is~kept}}
+      {\msg_warning:nnxx {kanban}{unknown-palette}
+        {board~palette}{\exp_not:V \l__kanban_palette_name_tl}}
   }
 \cs_new_protected:Npn \kanban@paletteboardinit
   {
@@ -256,9 +242,8 @@
       {\__kanban_palette_define:nn {#2}{#3}}
   }
 \cs_if_exist:NTF \kbdefinepalette
-  {\PackageWarning{kanban}
-    {\string\kbdefinepalette\space is~already~defined.~
-      \MessageBreak Use~\string\kanbandefinepalette\space instead}}
+  {\msg_warning:nnnn {kanban}{alias-taken}
+    {kbdefinepalette}{kanbandefinepalette}}
   {\cs_new_eq:NN \kbdefinepalette \kanbandefinepalette}
 %    \end{macrocode}
 % \end{macro}
@@ -276,13 +261,21 @@
 %    \end{macrocode}
 %
 % \paragraph{Column-name normalization.}
-% Column identity is case-insensitive, but the visible heading keeps the
-% spelling given in the column list. The single-name function therefore
-% produces two results. It stores the trimmed input as the display text and
-% writes the uppercase form into the destination variable as the lookup key.
-% The list function applies that rule to every item, ignores blank items,
-% records the first spelling of each key in a display map, and diagnoses
-% duplicates after normalization. A duplicate is a user error rather than a
+% Column identity is case-insensitive and ignores formatting, but the
+% visible heading keeps the spelling given in the column list. The
+% single-name function therefore produces two results. It stores the trimmed
+% input as the display text and writes the lookup key into the destination
+% variable. The key is the purified text of the name in uppercase. Ordinary
+% macros are expanded, and formatting commands and braces are removed. A
+% column declared as |\emph{Soon}| is therefore addressed as |soon| by a
+% task, and the heading still shows the emphasized text. Purification also
+% keeps robust commands out of the expanded definitions that later publish
+% the key list. The list function applies that rule to every item, ignores
+% blank items, records the first spelling of each key in a display map, and
+% diagnoses duplicates after normalization. Membership is tested in the
+% display map rather than in the key list, because a property list treats
+% every key as a string, whereas the comma list test does not support items
+% that contain a brace group. A duplicate is a user error rather than a
 % recoverable preference, so it produces an error with corrective help, and
 % the first occurrence is retained.
 %    \begin{macrocode}
@@ -291,7 +284,9 @@
     \tl_set:Nn \l__kanban_column_display_tl {#1}
     \tl_trim_spaces:N \l__kanban_column_display_tl
     \tl_set:Nx #2
-      {\exp_args:NV \text_uppercase:n \l__kanban_column_display_tl}
+      {\exp_args:NV \text_purify:n \l__kanban_column_display_tl}
+    \tl_set:Nx #2 {\exp_args:NV \text_uppercase:n #2}
+    \tl_trim_spaces:N #2
   }
 \cs_new_protected:Npn \__kanban_columns_normalize:nNN #1#2#3
   {
@@ -302,7 +297,7 @@
         \__kanban_column_normalize:nN {##1} \l__kanban_column_tl
         \tl_if_blank:VF \l__kanban_column_tl
           {
-            \clist_if_in:NVTF #2 \l__kanban_column_tl
+            \prop_if_in:NVTF #3 \l__kanban_column_tl
               {\PackageError{kanban}
                 {duplicate~kanban~column~
                   '\tl_use:N \l__kanban_column_tl'}
@@ -331,9 +326,7 @@
       \l__kanban_columns_tmp_clist
       \l__kanban_column_display_tmp_prop
     \clist_if_empty:NTF \l__kanban_columns_tmp_clist
-      {\PackageWarning{kanban}
-        {column~list~must~contain~at~least~one~name.~
-          \MessageBreak The~current~list~is~kept}}
+      {\msg_warning:nn {kanban}{empty-column-list}}
       {
         \clist_gset_eq:NN \g__kanban_columns_clist
           \l__kanban_columns_tmp_clist
@@ -395,13 +388,18 @@
 % consecutive identifier. The setup function also prepares the printable list
 % of valid keys for error messages and delegates the creation of per-column
 % counters, lists, colors, and renderer entries to |\kanban@setupcolumn|,
-% which is defined in the board part. The display text is passed by value so
-% that it is stored unexpanded for the heading.
+% which is defined in the board part. The printable list is expanded through
+% |\text_expand:n|, which expands the comma list but leaves any robust
+% command intact, so the expanded definition cannot be derailed. The display
+% text is passed by value so that it is stored unexpanded for the heading.
 %    \begin{macrocode}
 \cs_new_protected:Npn \kanban@setupboardcolumns
   {
     \cs_set:Npx \kanban@availablecolumns
-      {\clist_use:Nn \l__kanban_board_columns_clist {,}}
+      {
+        \text_expand:n
+          {\clist_use:Nn \l__kanban_board_columns_clist {,}}
+      }
     \prop_clear:N \l__kanban_column_ids_prop
     \int_zero:N \l__kanban_column_index_int
     \clist_map_inline:Nn \l__kanban_board_columns_clist
@@ -422,7 +420,11 @@
 % \paragraph{Choice normalization and registry cleanup.}
 % Several key values, including modes and date-format names, share the same
 % case-insensitive choice syntax. The choice helper trims and lowercases such
-% a value before publishing it as |\kb@choice|. At the end of the board
+% a value before publishing it as |\kb@choice|. The lowercase conversion
+% expands ordinary macros and leaves robust commands intact, and the
+% published copy is not expanded a second time. A robust command in a choice
+% is therefore reported as an unknown value instead of derailing the
+% definition. At the end of the board
 % lifecycle, the cleanup function removes all dynamically created per-column
 % control sequences so that completed boards do not retain card material or
 % counters in the hash table. The names are constructed from character data,
@@ -434,7 +436,7 @@
     \tl_trim_spaces:N \l__kanban_choice_tl
     \tl_set:Nx \l__kanban_choice_tl
       {\exp_args:NV \text_lowercase:n \l__kanban_choice_tl}
-    \cs_set:Npx \kb@choice {\tl_use:N \l__kanban_choice_tl}
+    \cs_set:Npx \kb@choice {\exp_not:V \l__kanban_choice_tl}
   }
 \cs_new_protected:Npn \kanban@cleanupboard
   {

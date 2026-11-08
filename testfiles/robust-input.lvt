@@ -1,0 +1,91 @@
+% Robust commands, paragraphs, brace groups, and leading zeros in user
+% supplied text. The boards in this file are small, so the complete run
+% stays on one page and no page is shipped out before the end marker.
+\input regression-test.tex
+\documentclass{article}
+\usepackage[reference-date=2026-07-18,startdate=2026-07-01]{kanban}
+\def\kbmacrodate{2026-07-18}
+\def\kbrobustdate{\textsc{soon}}
+\ExplSyntaxOn
+\NewDocumentCommand \kbcheckboardcolumns {mm}
+  {
+    \str_if_eq:eeTF
+      {\clist_use:Nn \l__kanban_board_columns_clist {,}} {#1}
+      {\TYPE{#2~OK}}
+      {\TYPE{#2~FAILED}}
+  }
+\ExplSyntaxOff
+\begin{document}
+\sbox0{\scriptsize $x$}% Load math font sizes outside captured output.
+\START
+\begingroup
+  % Deadline diagnostics are issued when a task is declared. Capture them
+  % semantically, because the console rendering of l3msg varies across TeX
+  % Live releases. A robust command in a deadline is a neutral label and
+  % must neither warn nor derail the run.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnn #1#2#3
+    {\TYPE{KANBAN~WARNING:~#2~'#3'}}
+  \ExplSyntaxOff
+  \begin{kanban}[columns={Queue}]
+    \kanbantask[due=\emph{soon}]{Queue}{A robust deadline}
+    \kanbantask[due={\textbf{2026-07-18}}]{Queue}{A wrapped date}
+    \kanbantask[due=\kbrobustdate]{Queue}{A macro to a robust command}
+    \kanbantask[due=\kbmacrodate]{Queue}{A macro to a date}
+    \kanbantask[late]{Queue}{A late task without a deadline}
+    \kanbantask[due=M01]{Queue}{A leading-zero project month}
+    \kanbantask[due=M000]{Queue}{An all-zero project month}
+    \kanbantask[due=01.01.0000]{Queue}{A year zero date}
+    \TYPE{KANBAN ROBUST DEADLINE DECLARATIONS OK}
+  \end{kanban}
+\endgroup
+\TYPE{KANBAN ROBUST DEADLINE RENDERING OK}
+\begin{kanban}[columns={Queue}]
+  \kanbantask{Queue}{First paragraph.\par Second paragraph.}
+  \kanbantask{Queue}{First paragraph.
+
+    Second paragraph.}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=2\relax
+    \TYPE{KANBAN PARAGRAPHS IN CARD TEXT OK}
+  \else
+    \TYPE{KANBAN PARAGRAPHS IN CARD TEXT FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\begin{kanban}[columns={\emph{Soon},Later}]
+  \kbcheckboardcolumns{SOON,LATER}{KANBAN ROBUST COLUMN KEYS}
+  \makeatletter
+  \ifcsstring{kanban@name@1}{\emph{Soon}}
+    {\TYPE{KANBAN ROBUST HEADING PRESERVED OK}}
+    {\TYPE{KANBAN ROBUST HEADING PRESERVED FAILED}}
+  \makeatother
+  \kanbantask{soon}{A plain target for an emphasized heading}
+  \kanbantask{\emph{soon}}{An emphasized target}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @1}=2\relax
+    \TYPE{KANBAN ROBUST COLUMN TARGETS OK}
+  \else
+    \TYPE{KANBAN ROBUST COLUMN TARGETS FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\begin{kanban}[columns={Q{1},Q{2}}]
+  \kbcheckboardcolumns{Q1,Q2}{KANBAN BRACE GROUP COLUMN KEYS}
+  \makeatletter
+  \ifcsstring{kanban@name@2}{Q{2}}
+    {\TYPE{KANBAN BRACE GROUP HEADING PRESERVED OK}}
+    {\TYPE{KANBAN BRACE GROUP HEADING PRESERVED FAILED}}
+  \makeatother
+  \kanbantask{Q{1}}{A brace group target}
+  \kanbantask{q{2}}{A lowercase brace group target}
+  \makeatletter
+  \ifnum\csuse{kanban@count@\kanban@boardgroup @2}=1\relax
+    \TYPE{KANBAN BRACE GROUP COLUMN TARGETS OK}
+  \else
+    \TYPE{KANBAN BRACE GROUP COLUMN TARGETS FAILED}
+  \fi
+  \makeatother
+\end{kanban}
+\END
+\end{document}

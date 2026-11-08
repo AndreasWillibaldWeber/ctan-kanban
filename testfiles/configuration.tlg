@@ -7,12 +7,26 @@ KANBAN SETUP DATE FORMAT OK
 KANBAN SETUP GAP OK
 KANBAN PACKAGE COLUMNS OK
 KANBAN SELECTED PALETTE REFRESHED OK
+KANBAN WARNING: unknown-key setup 'colour'
+KANBAN WARNING: unknown-key label 'urgent'
+KANBAN WARNING: unknown-palette palette 'missing'
+KANBAN WARNING: empty-column-list
+KANBAN WARNING: unknown-value mode 'blue'
+KANBAN WARNING: unknown-value mode '\emph {dark}'
+KANBAN WARNING: invalid-date-setting startdate '31.02.2026' in the package options
+KANBAN PACKAGE OPTION CONTEXT PRESERVES VALUE OK
 KANBAN BOARD MODE OVERRIDE OK
 KANBAN BOARD STARTDATE OVERRIDE OK
 KANBAN BOARD DATE FORMAT OVERRIDE OK
 KANBAN BOARD GAP OVERRIDE OK
 KANBAN BOARD PALETTE OVERRIDE OK
-KANBAN WARNING: unknown priority 'urgent'. The priority chip is omitted
+KANBAN WARNING: unknown-priority 'urgent'
+KANBAN WARNING: unknown-key board 'colour'
+KANBAN WARNING: unknown-key board label 'urgent'
+KANBAN WARNING: unknown-palette board palette 'missing'
+KANBAN WARNING: unknown-value board mode 'blue'
+KANBAN WARNING: unknown-key task 'colour'
+KANBAN PALETTE CYCLING OK
 KANBAN BOARD MODE SCOPE OK
 KANBAN BOARD STARTDATE SCOPE OK
 KANBAN BOARD DATE FORMAT SCOPE OK

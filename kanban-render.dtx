@@ -122,8 +122,10 @@
 % documented spellings, treats a blank choice as omission, and warns when
 % non-blank input is unknown. The normalized value is stored with the task.
 % All definitions occur while a task is collected inside the environment
-% group, so the temporary value cannot leak to later tasks.
+% group, so the temporary value cannot leak to later tasks. The warning is
+% a named message, so the definition sits in an expl3 syntax region.
 %    \begin{macrocode}
+\ExplSyntaxOn
 \newcommand\kanban@setpriority[1]{%
   \kanban@normalizechoice{#1}%
   \def\kbtask@prio{}%
@@ -131,9 +133,9 @@
     \ifdefstring{\kb@choice}{medium}{\def\kbtask@prio{medium}}{%
       \ifdefstring{\kb@choice}{med}{\def\kbtask@prio{med}}{%
         \ifdefstring{\kb@choice}{low}{\def\kbtask@prio{low}}{%
-          \ifdefempty\kb@choice{}{\PackageWarning{kanban}
-            {unknown priority '#1'.
-              \MessageBreak The priority chip is omitted}}}}}}}
+          \ifdefempty\kb@choice{}
+            {\msg_warning:nnn {kanban}{unknown-priority}{#1}}}}}}}
+\ExplSyntaxOff
 %    \end{macrocode}
 %
 % \paragraph{Break-layout headers and shared task cards.}

@@ -1813,8 +1813,9 @@
 % palette, visual mode, date format, project start date, reference date,
 % semantic labels, and column separation into board-local state. Its
 % optional key list is then applied to that state. Every column name is
-% trimmed. Its uppercase form is the lookup key, and its original spelling is
-% the heading text. A board-local property list maps each key to a
+% trimmed. Its lookup key is the uppercase form of its plain text, with
+% formatting commands and braces removed, and its original spelling is the
+% heading text. A board-local property list maps each key to a
 % consecutive numeric identifier. Task lists and counters use that identifier
 % together with a monotonically increasing board identifier, so user-provided
 % names never form part of an internal control-sequence name. Duplicate keys
@@ -1824,7 +1825,8 @@
 % surrounding key list has resolved its date format. They are then validated
 % and stored in canonical ISO form. Package options are accumulated and
 % passed through the same setup transaction rather than through a second
-% parser.
+% parser. Their diagnostics name the package options as the context,
+% because the line number at that moment lies inside the package file.
 %
 % Task declarations do not typeset cards immediately. Each declaration
 % normalizes and validates the target column, increments its counter, and
@@ -1868,26 +1870,31 @@
 % four-digit year. Input with the shape of a date but a shorter year is
 % reported rather than misread. Ambiguous year-last slash values follow the
 % date-format snapshot of the board, with a validity-based swap when only the
-% opposite ordering forms a real date. Project-month numbers are bounded
-% before integer conversion, and project-month boundaries use the start-day
-% number where possible and the last valid day in shorter months. Every
-% other value remains ordinary label text.
+% opposite ordering forms a real date. Project-month numbers are stripped of
+% leading zeros and bounded before integer conversion, and project-month
+% boundaries use the start-day number where possible and the last valid day
+% in shorter months. Every other value remains ordinary label text.
 %
 % Card surfaces, metadata chips, and deadline indicators are named
 % \textsf{tcolorbox} styles. Seven empty public styles are applied after the
 % structural defaults, which permits controlled presentation changes without
 % exposing internal environment names. Built-in header and semantic color
 % pairs were selected against a 4.5:1 contrast threshold. Internal LaTeX2e
-% control sequences use the |kanban@| or |kb@| prefix, and LaTeX3 variables
-% and functions use the |__kanban| module name. The package allocates its own
+% control sequences use three prefixes. The |kanban@| prefix marks package
+% state and helpers, the |kb@| prefix marks short-lived values of card
+% rendering and choice normalization, and the |kbtask@| prefix marks the
+% metadata of the task being declared. LaTeX3 variables and functions use
+% the |__kanban| module name. The package allocates its own
 % LaTeX3 variables for every role and does not rely on the scratch variables
 % of the kernel. The regression suite exercises configuration scope,
 % diagnostics, canonical date snapshots, fixed reference dates, metadata
 % flags, malformed dimensions, compatibility with the declared LaTeX format,
 % all three supported engines, all five date formats, custom heading
 % foregrounds, full-width cards, synchronized break-layout headings,
-% cross-page continuation, impossible-gap recovery, and a strict run with
-% expl3 declaration and deprecation checking enabled.
+% cross-page continuation, impossible-gap recovery, robust commands and
+% paragraphs in user text, brace groups in column names, TeX length
+% parameters as gaps, and a strict run with expl3 declaration and
+% deprecation checking enabled.
 %
 % \subsection{Bootstrap state}
 %
@@ -2069,35 +2076,82 @@
 %    \end{macrocode}
 %
 % \paragraph{Named diagnostics.}
-% Diagnostics that may arise in several configuration scopes are defined
-% once as named messages, so the main text and the help text stay consistent
-% whether invalid input originates in a package option, in |\kbset|, in a
-% board option, or in a task declaration. Each message states the line
-% context explicitly, because \textsf{l3msg} warnings do not add it on their
-% own.
+% Every warning of the package is a named message, so the main text and the
+% help text stay consistent whether invalid input originates in a package
+% option, in |\kbset|, in a board option, in a palette definition, or in a
+% task declaration. Each message states the line context after the subject
+% of its first sentence, because \textsf{l3msg} warnings do not add it on
+% their own. Messages that share a shape take the scope or the kind of the
+% setting as a parameter. The alias message is issued while the package
+% loads and therefore carries no line context. A message text that
+% continues on a second source line ends the first line with a tilde. The
+% tilde is a space character in expl3 syntax, and TeX discards a space
+% character at the start of a line. For the same reason a tilde directly
+% after |\msg_line_context:| is absorbed as the end of that control word, so
+% a word space at that position is written as |\c_space_tl|. The
+% LaTeX2e-facing wrapper lets the parts written in LaTeX2e syntax issue a
+% named message with two parameters.
 % \Needspace{14\baselineskip}
 %    \begin{macrocode}
 \msg_new:nnnn {kanban}{invalid-date-setting}
   {Invalid~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
-  {Use~a~valid~Gregorian~date~with~a~four-digit~year~in~one~of~the
-    ~documented~numeric~forms,~for~example~2026-07-18.}
+  {Use~a~valid~Gregorian~date~with~a~four-digit~year~in~one~of~the~
+    documented~numeric~forms,~for~example~2026-07-18.}
 \msg_new:nnnn {kanban}{invalid-dimension}
-  {Invalid~#1~value~'#2'~\msg_line_context:.~The~current~value
-    ~is~kept.}
-  {Use~a~non-negative~explicit~dimension,~such~as~2mm,~or~a~registered
-    ~LaTeX~length.}
+  {Invalid~#1~value~'#2'~\msg_line_context:.~The~current~value~
+    is~kept.}
+  {Use~a~non-negative~explicit~dimension~such~as~2mm,~a~LaTeX~length~
+    register,~or~a~TeX~length~parameter~such~as~\iow_char:N\\hsize.}
 \msg_new:nnnn {kanban}{unknown-key}
   {Unknown~#1~option~'#2'~\msg_line_context:.~The~option~is~ignored.}
   {Check~the~spelling~and~the~documented~scope~of~the~key.}
+\msg_new:nnnn {kanban}{unknown-value}
+  {Unknown~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Check~the~spelling~of~the~value~against~the~documented~choices.}
+\msg_new:nnnn {kanban}{unknown-palette}
+  {Unknown~#1~'#2'~\msg_line_context:.~The~current~palette~is~kept.}
+  {Define~the~palette~with~\iow_char:N\\kanbandefinepalette~before~
+    selecting~it.~The~built-in~names~are~default,~muted,~and~
+    monochrome.}
+\msg_new:nnnn {kanban}{empty-palette-name}
+  {Empty~palette~name~\msg_line_context:.~The~definition~is~ignored.}
+  {Give~the~palette~a~non-empty~name.}
+\msg_new:nnnn {kanban}{empty-palette}
+  {Palette~'#1'~\msg_line_context:\c_space_tl has~no~#2.~
+    The~definition~is~ignored.}
+  {List~at~least~one~entry,~for~example~kanbanBlue~or~
+    kanbanBlue/white.}
+\msg_new:nnnn {kanban}{malformed-palette-pair}
+  {Palette~'#1'~\msg_line_context:\c_space_tl has~a~malformed~
+    color/text~pair.~The~definition~is~ignored.}
+  {Write~every~entry~as~background/foreground~with~two~non-empty~
+    color~names,~for~example~kanbanSlate/white.}
+\msg_new:nnnn {kanban}{empty-column-list}
+  {Empty~column~list~\msg_line_context:.~The~current~list~is~kept.}
+  {Give~at~least~one~column~name,~for~example~columns={Backlog,Done}.}
+\msg_new:nnnn {kanban}{empty-label}
+  {Empty~#1~'#2'~\msg_line_context:.~The~current~value~is~kept.}
+  {Give~every~label~a~non-empty~text,~for~example~
+    labels={high=URGENT}.}
+\msg_new:nnnn {kanban}{unknown-priority}
+  {Unknown~priority~'#1'~\msg_line_context:.~The~priority~chip~is~
+    omitted.}
+  {Use~high,~medium,~med,~or~low.}
 \msg_new:nnnn {kanban}{invalid-deadline}
-  {Invalid~deadline~date~'#1'~\msg_line_context:.~The~card~shows~a
-    ~neutral~label.}
-  {Write~calendar~deadlines~with~a~four-digit~year~in~one~of~the
-    ~documented~numeric~forms,~for~example~2026-07-18.}
+  {Invalid~deadline~date~'#1'~\msg_line_context:.~The~card~shows~a~
+    neutral~label.}
+  {Write~calendar~deadlines~with~a~four-digit~year~in~one~of~the~
+    documented~numeric~forms,~for~example~2026-07-18.}
 \msg_new:nnnn {kanban}{invalid-project-month}
-  {Invalid~project-month~deadline~'#1'~\msg_line_context:.~The~card
-    ~shows~a~neutral~label.}
+  {Invalid~project-month~deadline~'#1'~\msg_line_context:.~The~card~
+    shows~a~neutral~label.}
   {Write~project~months~as~M~followed~by~an~integer~from~1~to~999999.}
+\msg_new:nnnn {kanban}{alias-taken}
+  {\iow_char:N\\#1~is~already~defined.~Use~\iow_char:N\\#2~instead.}
+  {Another~package~or~the~document~owns~the~short~name.~The~existing~
+    definition~is~kept.}
+\cs_new_protected:Npn \kanban@warning #1#2#3
+  {\msg_warning:nnnn {kanban}{#1}{#2}{#3}}
 %    \end{macrocode}
 %
 % At this point the package has allocated, but not yet populated, the

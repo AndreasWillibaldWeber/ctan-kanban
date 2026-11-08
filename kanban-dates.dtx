@@ -173,6 +173,12 @@
 % for example a two-digit year, sets only the syntax flag. Such input is
 % reported as an invalid date and is never silently treated as a label. This
 % protects against |18.07.26| being read as a date in the year 26.
+%
+% The input is expanded through |\text_expand:n| before matching. Ordinary
+% macros are expanded to their text, so a macro that holds a date is
+% classified. Robust and protected commands are left intact, so a deadline
+% such as |\emph{soon}| is a neutral label and cannot derail the expanded
+% assignment.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_parse_date:nn #1#2
   {
@@ -180,7 +186,7 @@
     \bool_set_false:N \l__kanban_date_syntax_bool
     \bool_set_false:N \l__kanban_date_components_bool
     \bool_set_false:N \l__kanban_ambiguous_slash_bool
-    \tl_set:Nx \l__kanban_deadline_tl {#1}
+    \tl_set:Nx \l__kanban_deadline_tl {\text_expand:n {#1}}
     \tl_trim_spaces:N \l__kanban_deadline_tl
     \exp_args:NnV \regex_extract_once:nnNTF
       {\A([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{4})\Z}
@@ -339,23 +345,26 @@
 % \paragraph{Project-month syntax.}
 % Project deadlines such as |M1| are relative to the configured start date
 % rather than to a calendar date written on the card. The parser accepts a
-% positive integer of at most six digits. It records recognized but invalid
-% |M|-prefixed numeric syntax separately and leaves all other text neutral.
-% The bound keeps malformed input away from integer arithmetic while
-% remaining far beyond any realistic project duration.
+% positive integer of at most six significant digits and allows leading
+% zeros, so |M01| denotes the first month while |M0| and |M000| remain
+% invalid. It records recognized but invalid |M|-prefixed numeric syntax
+% separately and leaves all other text neutral. The bound keeps malformed
+% input away from integer arithmetic while remaining far beyond any
+% realistic project duration. The input is expanded through
+% |\text_expand:n| in the same way as a calendar date.
 %    \begin{macrocode}
 \cs_new_protected:Npn \__kanban_parse_project_month:n #1
   {
     \bool_set_false:N \l__kanban_valid_project_month_bool
     \bool_set_false:N \l__kanban_project_month_syntax_bool
-    \tl_set:Nx \l__kanban_deadline_tl {#1}
+    \tl_set:Nx \l__kanban_deadline_tl {\text_expand:n {#1}}
     \tl_trim_spaces:N \l__kanban_deadline_tl
     \exp_args:NnV \regex_match:nnT
       {\AM[0-9]+\Z}
       \l__kanban_deadline_tl
       {\bool_set_true:N \l__kanban_project_month_syntax_bool}
     \exp_args:NnV \regex_extract_once:nnNTF
-      {\AM([1-9][0-9]{0,5})\Z}
+      {\AM0*([1-9][0-9]{0,5})\Z}
       \l__kanban_deadline_tl
       \l__kanban_deadline_match_seq
       {
@@ -598,38 +607,93 @@
 % \paragraph{Safe dimension recognition.}
 % The column-gap setters must reject malformed input before TeX attempts a
 % dimension assignment, because an unrestricted assignment can consume later
-% document tokens while searching for a unit. The validator accepts either a
-% complete explicit dimension in a standard TeX unit or one existing
-% dimension or skip register. It does not evaluate arbitrary macros or
-% dimension expressions at this boundary. The two LaTeX2e-facing wrappers
-% translate the conditional and the named message for the configuration
-% layer.
+% document tokens while searching for a unit. The validator accepts three
+% forms. The first is a complete explicit dimension in a standard TeX unit,
+% with optional spaces before the unit and an optional |true| prefix on the
+% physical units. The second is one existing dimension or skip register. The
+% third is one token whose meaning is a dimension or glue parameter of TeX,
+% such as |\parindent| or |\baselineskip|. Those parameters are primitives
+% rather than registers, so the register tests do not recognize them. The
+% constant lists the meaning of all 21 dimension parameters and all 15 glue
+% parameters of TeX, and the membership test compares the meaning of the
+% candidate token, which also accepts a |\let| copy of a parameter. The
+% three math glue parameters are excluded because they cannot be assigned
+% to a length. The validator does not evaluate arbitrary macros or
+% dimension expressions at this boundary. The input is expanded through
+% |\text_expand:n|, so a macro that expands to a dimension is accepted while
+% a robust command is left intact and rejected. The two LaTeX2e-facing
+% wrappers translate the conditional and the named message for the
+% configuration layer.
 %    \begin{macrocode}
+\str_const:Nx \c__kanban_tex_lengths_str
+  {
+    | \token_to_meaning:N \parindent
+    | \token_to_meaning:N \mathsurround
+    | \token_to_meaning:N \lineskiplimit
+    | \token_to_meaning:N \hsize
+    | \token_to_meaning:N \vsize
+    | \token_to_meaning:N \maxdepth
+    | \token_to_meaning:N \splitmaxdepth
+    | \token_to_meaning:N \boxmaxdepth
+    | \token_to_meaning:N \hfuzz
+    | \token_to_meaning:N \vfuzz
+    | \token_to_meaning:N \delimitershortfall
+    | \token_to_meaning:N \nulldelimiterspace
+    | \token_to_meaning:N \scriptspace
+    | \token_to_meaning:N \predisplaysize
+    | \token_to_meaning:N \displaywidth
+    | \token_to_meaning:N \displayindent
+    | \token_to_meaning:N \overfullrule
+    | \token_to_meaning:N \hangindent
+    | \token_to_meaning:N \hoffset
+    | \token_to_meaning:N \voffset
+    | \token_to_meaning:N \emergencystretch
+    | \token_to_meaning:N \lineskip
+    | \token_to_meaning:N \baselineskip
+    | \token_to_meaning:N \parskip
+    | \token_to_meaning:N \abovedisplayskip
+    | \token_to_meaning:N \abovedisplayshortskip
+    | \token_to_meaning:N \belowdisplayskip
+    | \token_to_meaning:N \belowdisplayshortskip
+    | \token_to_meaning:N \leftskip
+    | \token_to_meaning:N \rightskip
+    | \token_to_meaning:N \topskip
+    | \token_to_meaning:N \splittopskip
+    | \token_to_meaning:N \tabskip
+    | \token_to_meaning:N \spaceskip
+    | \token_to_meaning:N \xspaceskip
+    | \token_to_meaning:N \parfillskip |
+  }
 \prg_new_protected_conditional:Npnn
-  \__kanban_dimension_register:N #1 {T,F,TF}
+  \__kanban_dimension_token:N #1 {T,F,TF}
   {
     \token_if_dim_register:NTF #1
       {\prg_return_true:}
       {
         \token_if_skip_register:NTF #1
           {\prg_return_true:}
-          {\prg_return_false:}
+          {
+            \exp_args:NNx \str_if_in:NnTF \c__kanban_tex_lengths_str
+              { | \token_to_meaning:N #1 | }
+              {\prg_return_true:}
+              {\prg_return_false:}
+          }
       }
   }
 \prg_new_protected_conditional:Npnn
   \__kanban_dimension_valid:n #1 {T,F,TF}
   {
-    \tl_set:Nx \l__kanban_dimension_tl {#1}
+    \tl_set:Nx \l__kanban_dimension_tl {\text_expand:n {#1}}
     \tl_trim_spaces:N \l__kanban_dimension_tl
     \exp_args:NnV \regex_match:nnTF
-      {\A[+\-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)
-        (?:pt|pc|in|bp|cm|mm|dd|cc|sp|ex|em)\Z}
+      {\A[+\-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)\s*
+        (?:(?:true\s*)?(?:pt|pc|in|bp|cm|mm|dd|cc|sp)|ex|em)\Z}
       \l__kanban_dimension_tl
       {\prg_return_true:}
       {
         \exp_args:NV \tl_if_single_token:nTF \l__kanban_dimension_tl
           {
-            \exp_args:NV \__kanban_dimension_register:NTF
+            \exp_args:NV \__kanban_dimension_token:NTF
               \l__kanban_dimension_tl
               {\prg_return_true:}
               {\prg_return_false:}

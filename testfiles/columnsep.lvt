@@ -10,6 +10,57 @@
 \else
   \TYPE{KANBAN PACKAGE COLUMNSEP FAILED}
 \fi
+\newcommand\kbexpectaccepted[2]{%
+  \kanban@validatedimensionTF{#1}
+    {\TYPE{#2 OK}}
+    {\TYPE{#2 FAILED}}}
+\newcommand\kbexpectrejected[2]{%
+  \kanban@validatedimensionTF{#1}
+    {\TYPE{#2 FAILED}}
+    {\TYPE{#2 OK}}}
+\newlength\kbtestlength
+\def\kbtestgap{2mm}
+\let\kbtestindent\parindent
+\kbexpectaccepted{2mm}{KANBAN EXPLICIT DIMENSION ACCEPTED}
+\kbexpectaccepted{2 mm}{KANBAN SPACED UNIT ACCEPTED}
+\kbexpectaccepted{2truemm}{KANBAN TRUE UNIT ACCEPTED}
+\kbexpectaccepted{2 true mm}{KANBAN SPACED TRUE UNIT ACCEPTED}
+\kbexpectaccepted{.5em}{KANBAN FONT UNIT ACCEPTED}
+\kbexpectaccepted{\parindent}{KANBAN DIMENSION PARAMETER ACCEPTED}
+\kbexpectaccepted{\hsize}{KANBAN HSIZE PARAMETER ACCEPTED}
+\kbexpectaccepted{\baselineskip}{KANBAN GLUE PARAMETER ACCEPTED}
+\kbexpectaccepted{\parskip}{KANBAN PARSKIP PARAMETER ACCEPTED}
+\kbexpectaccepted{\kbtestindent}{KANBAN LET COPY OF PARAMETER ACCEPTED}
+\kbexpectaccepted{\linewidth}{KANBAN DIMENSION REGISTER ACCEPTED}
+\kbexpectaccepted{\kbtestlength}{KANBAN SKIP REGISTER ACCEPTED}
+\kbexpectaccepted{\kbtestgap}{KANBAN MACRO DIMENSION ACCEPTED}
+\kbexpectrejected{\dimexpr 2mm\relax}{KANBAN DIMEXPR REJECTED}
+\kbexpectrejected{0.5\linewidth}{KANBAN SCALED REGISTER REJECTED}
+\kbexpectrejected{2}{KANBAN MISSING UNIT REJECTED}
+\kbexpectrejected{mm}{KANBAN MISSING NUMBER REJECTED}
+\kbexpectrejected{2trueem}{KANBAN TRUE FONT UNIT REJECTED}
+\kbexpectrejected{\thinmuskip}{KANBAN MATH GLUE PARAMETER REJECTED}
+\kbexpectrejected{\relax}{KANBAN RELAX REJECTED}
+\kbexpectrejected{\emph{2mm}}{KANBAN ROBUST COMMAND REJECTED}
+\kbexpectrejected{not-a-length}{KANBAN TEXT REJECTED}
+\makeatother
+\begin{kanban}[columns={One,Two},columnsep=\parindent]
+  \makeatletter
+  \ifdim\kanban@boardcolumnsep=\parindent
+    \TYPE{KANBAN PARAMETER GAP ASSIGNED OK}
+  \else
+    \TYPE{KANBAN PARAMETER GAP ASSIGNED FAILED}
+  \fi
+  \makeatother
+  \kanbantask{One}{Exercise a TeX parameter as the gap}
+\end{kanban}
+\kbset{columnsep=2 true mm}
+\makeatletter
+\ifdim\kanban@columnsep=2truemm\relax
+  \TYPE{KANBAN TRUE UNIT GAP ASSIGNED OK}
+\else
+  \TYPE{KANBAN TRUE UNIT GAP ASSIGNED FAILED}
+\fi
 \makeatother
 \begin{kanban}[columns={A deliberately long column heading,Done,Empty}]
   \kanbantask{A deliberately long column heading}

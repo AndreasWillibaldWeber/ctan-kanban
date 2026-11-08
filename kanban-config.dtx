@@ -50,20 +50,20 @@
 % \paragraph{Mode selection.}
 % Visual mode is a constrained textual choice. The persistent selector
 % records a global |light| or |dark| default and the board selector records
-% the same choice locally. Unknown values keep the previous selection.
+% the same choice locally. Unknown values keep the previous selection and
+% are reported through the shared unknown-value message, which names the
+% scope of the setting.
 %    \begin{macrocode}
 \newcommand\kanban@selectmode[1]{%
   \kanban@normalizechoice{#1}%
   \ifdefstring{\kb@choice}{light}{\gdef\kanban@mode{light}}{%
     \ifdefstring{\kb@choice}{dark}{\gdef\kanban@mode{dark}}{%
-      \PackageWarning{kanban}
-        {unknown mode '#1'.\MessageBreak The current mode is kept}}}}
+      \kanban@warning{unknown-value}{mode}{#1}}}}
 \newcommand\kanban@selectboardmode[1]{%
   \kanban@normalizechoice{#1}%
   \ifdefstring{\kb@choice}{light}{\def\kanban@boardmode{light}}{%
     \ifdefstring{\kb@choice}{dark}{\def\kanban@boardmode{dark}}{%
-      \PackageWarning{kanban}
-        {unknown mode '#1'.\MessageBreak The current mode is kept}}}}
+      \kanban@warning{unknown-value}{board mode}{#1}}}}
 %    \end{macrocode}
 %
 % \paragraph{Date-format canonicalization and selection.}
@@ -90,16 +90,12 @@
 \newcommand\kanban@selectdateformat[1]{%
   \kanban@canonicaldateformat{#1}%
   \ifdefempty\kb@datechoice
-    {\PackageWarning{kanban}
-      {unknown date format '#1'.
-        \MessageBreak The current date format is kept}}
+    {\kanban@warning{unknown-value}{date format}{#1}}
     {\global\let\kanban@dateformat\kb@datechoice}}
 \newcommand\kanban@selectboarddateformat[1]{%
   \kanban@canonicaldateformat{#1}%
   \ifdefempty\kb@datechoice
-    {\PackageWarning{kanban}
-      {unknown board date format '#1'.
-        \MessageBreak The current date format is kept}}
+    {\kanban@warning{unknown-value}{board date format}{#1}}
     {\let\kanban@boarddateformat\kb@datechoice}}
 %    \end{macrocode}
 %
@@ -160,15 +156,11 @@
 %    \begin{macrocode}
 \newcommand\kanban@setlabel[2]{%
   \ifblank{#2}
-    {\PackageWarning{kanban}
-      {label '#1' must not be empty.
-        \MessageBreak The current value is kept}}
+    {\kanban@warning{empty-label}{label}{#1}}
     {\csgdef{kanban@#1label}{#2}}}
 \newcommand\kanban@setboardlabel[2]{%
   \ifblank{#2}
-    {\PackageWarning{kanban}
-      {board label '#1' must not be empty.
-        \MessageBreak The current value is kept}}
+    {\kanban@warning{empty-label}{board label}{#1}}
     {\csdef{kanban@board#1label}{#2}}}
 %    \end{macrocode}
 %
@@ -177,7 +169,9 @@
 % |labels={high=URGENT,done=FINISHED}|. Separate persistent and board-local
 % families direct identical key names to setters with different assignment
 % scope. Each family owns its unknown-key diagnostic, which states whether
-% the mistake occurred in global setup or in a board override.
+% the mistake occurred in global setup or in a board override. The key name
+% is passed by expansion, because \textsf{l3msg} shows message arguments
+% without expanding them.
 %    \begin{macrocode}
 \ExplSyntaxOn
 \keys_define:nn {kanban/setup-labels}
@@ -187,7 +181,7 @@
     low .code:n = {\kanban@setlabel{low}{#1}},
     done .code:n = {\kanban@setlabel{done}{#1}},
     unknown .code:n =
-      {\msg_warning:nnnn {kanban}{unknown-key}
+      {\msg_warning:nnxx {kanban}{unknown-key}
         {label}{\l_keys_key_str}}
   }
 \keys_define:nn {kanban/board-labels}
@@ -197,7 +191,7 @@
     low .code:n = {\kanban@setboardlabel{low}{#1}},
     done .code:n = {\kanban@setboardlabel{done}{#1}},
     unknown .code:n =
-      {\msg_warning:nnnn {kanban}{unknown-key}
+      {\msg_warning:nnxx {kanban}{unknown-key}
         {board~label}{\l_keys_key_str}}
   }
 %    \end{macrocode}
@@ -231,7 +225,7 @@
     columnsep .code:n = {\kanban@setcolumnsep{#1}},
     labels .code:n = {\keys_set:nn {kanban/setup-labels}{#1}},
     unknown .code:n =
-      {\msg_warning:nnnn {kanban}{unknown-key}
+      {\msg_warning:nnxx {kanban}{unknown-key}
         {setup}{\l_keys_key_str}}
   }
 %    \end{macrocode}
@@ -268,9 +262,7 @@
 \NewDocumentCommand\kanbansetup{m}{\kanban@processsetup{#1}}
 \@ifundefined{kbset}
   {\let\kbset\kanbansetup}
-  {\PackageWarning{kanban}
-    {\string\kbset\space is already defined.
-      \MessageBreak Use \string\kanbansetup\space instead}}
+  {\kanban@warning{alias-taken}{kbset}{kanbansetup}}
 %    \end{macrocode}
 %
 % \paragraph{Collection and application of package options.}
@@ -278,7 +270,12 @@
 % into one token list and applies that list through the deferred setup
 % transaction after option processing has finished. Package options
 % therefore share validation, aliases, key-order independence, and
-% diagnostics with |\kanbansetup|.
+% diagnostics with |\kanbansetup|. The transaction runs while |kanban.sty|
+% is still being read, so the line number at that moment points into the
+% package rather than into the document. The application therefore runs in
+% a group that redefines the line context of \textsf{l3msg} to name the
+% package options. Every assignment made by the setup transaction is
+% global, so the group does not shorten the lifetime of any setting.
 %
 % Formats dated 2021-06-01 or later parse raw option lists with the
 % brace-aware key--value processor, so the catch-all collector receives every
@@ -310,8 +307,13 @@
 \cs_new_protected:Npn \kanban@applypackageoptions
   {
     \tl_if_empty:NF \g__kanban_package_options_tl
-      {\exp_args:NV \kanban@processsetup
-        \g__kanban_package_options_tl}
+      {
+        \group_begin:
+          \cs_set:Npn \msg_line_context: {in~the~package~options}
+          \exp_args:NV \kanban@processsetup
+            \g__kanban_package_options_tl
+        \group_end:
+      }
   }
 \ExplSyntaxOff
 \IfFormatAtLeastTF{2021-06-01}

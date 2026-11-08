@@ -69,6 +69,40 @@
 \makeatother
 \kbcheckpackagecolumns
 \kbcheckglobalpalette
+\begingroup
+  % Unknown options and rejected values are reported through named
+  % messages. Capture them semantically and keep the key name unexpanded,
+  % so a literal variable name in place of the key would be visible.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nn #1#2
+    {\TYPE{KANBAN~WARNING:~#2}}
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'\exp_not:n{#4}'}}
+  \ExplSyntaxOff
+  \kbset{colour=red}
+  \kbset{labels={urgent=NOW}}
+  \kbset{palette=missing}
+  \kbset{columns={}}
+  \kbset{mode=blue}
+  \kbset{mode=\emph{dark}}
+\endgroup
+\begingroup
+  % Package options are applied while kanban.sty is read. Their diagnostics
+  % must name the package options instead of a line inside the package.
+  \makeatletter
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'#4'~\msg_line_context:}}
+  \tl_gset:Nn \g__kanban_package_options_tl {startdate=31.02.2026}
+  \kanban@applypackageoptions
+  \ExplSyntaxOff
+  \makeatother
+\endgroup
+\makeatletter
+\ifdefstring{\kanban@startdate}{2026-07-15}
+  {\TYPE{KANBAN PACKAGE OPTION CONTEXT PRESERVES VALUE OK}}
+  {\TYPE{KANBAN PACKAGE OPTION CONTEXT PRESERVES VALUE FAILED}}
+\makeatother
 \begin{kanban}[columns={Todo},palette=default,mode=DaRk,dateformat=iso,
     startdate=01.08.2026,columnsep=4mm]
   \makeatletter
@@ -90,11 +124,31 @@
   \kbcheckboardpalette
   \kanbantask{Todo}{Exercise board-local settings}
   \begingroup
-    \makeatletter
-    \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
-    \makeatother
+    \ExplSyntaxOn
+    \cs_set_protected:Npn \msg_warning:nnn #1#2#3
+      {\TYPE{KANBAN~WARNING:~#2~'#3'}}
+    \ExplSyntaxOff
     \kanbantask[prio=urgent]{Todo}{Exercise priority validation}
   \endgroup
+\end{kanban}
+\begingroup
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'\exp_not:n{#4}'}}
+  \ExplSyntaxOff
+  \begin{kanban}[columns={Todo},colour=red,labels={urgent=NOW},
+      palette=missing,mode=blue]
+    \kanbantask[colour=red]{Todo}{Exercise unknown option warnings}
+  \end{kanban}
+\endgroup
+\kbdefinepalette{pair}{red,blue}
+\begin{kanban}[columns={One,Two,Three},palette=pair]
+  \makeatletter
+  \ifcsstring{kanban@color@3}{red}
+    {\TYPE{KANBAN PALETTE CYCLING OK}}
+    {\TYPE{KANBAN PALETTE CYCLING FAILED}}
+  \makeatother
+  \kanbantask{Three}{Exercise palette cycling}
 \end{kanban}
 \makeatletter
 \ifdefstring{\kanban@mode}{light}

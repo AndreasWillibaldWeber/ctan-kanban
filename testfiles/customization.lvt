@@ -35,16 +35,27 @@
   {\TYPE{KANBAN PUBLIC DEADLINE STYLE OK}}
   {\TYPE{KANBAN PUBLIC DEADLINE STYLE FAILED}}
 \begingroup
-  \makeatletter
-  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
-  \makeatother
+  % Capture the named messages semantically. The console rendering of
+  % l3msg varies across TeX Live releases.
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'#4'}}
+  \ExplSyntaxOff
   \kbset{labels={high=}}
 \endgroup
 \begingroup
-  \makeatletter
-  \def\PackageWarning#1#2{\TYPE{KANBAN WARNING: #2}}\def\MessageBreak{}
-  \makeatother
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nn #1#2
+    {\TYPE{KANBAN~WARNING:~#2}}
+  \cs_set_protected:Npn \msg_warning:nnn #1#2#3
+    {\TYPE{KANBAN~WARNING:~#2~'#3'}}
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~'#3'~#4}}
+  \ExplSyntaxOff
   \kbdefinepalette*{broken}{red/}
+  \kbdefinepalette{empty}{}
+  \kbdefinepalette*{emptypairs}{}
+  \kbdefinepalette{}{red}
 \endgroup
 \makeatletter
 \ifdefstring{\kanban@highlabel}{URGENT}
@@ -68,6 +79,20 @@
   \kanbantask[prio=high]{Todo}{Review the customization}
   \kanbantask[completed]{Done}{Approve the customization}
 \end{kanban}
+\begingroup
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \msg_warning:nnnn #1#2#3#4
+    {\TYPE{KANBAN~WARNING:~#2~#3~'#4'}}
+  \ExplSyntaxOff
+  \begin{kanban}[columns={Todo},labels={done=}]
+    \makeatletter
+    \ifdefstring{\kanban@boarddonelabel}{FINISHED}
+      {\TYPE{KANBAN EMPTY BOARD LABEL PRESERVES VALUE OK}}
+      {\TYPE{KANBAN EMPTY BOARD LABEL PRESERVES VALUE FAILED}}
+    \makeatother
+    \kanbantask{Todo}{Exercise empty board label validation}
+  \end{kanban}
+\endgroup
 \begin{kanban}[columns={Dark heading,Light heading},palette=contrast]
   \makeatletter
   \edef\kbfirstheadingtext{\csuse{kanban@headingtext@1}}
